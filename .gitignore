@@ -1,3 +1,26 @@
+# cc10x orchestration state (local)
 .claude/cc10x/
+.claude/cache/
+
+# OS / editor cruft
 .DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# Logs & runtime
 *.log
+*.pid
+
+# Local env files
+.env
+.env.local
+.env.*.local
+
+# Backup files
+*.bak
+*.orig
+*.tmp
