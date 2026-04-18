@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1080">
+    <title>Noord Karavane - Water Systems</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --navy: #1f1f1f;
+            --navy-dark: #141414;
+            --orange: #e85d04;
+            --orange-bright: #ff6b0a;
+            --blue: #0ea5e9;
+            --blue-dark: #1a1a1a;
+            --black: #0a0a0a;
+            --white: #ffffff;
+            --cream: #f5f2ed;
+        }
+
+        body {
+            font-family: 'Barlow', sans-serif;
+            background: var(--navy);
+        }
+
+        .canvas {
+            width: 1080px;
+            height: 1080px;
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(160deg, var(--blue-dark) 0%, var(--navy-dark) 50%, var(--navy) 100%);
+        }
+
+        /* Water droplet pattern */
+        .water-pattern {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.06;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffffff'%3E%3Cpath d='M12 2c-5.33 4.55-8 8.48-8 11.8 0 4.98 3.8 8.2 8 8.2s8-3.22 8-8.2c0-3.32-2.67-7.25-8-11.8zm0 18c-3.35 0-6-2.57-6-6.2 0-2.34 1.95-5.44 6-9.14 4.05 3.7 6 6.79 6 9.14 0 3.63-2.65 6.2-6 6.2z'/%3E%3C/svg%3E");
+            background-size: 60px 60px;
+        }
+
+        .accent-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 12px;
+            background: linear-gradient(90deg, var(--blue) 0%, var(--orange) 100%);
+        }
+
+        .logo-section {
+            position: absolute;
+            top: 40px;
+            right: 60px;
+        }
+
+        .logo {
+            width: 150px;
+            height: 150px;
+        }
+
+        .content {
+            position: absolute;
+            top: 50px;
+            left: 60px;
+            width: calc(100% - 280px);
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--blue);
+            color: var(--white);
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+        }
+
+        .headline {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 68px;
+            color: var(--white);
+            letter-spacing: 3px;
+            line-height: 1.05;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+        }
+
+        .headline span {
+            color: var(--blue);
+        }
+
+        .intro {
+            font-size: 22px;
+            color: var(--cream);
+            font-weight: 400;
+            line-height: 1.4;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            position: absolute;
+            top: 320px;
+            left: 0;
+            width: 100%;
+            padding: 0 60px;
+        }
+
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+
+        .column {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 28px;
+        }
+
+        .column h3 {
+            color: var(--blue);
+            font-size: 26px;
+            font-weight: 700;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .column h3 svg {
+            width: 28px;
+            height: 28px;
+            fill: var(--blue);
+        }
+
+        .column ul {
+            list-style: none;
+        }
+
+        .column ul li {
+            color: var(--white);
+            font-size: 19px;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .column ul li:last-child {
+            border-bottom: none;
+        }
+
+        .column ul li::before {
+            content: "";
+            width: 8px;
+            height: 8px;
+            background: var(--orange);
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .promo-banner {
+            margin-top: 25px;
+            background: linear-gradient(135deg, var(--orange) 0%, var(--orange-bright) 100%);
+            border-radius: 16px;
+            padding: 25px 35px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .promo-banner .text h4 {
+            color: var(--white);
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 32px;
+            letter-spacing: 2px;
+        }
+
+        .promo-banner .text p {
+            color: var(--white);
+            font-size: 18px;
+            opacity: 0.9;
+        }
+
+        .promo-banner .price {
+            text-align: right;
+        }
+
+        .promo-banner .price .from {
+            color: var(--white);
+            font-size: 16px;
+            opacity: 0.8;
+        }
+
+        .promo-banner .price .amount {
+            color: var(--white);
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 48px;
+            letter-spacing: 2px;
+        }
+
+        .contact-section {
+            position: absolute;
+            bottom: 50px;
+            left: 0;
+            width: 100%;
+            padding: 0 60px;
+        }
+
+        .contact-bar {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 25px 35px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .contact-info {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--white);
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .contact-item svg {
+            width: 22px;
+            height: 22px;
+            fill: var(--orange);
+        }
+
+        .whatsapp-cta {
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+            color: var(--white);
+            padding: 18px 30px;
+            border-radius: 50px;
+            font-size: 22px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .whatsapp-cta svg {
+            width: 28px;
+            height: 28px;
+            fill: var(--white);
+        }
+
+        .bottom-accent {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 8px;
+            background: linear-gradient(90deg, var(--orange) 0%, var(--blue) 100%);
+        }
+    </style>
+</head>
+<body>
+    <div class="canvas">
+        <div class="water-pattern"></div>
+        <div class="accent-bar"></div>
+
+        <div class="logo-section">
+            <img src="logo-white.png" alt="Noord Karavane" class="logo">
+        </div>
+
+        <div class="content">
+            <span class="badge">Plumbing Experts</span>
+            <h1 class="headline">Water Systems<br>& <span>Geysers</span></h1>
+            <p class="intro">From leaky taps to complete system overhauls - we keep your water flowing wherever you roam.</p>
+        </div>
+
+        <div class="main-content">
+            <div class="two-column">
+                <div class="column">
+                    <h3>
+                        <svg viewBox="0 0 24 24"><path d="M12 2c-5.33 4.55-8 8.48-8 11.8 0 4.98 3.8 8.2 8 8.2s8-3.22 8-8.2c0-3.32-2.67-7.25-8-11.8z"/></svg>
+                        Fresh Water
+                    </h3>
+                    <ul>
+                        <li>Water pump repairs & replacement</li>
+                        <li>Tank cleaning & sanitisation</li>
+                        <li>12V & 220V pump systems</li>
+                        <li>Pressure regulator fitting</li>
+                        <li>Pipe repairs & upgrades</li>
+                    </ul>
+                </div>
+                <div class="column">
+                    <h3>
+                        <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                        Hot Water
+                    </h3>
+                    <ul>
+                        <li>Gas geyser servicing</li>
+                        <li>Electric element replacement</li>
+                        <li>Truma & Dometic specialists</li>
+                        <li>Thermostat calibration</li>
+                        <li>New geyser installations</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="promo-banner">
+                <div class="text">
+                    <h4>Full Water System Inspection</h4>
+                    <p>Pumps, pipes, taps, geyser & drainage check</p>
+                </div>
+                <div class="price">
+                    <span class="from">From only</span>
+                    <span class="amount">R450</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="contact-section">
+            <div class="contact-bar">
+                <div class="contact-info">
+                    <div class="contact-item">
+                        <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                        <span>252 General Beyers, Pretoria North</span>
+                    </div>
+                    <div class="contact-item">
+                        <svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+                        <span>083 334 9357</span>
+                    </div>
+                </div>
+                <div class="whatsapp-cta">
+                    <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                    Book Service
+                </div>
+            </div>
+        </div>
+
+        <div class="bottom-accent"></div>
+    </div>
+</body>
+</html>

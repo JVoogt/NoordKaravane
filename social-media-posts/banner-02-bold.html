@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=2000">
+    <title>Noord Karavane - Storefront Banner - Bold</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --navy: #1f1f1f;
+            --navy-dark: #141414;
+            --orange: #e85d04;
+            --orange-bright: #ff6b0a;
+            --black: #0a0a0a;
+            --white: #ffffff;
+            --cream: #f5f2ed;
+        }
+
+        body {
+            font-family: 'Barlow', sans-serif;
+            background: var(--navy);
+        }
+
+        .canvas {
+            width: 2000px;
+            height: 1200px;
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(135deg, var(--navy) 0%, var(--navy-dark) 60%, var(--black) 100%);
+        }
+
+        /* Dynamic diagonal accent */
+        .diagonal-accent {
+            position: absolute;
+            top: -100px;
+            right: -200px;
+            width: 900px;
+            height: 1400px;
+            background: linear-gradient(135deg, var(--orange) 0%, var(--orange-bright) 100%);
+            transform: rotate(-15deg);
+            opacity: 0.12;
+        }
+
+        .diagonal-accent-2 {
+            position: absolute;
+            top: -50px;
+            right: -300px;
+            width: 600px;
+            height: 1300px;
+            background: linear-gradient(135deg, var(--orange-bright) 0%, var(--orange) 100%);
+            transform: rotate(-15deg);
+            opacity: 0.08;
+        }
+
+        /* Top accent bar */
+        .accent-bar-top {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 20px;
+            background: linear-gradient(90deg, var(--orange) 0%, var(--orange-bright) 50%, var(--orange) 100%);
+        }
+
+        /* Bottom accent bar */
+        .accent-bar-bottom {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 16px;
+            background: linear-gradient(90deg, var(--orange) 0%, var(--orange-bright) 50%, var(--orange) 100%);
+        }
+
+        /* Left section - Logo */
+        .left-section {
+            position: absolute;
+            top: 50%;
+            left: 120px;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .logo {
+            width: 480px;
+            height: 480px;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+        }
+
+        /* Right section - Content */
+        .right-section {
+            position: absolute;
+            top: 50%;
+            right: 100px;
+            transform: translateY(-50%);
+            text-align: right;
+            max-width: 1150px;
+        }
+
+        .headline {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 130px;
+            color: var(--white);
+            letter-spacing: 8px;
+            line-height: 0.95;
+            text-transform: uppercase;
+            margin-bottom: 25px;
+        }
+
+        .headline span {
+            color: var(--orange);
+        }
+
+        .subheadline {
+            font-size: 34px;
+            color: var(--cream);
+            font-weight: 600;
+            letter-spacing: 6px;
+            text-transform: uppercase;
+            margin-bottom: 45px;
+            opacity: 0.9;
+        }
+
+        /* Services as tags */
+        .services-row {
+            display: flex;
+            justify-content: flex-end;
+            gap: 18px;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
+        }
+
+        .services-row:last-of-type {
+            margin-bottom: 45px;
+        }
+
+        .service-tag {
+            background: rgba(232, 93, 4, 0.2);
+            border: 2px solid var(--orange);
+            padding: 14px 28px;
+            border-radius: 8px;
+            color: var(--white);
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        /* Contact info */
+        .contact-row {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 50px;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: var(--white);
+        }
+
+        .contact-item svg {
+            width: 38px;
+            height: 38px;
+            fill: var(--orange);
+            flex-shrink: 0;
+        }
+
+        .contact-item .text {
+            font-size: 30px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        /* Orange vertical line accent */
+        .vertical-accent {
+            position: absolute;
+            top: 100px;
+            left: 680px;
+            width: 5px;
+            height: 1000px;
+            background: linear-gradient(180deg, transparent 0%, var(--orange) 10%, var(--orange) 90%, transparent 100%);
+        }
+    </style>
+</head>
+<body>
+    <div class="canvas">
+        <div class="diagonal-accent"></div>
+        <div class="diagonal-accent-2"></div>
+        <div class="accent-bar-top"></div>
+        <div class="vertical-accent"></div>
+
+        <div class="left-section">
+            <img src="logo-white.png" alt="Noord Karavane" class="logo">
+        </div>
+
+        <div class="right-section">
+            <h1 class="headline">Caravan &<br><span>Trailer</span><br>Experts</h1>
+            <p class="subheadline">Professional Service You Can Trust</p>
+
+            <div class="services-row">
+                <div class="service-tag">Service & Repairs</div>
+                <div class="service-tag">Electrical & Solar</div>
+                <div class="service-tag">Safety Checks</div>
+            </div>
+            <div class="services-row">
+                <div class="service-tag">Wheel Bearings</div>
+                <div class="service-tag">Awnings</div>
+                <div class="service-tag">Water Systems</div>
+            </div>
+
+            <div class="contact-row">
+                <div class="contact-item">
+                    <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                    <span class="text">252 General Beyers, Pretoria North</span>
+                </div>
+                <div class="contact-item">
+                    <svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+                    <span class="text">083 334 9357</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="accent-bar-bottom"></div>
+    </div>
+</body>
+</html>

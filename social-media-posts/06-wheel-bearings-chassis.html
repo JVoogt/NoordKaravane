@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1080">
+    <title>Noord Karavane - Wheel Bearings & Chassis</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --navy: #1f1f1f;
+            --navy-dark: #141414;
+            --orange: #e85d04;
+            --orange-bright: #ff6b0a;
+            --black: #0a0a0a;
+            --white: #ffffff;
+            --cream: #f5f2ed;
+            --red: #dc2626;
+        }
+
+        body {
+            font-family: 'Barlow', sans-serif;
+            background: var(--navy);
+        }
+
+        .canvas {
+            width: 1080px;
+            height: 1080px;
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(160deg, var(--navy-dark) 0%, var(--navy) 100%);
+        }
+
+        /* Gear pattern overlay */
+        .gear-pattern {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.05;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffffff'%3E%3Cpath d='M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z'/%3E%3C/svg%3E");
+            background-size: 120px 120px;
+        }
+
+        .accent-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 12px;
+            background: linear-gradient(90deg, var(--orange) 0%, var(--red) 100%);
+        }
+
+        .logo-section {
+            position: absolute;
+            top: 40px;
+            left: 60px;
+        }
+
+        .logo {
+            width: 160px;
+            height: 160px;
+        }
+
+        .warning-badge {
+            position: absolute;
+            top: 50px;
+            right: 60px;
+            background: var(--red);
+            color: var(--white);
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 18px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .content {
+            position: absolute;
+            top: 220px;
+            left: 0;
+            width: 100%;
+            padding: 0 60px;
+        }
+
+        .headline {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 64px;
+            color: var(--white);
+            letter-spacing: 3px;
+            line-height: 1.1;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+        }
+
+        .headline span {
+            color: var(--orange);
+        }
+
+        .intro {
+            font-size: 24px;
+            color: var(--cream);
+            font-weight: 400;
+            line-height: 1.4;
+            margin-bottom: 30px;
+            opacity: 0.9;
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .service-item {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 20px 24px;
+            border-left: 4px solid var(--orange);
+        }
+
+        .service-item h3 {
+            color: var(--white);
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .service-item p {
+            color: var(--cream);
+            font-size: 16px;
+            opacity: 0.85;
+            line-height: 1.4;
+        }
+
+        .warning-text {
+            background: rgba(220, 38, 38, 0.15);
+            border: 1px solid rgba(220, 38, 38, 0.4);
+            border-radius: 12px;
+            padding: 20px 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .warning-text svg {
+            width: 40px;
+            height: 40px;
+            fill: var(--red);
+            flex-shrink: 0;
+        }
+
+        .warning-text p {
+            color: var(--white);
+            font-size: 18px;
+            font-weight: 500;
+            line-height: 1.4;
+        }
+
+        .contact-section {
+            position: absolute;
+            bottom: 50px;
+            left: 0;
+            width: 100%;
+            padding: 0 60px;
+        }
+
+        .contact-bar {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 25px 35px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .contact-info {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--white);
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .contact-item svg {
+            width: 22px;
+            height: 22px;
+            fill: var(--orange);
+        }
+
+        .whatsapp-cta {
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+            color: var(--white);
+            padding: 18px 30px;
+            border-radius: 50px;
+            font-size: 22px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .whatsapp-cta svg {
+            width: 28px;
+            height: 28px;
+            fill: var(--white);
+        }
+
+        .bottom-accent {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 8px;
+            background: linear-gradient(90deg, var(--red) 0%, var(--orange) 100%);
+        }
+    </style>
+</head>
+<body>
+    <div class="canvas">
+        <div class="gear-pattern"></div>
+        <div class="accent-bar"></div>
+
+        <div class="logo-section">
+            <img src="logo-white.png" alt="Noord Karavane" class="logo">
+        </div>
+
+        <div class="warning-badge">Safety Critical</div>
+
+        <div class="content">
+            <h1 class="headline">Wheel Bearings,<br><span>Brakes</span> & Chassis</h1>
+            <p class="intro">Your caravan's foundation needs expert attention. We inspect, service, and replace critical running gear components.</p>
+
+            <div class="services-grid">
+                <div class="service-item">
+                    <h3>Wheel Bearings</h3>
+                    <p>Repack or replace bearings before they fail on the road</p>
+                </div>
+                <div class="service-item">
+                    <h3>Brake Systems</h3>
+                    <p>Drum brakes, electric brakes, breakaway systems</p>
+                </div>
+                <div class="service-item">
+                    <h3>Suspension</h3>
+                    <p>Leaf springs, shock absorbers, chassis alignment</p>
+                </div>
+                <div class="service-item">
+                    <h3>Coupling & Jockey</h3>
+                    <p>Tow hitch, jockey wheel, safety chains</p>
+                </div>
+            </div>
+
+            <div class="warning-text">
+                <svg viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+                <p>Worn bearings cause 40% of roadside breakdowns. Don't risk your holiday - get them checked before you go!</p>
+            </div>
+        </div>
+
+        <div class="contact-section">
+            <div class="contact-bar">
+                <div class="contact-info">
+                    <div class="contact-item">
+                        <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                        <span>252 General Beyers, Pretoria North</span>
+                    </div>
+                    <div class="contact-item">
+                        <svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+                        <span>083 334 9357</span>
+                    </div>
+                </div>
+                <div class="whatsapp-cta">
+                    <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                    Book Now
+                </div>
+            </div>
+        </div>
+
+        <div class="bottom-accent"></div>
+    </div>
+</body>
+</html>

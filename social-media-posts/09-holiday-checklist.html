@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1080">
+    <title>Noord Karavane - Holiday Checklist</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --navy: #1f1f1f;
+            --navy-dark: #141414;
+            --orange: #e85d04;
+            --orange-bright: #ff6b0a;
+            --green: #16a34a;
+            --green-dark: #1a1a1a;
+            --black: #0a0a0a;
+            --white: #ffffff;
+            --cream: #f5f2ed;
+        }
+
+        body {
+            font-family: 'Barlow', sans-serif;
+            background: var(--navy);
+        }
+
+        .canvas {
+            width: 1080px;
+            height: 1080px;
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(155deg, var(--green-dark) 0%, var(--navy-dark) 45%, var(--navy) 100%);
+        }
+
+        /* Road pattern */
+        .road-pattern {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.05;
+            background-image: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 40px,
+                rgba(255,255,255,0.3) 40px,
+                rgba(255,255,255,0.3) 60px,
+                transparent 60px,
+                transparent 100px
+            );
+            background-size: 60px 100px;
+            background-position: center;
+        }
+
+        .accent-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 12px;
+            background: linear-gradient(90deg, var(--green) 0%, var(--orange) 100%);
+        }
+
+        .logo-section {
+            position: absolute;
+            top: 40px;
+            right: 60px;
+        }
+
+        .logo {
+            width: 140px;
+            height: 140px;
+        }
+
+        .content {
+            position: absolute;
+            top: 45px;
+            left: 60px;
+            width: calc(100% - 260px);
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--green);
+            color: var(--white);
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+        }
+
+        .headline {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 62px;
+            color: var(--white);
+            letter-spacing: 3px;
+            line-height: 1.05;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .headline span {
+            color: var(--orange);
+        }
+
+        .intro {
+            font-size: 20px;
+            color: var(--cream);
+            font-weight: 400;
+            line-height: 1.4;
+            opacity: 0.9;
+        }
+
+        .checklist-section {
+            position: absolute;
+            top: 280px;
+            left: 0;
+            width: 100%;
+            padding: 0 60px;
+        }
+
+        .checklist {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        .check-item {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .check-item .checkbox {
+            width: 32px;
+            height: 32px;
+            background: var(--green);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .check-item .checkbox svg {
+            width: 20px;
+            height: 20px;
+            fill: var(--white);
+        }
+
+        .check-item .text {
+            color: var(--white);
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .cta-banner {
+            margin-top: 20px;
+            background: linear-gradient(135deg, var(--orange) 0%, var(--orange-bright) 100%);
+            border-radius: 14px;
+            padding: 22px 30px;
+            text-align: center;
+        }
+
+        .cta-banner h4 {
+            color: var(--white);
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 36px;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+        }
+
+        .cta-banner p {
+            color: var(--white);
+            font-size: 18px;
+            opacity: 0.95;
+        }
+
+        .contact-section {
+            position: absolute;
+            bottom: 50px;
+            left: 0;
+            width: 100%;
+            padding: 0 60px;
+        }
+
+        .contact-bar {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 25px 35px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .contact-info {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--white);
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .contact-item svg {
+            width: 22px;
+            height: 22px;
+            fill: var(--orange);
+        }
+
+        .whatsapp-cta {
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+            color: var(--white);
+            padding: 18px 30px;
+            border-radius: 50px;
+            font-size: 22px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .whatsapp-cta svg {
+            width: 28px;
+            height: 28px;
+            fill: var(--white);
+        }
+
+        .bottom-accent {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 8px;
+            background: linear-gradient(90deg, var(--orange) 0%, var(--green) 100%);
+        }
+    </style>
+</head>
+<body>
+    <div class="canvas">
+        <div class="road-pattern"></div>
+        <div class="accent-bar"></div>
+
+        <div class="logo-section">
+            <img src="logo-white.png" alt="Noord Karavane" class="logo">
+        </div>
+
+        <div class="content">
+            <span class="badge">Pre-Trip Essentials</span>
+            <h1 class="headline">Holiday <span>Checklist</span><br>Before You Go</h1>
+            <p class="intro">Don't let a breakdown ruin your getaway. Book your pre-trip inspection today!</p>
+        </div>
+
+        <div class="checklist-section">
+            <div class="checklist">
+                <div class="check-item">
+                    <div class="checkbox">
+                        <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                    </div>
+                    <span class="text">Wheel bearings repacked</span>
+                </div>
+                <div class="check-item">
+                    <div class="checkbox">
+                        <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                    </div>
+                    <span class="text">Brakes tested & adjusted</span>
+                </div>
+                <div class="check-item">
+                    <div class="checkbox">
+                        <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                    </div>
+                    <span class="text">Tyres & spare checked</span>
+                </div>
+                <div class="check-item">
+                    <div class="checkbox">
+                        <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                    </div>
+                    <span class="text">Lights & indicators working</span>
+                </div>
+                <div class="check-item">
+                    <div class="checkbox">
+                        <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                    </div>
+                    <span class="text">Gas system certified</span>
+                </div>
+                <div class="check-item">
+                    <div class="checkbox">
+                        <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                    </div>
+                    <span class="text">Water pump & geyser tested</span>
+                </div>
+                <div class="check-item">
+                    <div class="checkbox">
+                        <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                    </div>
+                    <span class="text">12V & 220V electrics safe</span>
+                </div>
+                <div class="check-item">
+                    <div class="checkbox">
+                        <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                    </div>
+                    <span class="text">Seals & roof leak-free</span>
+                </div>
+            </div>
+
+            <div class="cta-banner">
+                <h4>Full Pre-Trip Inspection from R650</h4>
+                <p>Complete 30-point check with written report - peace of mind guaranteed</p>
+            </div>
+        </div>
+
+        <div class="contact-section">
+            <div class="contact-bar">
+                <div class="contact-info">
+                    <div class="contact-item">
+                        <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                        <span>252 General Beyers, Pretoria North</span>
+                    </div>
+                    <div class="contact-item">
+                        <svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+                        <span>083 334 9357</span>
+                    </div>
+                </div>
+                <div class="whatsapp-cta">
+                    <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                    Book Now
+                </div>
+            </div>
+        </div>
+
+        <div class="bottom-accent"></div>
+    </div>
+</body>
+</html>

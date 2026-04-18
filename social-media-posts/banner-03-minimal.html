@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=2000">
+    <title>Noord Karavane - Storefront Banner - Minimal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --navy: #1f1f1f;
+            --navy-dark: #141414;
+            --orange: #e85d04;
+            --orange-bright: #ff6b0a;
+            --black: #0a0a0a;
+            --white: #ffffff;
+            --cream: #f5f2ed;
+        }
+
+        body {
+            font-family: 'Barlow', sans-serif;
+            background: var(--navy);
+        }
+
+        .canvas {
+            width: 2000px;
+            height: 1200px;
+            position: relative;
+            overflow: hidden;
+            background: var(--navy);
+        }
+
+        /* Gradient overlay */
+        .gradient-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, var(--navy) 0%, var(--navy-dark) 50%, var(--black) 100%);
+        }
+
+        /* Subtle dot pattern */
+        .dot-pattern {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.03;
+            background-image: radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        /* Top accent bar - thicker */
+        .accent-bar-top {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 24px;
+            background: linear-gradient(90deg, var(--orange) 0%, var(--orange-bright) 100%);
+        }
+
+        /* Bottom accent bar */
+        .accent-bar-bottom {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 20px;
+            background: linear-gradient(90deg, var(--orange-bright) 0%, var(--orange) 100%);
+        }
+
+        /* Main content - centered three column layout */
+        .main-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            align-items: center;
+            gap: 80px;
+        }
+
+        /* Logo section - centered */
+        .logo-section {
+            text-align: center;
+        }
+
+        .logo {
+            width: 520px;
+            height: 520px;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+        }
+
+        /* Left content */
+        .left-content {
+            text-align: right;
+            max-width: 550px;
+        }
+
+        .main-headline {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 100px;
+            color: var(--white);
+            letter-spacing: 6px;
+            line-height: 1;
+            text-transform: uppercase;
+            margin-bottom: 30px;
+        }
+
+        .main-headline span {
+            color: var(--orange);
+            display: block;
+        }
+
+        .services-left {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 15px;
+        }
+
+        .service-text {
+            font-size: 28px;
+            color: var(--cream);
+            font-weight: 600;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .service-text::before {
+            content: '';
+            width: 12px;
+            height: 12px;
+            background: var(--orange);
+            border-radius: 50%;
+        }
+
+        /* Right content */
+        .right-content {
+            text-align: left;
+            max-width: 550px;
+        }
+
+        .sub-headline {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 100px;
+            color: var(--orange);
+            letter-spacing: 6px;
+            line-height: 1;
+            text-transform: uppercase;
+            margin-bottom: 30px;
+        }
+
+        .sub-headline span {
+            color: var(--white);
+            display: block;
+        }
+
+        .services-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 15px;
+        }
+
+        /* Contact bar at bottom */
+        .contact-section {
+            position: absolute;
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .contact-bar {
+            background: rgba(232, 93, 4, 0.15);
+            border: 2px solid var(--orange);
+            border-radius: 60px;
+            padding: 25px 80px;
+            display: flex;
+            align-items: center;
+            gap: 60px;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            color: var(--white);
+        }
+
+        .contact-item svg {
+            width: 44px;
+            height: 44px;
+            fill: var(--orange);
+        }
+
+        .contact-item .text {
+            font-size: 34px;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+
+        .contact-divider {
+            width: 3px;
+            height: 50px;
+            background: var(--orange);
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="canvas">
+        <div class="gradient-overlay"></div>
+        <div class="dot-pattern"></div>
+        <div class="accent-bar-top"></div>
+
+        <div class="main-content">
+            <div class="left-content">
+                <h1 class="main-headline">Caravan<span>& Trailer</span></h1>
+                <div class="services-left">
+                    <div class="service-text">Full Service & Repairs</div>
+                    <div class="service-text">Electrical & Solar</div>
+                    <div class="service-text">Safety Inspections</div>
+                </div>
+            </div>
+
+            <div class="logo-section">
+                <img src="logo-white.png" alt="Noord Karavane" class="logo">
+            </div>
+
+            <div class="right-content">
+                <h2 class="sub-headline">Service<span>Specialists</span></h2>
+                <div class="services-right">
+                    <div class="service-text">Wheel Bearings & Chassis</div>
+                    <div class="service-text">Awning Repairs</div>
+                    <div class="service-text">Water Systems</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="contact-section">
+            <div class="contact-bar">
+                <div class="contact-item">
+                    <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                    <span class="text">252 General Beyers, Pretoria North</span>
+                </div>
+                <div class="contact-divider"></div>
+                <div class="contact-item">
+                    <svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+                    <span class="text">083 334 9357</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="accent-bar-bottom"></div>
+    </div>
+</body>
+</html>

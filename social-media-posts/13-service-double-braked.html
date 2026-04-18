@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1080">
+    <title>Noord Karavane - Double Braked Axle Service</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --navy: #1f1f1f;
+            --navy-dark: #141414;
+            --orange: #e85d04;
+            --orange-bright: #ff6b0a;
+            --black: #0a0a0a;
+            --white: #ffffff;
+            --cream: #f5f2ed;
+            --gray: #6b7280;
+            --gold: #f59e0b;
+        }
+
+        body {
+            font-family: 'Barlow', sans-serif;
+            background: var(--navy);
+        }
+
+        .canvas {
+            width: 1080px;
+            height: 1080px;
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(160deg, var(--navy) 0%, var(--navy-dark) 50%, var(--black) 100%);
+        }
+
+        /* Diagonal stripes */
+        .diagonal-stripes {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.03;
+            background: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 40px,
+                rgba(255,255,255,0.1) 40px,
+                rgba(255,255,255,0.1) 42px
+            );
+        }
+
+        .accent-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 12px;
+            background: linear-gradient(90deg, var(--orange) 0%, var(--gold) 100%);
+        }
+
+        .campaign-badge {
+            position: absolute;
+            top: 40px;
+            left: 60px;
+            background: var(--orange);
+            color: var(--white);
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 18px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .premium-badge {
+            position: absolute;
+            top: 40px;
+            right: 200px;
+            background: linear-gradient(135deg, var(--gold) 0%, #d97706 100%);
+            color: var(--white);
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .logo-section {
+            position: absolute;
+            top: 35px;
+            right: 60px;
+        }
+
+        .logo {
+            width: 130px;
+            height: 130px;
+        }
+
+        .content {
+            position: absolute;
+            top: 140px;
+            left: 0;
+            width: 100%;
+            padding: 0 60px;
+            text-align: center;
+        }
+
+        .service-type {
+            font-size: 22px;
+            color: var(--cream);
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            opacity: 0.8;
+        }
+
+        .headline {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 72px;
+            color: var(--white);
+            letter-spacing: 4px;
+            line-height: 1.05;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+
+        .headline span {
+            color: var(--gold);
+        }
+
+        .price-section {
+            background: linear-gradient(135deg, var(--gold) 0%, #d97706 100%);
+            border-radius: 20px;
+            padding: 30px 50px;
+            display: inline-block;
+            margin-bottom: 30px;
+            position: relative;
+            box-shadow: 0 10px 40px rgba(245, 158, 11, 0.3);
+        }
+
+        .price-section .price {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 96px;
+            color: var(--white);
+            letter-spacing: 3px;
+            line-height: 1;
+        }
+
+        .price-section .price-note {
+            font-size: 18px;
+            color: var(--white);
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+
+        .includes-section {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 30px 40px;
+            text-align: left;
+            margin-bottom: 20px;
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        .includes-section h3 {
+            color: var(--gold);
+            font-size: 20px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .includes-list {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .includes-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: var(--white);
+            font-size: 22px;
+            font-weight: 600;
+        }
+
+        .includes-item .check {
+            width: 32px;
+            height: 32px;
+            background: var(--gold);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .includes-item .check svg {
+            width: 18px;
+            height: 18px;
+            fill: var(--white);
+        }
+
+        .disclaimer {
+            font-size: 16px;
+            color: var(--gray);
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        .contact-section {
+            position: absolute;
+            bottom: 50px;
+            left: 0;
+            width: 100%;
+            padding: 0 60px;
+        }
+
+        .contact-bar {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 25px 35px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        .contact-info {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--white);
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .contact-item svg {
+            width: 22px;
+            height: 22px;
+            fill: var(--gold);
+        }
+
+        .whatsapp-cta {
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+            color: var(--white);
+            padding: 18px 30px;
+            border-radius: 50px;
+            font-size: 22px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .whatsapp-cta svg {
+            width: 28px;
+            height: 28px;
+            fill: var(--white);
+        }
+
+        .bottom-accent {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 8px;
+            background: linear-gradient(90deg, var(--gold) 0%, var(--orange) 100%);
+        }
+    </style>
+</head>
+<body>
+    <div class="canvas">
+        <div class="diagonal-stripes"></div>
+        <div class="accent-bar"></div>
+
+        <div class="campaign-badge">Jan/Feb Special</div>
+        <div class="premium-badge">Best Value</div>
+
+        <div class="logo-section">
+            <img src="logo-white.png" alt="Noord Karavane" class="logo">
+        </div>
+
+        <div class="content">
+            <p class="service-type">Caravan & Trailer Service</p>
+            <h1 class="headline">Double <span>Braked</span><br>Axle Service</h1>
+
+            <div class="price-section">
+                <div class="price">R2299</div>
+                <div class="price-note">Parts not included</div>
+            </div>
+
+            <div class="includes-section">
+                <h3>Service Includes</h3>
+                <div class="includes-list">
+                    <div class="includes-item">
+                        <div class="check">
+                            <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                        </div>
+                        <span>Safety & Electrical Checks</span>
+                    </div>
+                    <div class="includes-item">
+                        <div class="check">
+                            <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                        </div>
+                        <span>Brake Inspection</span>
+                    </div>
+                    <div class="includes-item">
+                        <div class="check">
+                            <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                        </div>
+                        <span>Bearing Service or Replacement</span>
+                    </div>
+                </div>
+            </div>
+
+            <p class="disclaimer">Onsite services available at additional cost</p>
+        </div>
+
+        <div class="contact-section">
+            <div class="contact-bar">
+                <div class="contact-info">
+                    <div class="contact-item">
+                        <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                        <span>252 General Beyers, Pretoria North</span>
+                    </div>
+                    <div class="contact-item">
+                        <svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+                        <span>083 334 9357</span>
+                    </div>
+                </div>
+                <div class="whatsapp-cta">
+                    <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                    Book Now
+                </div>
+            </div>
+        </div>
+
+        <div class="bottom-accent"></div>
+    </div>
+</body>
+</html>

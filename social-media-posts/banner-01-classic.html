@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=2000">
+    <title>Noord Karavane - Storefront Banner - Classic</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --navy: #1f1f1f;
+            --navy-dark: #141414;
+            --orange: #e85d04;
+            --orange-bright: #ff6b0a;
+            --black: #0a0a0a;
+            --white: #ffffff;
+            --cream: #f5f2ed;
+        }
+
+        body {
+            font-family: 'Barlow', sans-serif;
+            background: var(--navy);
+        }
+
+        .canvas {
+            width: 2000px;
+            height: 1200px;
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(160deg, var(--navy) 0%, var(--navy-dark) 50%, var(--black) 100%);
+        }
+
+        /* Subtle background pattern */
+        .bg-pattern {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.04;
+            background: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 60px,
+                rgba(255,255,255,0.1) 60px,
+                rgba(255,255,255,0.1) 62px
+            );
+        }
+
+        /* Top accent bar */
+        .accent-bar-top {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 20px;
+            background: linear-gradient(90deg, var(--orange) 0%, var(--orange-bright) 100%);
+        }
+
+        /* Bottom accent bar */
+        .accent-bar-bottom {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 16px;
+            background: linear-gradient(90deg, var(--orange-bright) 0%, var(--orange) 100%);
+        }
+
+        /* Logo section - centered and large */
+        .logo-section {
+            position: absolute;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+        }
+
+        .logo {
+            width: 420px;
+            height: 420px;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+        }
+
+        /* Tagline below logo */
+        .tagline {
+            position: absolute;
+            top: 500px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            width: 100%;
+        }
+
+        .tagline h1 {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 80px;
+            color: var(--white);
+            letter-spacing: 10px;
+            text-transform: uppercase;
+        }
+
+        .tagline h1 span {
+            color: var(--orange);
+        }
+
+        .tagline p {
+            font-size: 34px;
+            color: var(--cream);
+            letter-spacing: 6px;
+            margin-top: 15px;
+            text-transform: uppercase;
+        }
+
+        /* Services section */
+        .services-section {
+            position: absolute;
+            top: 720px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 1800px;
+        }
+
+        .services-bar {
+            background: rgba(232, 93, 4, 0.12);
+            border-top: 3px solid var(--orange);
+            border-bottom: 3px solid var(--orange);
+            padding: 28px 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .service-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--white);
+            font-size: 26px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            white-space: nowrap;
+        }
+
+        .service-item svg {
+            width: 32px;
+            height: 32px;
+            fill: var(--orange);
+            flex-shrink: 0;
+        }
+
+        .service-divider {
+            color: var(--orange);
+            font-size: 32px;
+            font-weight: 300;
+            opacity: 0.6;
+        }
+
+        /* Contact section */
+        .contact-section {
+            position: absolute;
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .contact-bar {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 60px;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            color: var(--white);
+        }
+
+        .contact-item svg {
+            width: 44px;
+            height: 44px;
+            fill: var(--orange);
+            flex-shrink: 0;
+        }
+
+        .contact-item .text {
+            font-size: 38px;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+
+        .contact-divider {
+            width: 4px;
+            height: 60px;
+            background: var(--orange);
+            border-radius: 2px;
+        }
+
+        /* Side accents */
+        .side-accent-left {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+            width: 8px;
+            height: 400px;
+            background: linear-gradient(180deg, transparent 0%, var(--orange) 20%, var(--orange) 80%, transparent 100%);
+        }
+
+        .side-accent-right {
+            position: absolute;
+            top: 50%;
+            right: 0;
+            transform: translateY(-50%);
+            width: 8px;
+            height: 400px;
+            background: linear-gradient(180deg, transparent 0%, var(--orange) 20%, var(--orange) 80%, transparent 100%);
+        }
+    </style>
+</head>
+<body>
+    <div class="canvas">
+        <div class="bg-pattern"></div>
+        <div class="accent-bar-top"></div>
+        <div class="side-accent-left"></div>
+        <div class="side-accent-right"></div>
+
+        <div class="logo-section">
+            <img src="logo-white.png" alt="Noord Karavane" class="logo">
+        </div>
+
+        <div class="tagline">
+            <h1>Caravan & Trailer <span>Specialists</span></h1>
+            <p>Service | Repairs | Electrical | Safety</p>
+        </div>
+
+        <div class="services-section">
+            <div class="services-bar">
+                <div class="service-item">
+                    <svg viewBox="0 0 24 24"><path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/></svg>
+                    <span>Full Service & Repairs</span>
+                </div>
+                <span class="service-divider">|</span>
+                <div class="service-item">
+                    <svg viewBox="0 0 24 24"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>
+                    <span>Electrical & Solar</span>
+                </div>
+                <span class="service-divider">|</span>
+                <div class="service-item">
+                    <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
+                    <span>Safety Inspections</span>
+                </div>
+                <span class="service-divider">|</span>
+                <div class="service-item">
+                    <svg viewBox="0 0 24 24"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/></svg>
+                    <span>Wheel Bearings & Chassis</span>
+                </div>
+                <span class="service-divider">|</span>
+                <div class="service-item">
+                    <svg viewBox="0 0 24 24"><path d="M12 3L2 12h3v8h6v-6h2v6h6v-8h3L12 3z"/></svg>
+                    <span>Awnings & Water Systems</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="contact-section">
+            <div class="contact-bar">
+                <div class="contact-item">
+                    <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                    <span class="text">252 General Beyers, Pretoria North</span>
+                </div>
+                <div class="contact-divider"></div>
+                <div class="contact-item">
+                    <svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+                    <span class="text">083 334 9357</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="accent-bar-bottom"></div>
+    </div>
+</body>
+</html>
