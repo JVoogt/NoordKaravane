@@ -267,7 +267,7 @@ ul { list-style: none; }
 }
 .hero-actions {
   display: flex; gap: 12px; flex-wrap: wrap;
-  margin-bottom: 56px;
+  margin-bottom: 24px;
 }
 .btn {
   display: inline-flex; align-items: center; gap: 10px;
@@ -295,6 +295,42 @@ ul { list-style: none; }
   color: #062e16;
 }
 .btn-whatsapp:hover { background: #3ddb7c; transform: translateY(-1px); }
+
+.hero-trust {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 52px;
+}
+.hero-trust-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 9px;
+  min-height: 46px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(235, 230, 221, 0.035);
+  color: var(--paper-dim);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+.hero-trust-item::before {
+  content: '';
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: var(--orange);
+  box-shadow: inset 0 0 0 5px var(--ink);
+  border: 1px solid var(--orange);
+}
+.hero-trust-item strong {
+  display: block;
+  color: var(--paper);
+  font: 600 12px/1.2 var(--f-body);
+}
 
 /* hero stat strip */
 .hero-stats {
@@ -532,7 +568,7 @@ section.block {
   color: var(--ink);
   border-color: var(--orange);
 }
-.step h4 {
+.step h3 {
   font-family: var(--f-display);
   font-weight: 600;
   font-size: 20px;
@@ -588,7 +624,7 @@ section.block {
   color: var(--ink);
   border-color: var(--orange);
 }
-.price h4 {
+.price h3 {
   font-family: var(--f-display);
   font-weight: 600;
   font-size: 20px;
@@ -874,7 +910,7 @@ section.block {
   color: var(--orange);
   margin-bottom: 40px;
 }
-.why h4 {
+.why h3 {
   font-family: var(--f-display);
   font-weight: 600;
   font-size: 24px;
@@ -1247,7 +1283,7 @@ section.block {
   max-width: 36ch;
   line-height: 1.5;
 }
-.foot h5 {
+.foot-heading {
   font-family: var(--f-mono);
   font-size: 11px;
   letter-spacing: 0.22em;
@@ -1297,6 +1333,7 @@ section.block {
   .hero-grid { grid-template-columns: 1fr; }
   .hero-media { max-width: 480px; aspect-ratio: 4/3; }
   .hero-stats { grid-template-columns: repeat(2, 1fr); }
+  .hero-trust { grid-template-columns: repeat(2, 1fr); }
   .svc-grid { grid-template-columns: repeat(6, 1fr); }
   .svc[data-size="wide"],
   .svc[data-size="med"]  { grid-column: span 3; }
@@ -1317,6 +1354,7 @@ section.block {
   .svc-grid { grid-template-columns: 1fr; }
   .svc[data-size], .svc { grid-column: span 1; }
   .hero-stats { grid-template-columns: 1fr 1fr; }
+  .hero-trust { grid-template-columns: 1fr; }
   .why-grid { grid-template-columns: 1fr; }
   .faq-list { grid-template-columns: 1fr; }
   .foot-main { grid-template-columns: 1fr; gap: 28px; }
@@ -1391,13 +1429,20 @@ section.block {
 
       <div class="hero-actions">
         <a href="https://wa.me/27833349357?text=Hi%2C%20I'd%20like%20to%20book%20a%20service%20slot." class="btn btn-primary" target="_blank" rel="noopener">
-          Book a service slot
+          Book via WhatsApp
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         </a>
         <a href="#pricing" class="btn btn-ghost">
           See packages from R949
         </a>
       </div>
+
+      <ul class="hero-trust" aria-label="Noord Karavane booking trust signals">
+        <li class="hero-trust-item"><strong>Insurance accredited</strong></li>
+        <li class="hero-trust-item"><strong>Quote before work</strong></li>
+        <li class="hero-trust-item"><strong>500+ serviced</strong></li>
+        <li class="hero-trust-item"><strong>WhatsApp direct</strong></li>
+      </ul>
 
       <div class="hero-stats">
         <div class="hero-stat">
@@ -1506,11 +1551,11 @@ section.block {
     </div>
 
     <div class="process">
-      <div class="step"><div class="step-dot">01</div><h4>Drop it in</h4><p>Message us on WhatsApp with your caravan make, year and what's bothering you. We book you a slot, usually within the week.</p></div>
-      <div class="step"><div class="step-dot">02</div><h4>On-ramp inspection</h4><p>A full walk-around on arrival. We log brakes, bearings, tyres, electrics and structure, with photos.</p></div>
-      <div class="step"><div class="step-dot">03</div><h4>Scope &amp; quote</h4><p>You get a plain-language quote before we pick up a spanner. Optional extras flagged separately.</p></div>
-      <div class="step"><div class="step-dot">04</div><h4>Work done</h4><p>The job happens in our workshop, not a parking lot. Parts sourced with warranties attached.</p></div>
-      <div class="step"><div class="step-dot">05</div><h4>Sign-off &amp; tow</h4><p>Final road-ready check, a written report in your logbook, and she rolls out straight.</p></div>
+      <div class="step"><div class="step-dot">01</div><h3>Drop it in</h3><p>Message us on WhatsApp with your caravan make, year and what's bothering you. We book you a slot, usually within the week.</p></div>
+      <div class="step"><div class="step-dot">02</div><h3>On-ramp inspection</h3><p>A full walk-around on arrival. We log brakes, bearings, tyres, electrics and structure, with photos.</p></div>
+      <div class="step"><div class="step-dot">03</div><h3>Scope &amp; quote</h3><p>You get a plain-language quote before we pick up a spanner. Optional extras flagged separately.</p></div>
+      <div class="step"><div class="step-dot">04</div><h3>Work done</h3><p>The job happens in our workshop, not a parking lot. Parts sourced with warranties attached.</p></div>
+      <div class="step"><div class="step-dot">05</div><h3>Sign-off &amp; tow</h3><p>Final road-ready check, a written report in your logbook, and she rolls out straight.</p></div>
     </div>
   </div>
 </section>
@@ -1529,7 +1574,7 @@ section.block {
         <button class="price" data-axles="1" data-braked="0" data-base="949">
           <div class="price-mark">A</div>
           <div>
-            <h4>Single axle, unbraked</h4>
+            <h3>Single axle, unbraked</h3>
             <div class="meta">Safety · Brakes · Bearings</div>
           </div>
           <div class="amt">R949<sub>from</sub></div>
@@ -1538,7 +1583,7 @@ section.block {
         <button class="price active" data-axles="1" data-braked="1" data-base="1499">
           <div class="price-mark">B</div>
           <div>
-            <h4>Single axle, braked</h4>
+            <h3>Single axle, braked</h3>
             <div class="meta">Most popular: full service</div>
           </div>
           <div class="amt">R1 499<sub>from</sub></div>
@@ -1547,7 +1592,7 @@ section.block {
         <button class="price" data-axles="2" data-braked="1" data-base="2299">
           <div class="price-mark">C</div>
           <div>
-            <h4>Double axle, braked</h4>
+            <h3>Double axle, braked</h3>
             <div class="meta">For bigger rigs &amp; tourers</div>
           </div>
           <div class="amt">R2 299<sub>from</sub></div>
@@ -1612,7 +1657,7 @@ section.block {
       </div>
       <div class="promo-detail">
         <div class="promo-eyebrow">Featured modification</div>
-        <h2 class="promo-title">Caravan lift kit, <em>installation included.</em></h2>
+        <h3 class="promo-title">Caravan lift kit, <em>installation included.</em></h3>
         <div class="promo-price">
           <span class="amt">R1 980</span>
           <span class="unit">Fitted · taxes incl.</span>
@@ -1647,22 +1692,22 @@ section.block {
     <div class="why-grid">
       <div class="why">
         <div class="why-n">I.</div>
-        <h4>Specialists, not generalists</h4>
+        <h3>Specialists, not generalists</h3>
         <p>Caravans are what we do, every day. Factory-trained on the major SA brands: Jurgens, Sprite, Gypsey, Conqueror, and the rest.</p>
       </div>
       <div class="why">
         <div class="why-n">II.</div>
-        <h4>Quote before spanners</h4>
+        <h3>Quote before spanners</h3>
         <p>You see the scope and the number before we open a single panel. Approve or walk.</p>
       </div>
       <div class="why">
         <div class="why-n">III.</div>
-        <h4>Quick turnaround</h4>
+        <h3>Quick turnaround</h3>
         <p>Most services done same or next day. We know a caravan sitting in the workshop is a holiday sitting still.</p>
       </div>
       <div class="why">
         <div class="why-n">IV.</div>
-        <h4>Photographed &amp; logged</h4>
+        <h3>Photographed &amp; logged</h3>
         <p>Every inspection comes with photos and a written report straight in your logbook. No "trust us, it's fine."</p>
       </div>
     </div>
@@ -1851,7 +1896,7 @@ section.block {
         <p>A small specialist caravan workshop in Pretoria North. Servicing, repairs, solar, recoveries, modifications, done the way the regulars ask for them.</p>
       </div>
       <div class="foot-col">
-        <h5>Workshop</h5>
+        <div class="foot-heading">Workshop</div>
         <ul>
           <li><a href="#services">Services</a></li>
           <li><a href="#process">Process</a></li>
@@ -1860,7 +1905,7 @@ section.block {
         </ul>
       </div>
       <div class="foot-col">
-        <h5>Company</h5>
+        <div class="foot-heading">Company</div>
         <ul>
           <li><a href="#why-us">Why us</a></li>
           <li><a href="#kampi-widget">Kampi rentals</a></li>
@@ -1869,7 +1914,7 @@ section.block {
         </ul>
       </div>
       <div class="foot-col">
-        <h5>Contact</h5>
+        <div class="foot-heading">Contact</div>
         <ul>
           <li><a href="https://wa.me/27833349357" target="_blank" rel="noopener">WhatsApp 083 334 9357</a></li>
           <li><a href="tel:+27833349357">Call 083 334 9357</a></li>
