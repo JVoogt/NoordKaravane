@@ -37,7 +37,7 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
 
 <style>
 :root {
@@ -54,9 +54,9 @@
   --orange-low: rgba(233, 94, 29, 0.12);
   --whatsapp:   #25D366;
 
-  --f-display:  'Syne', 'Archivo', system-ui, sans-serif;
-  --f-body:     'Archivo', system-ui, -apple-system, sans-serif;
-  --f-mono:     'JetBrains Mono', ui-monospace, monospace;
+  --f-display:  'Bebas Neue', 'Barlow', system-ui, sans-serif;
+  --f-body:     'Barlow', system-ui, -apple-system, sans-serif;
+  --f-mono:     'Barlow', system-ui, sans-serif;
 
   --gap:        28px;
   --section-y:  clamp(72px, 9vw, 120px);
@@ -135,9 +135,9 @@ ul { list-style: none; }
   align-items: center;
   gap: 12px;
   font-family: var(--f-display);
-  font-weight: 700;
-  font-size: 15px;
-  letter-spacing: 0.14em;
+  font-weight: 400;
+  font-size: 24px;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 .brand-mark {
@@ -152,10 +152,10 @@ ul { list-style: none; }
 .brand-txt { line-height: 1; }
 .brand-txt small {
   display: block;
-  font-family: var(--f-mono);
-  font-weight: 400;
+  font-family: var(--f-body);
+  font-weight: 500;
   font-size: 10px;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.18em;
   color: var(--paper-low);
   margin-top: 4px;
   text-transform: none;
@@ -200,6 +200,28 @@ ul { list-style: none; }
 }
 .nav-cta:hover { background: #fff; transform: translateY(-1px); }
 .nav-cta svg { width: 14px; height: 14px; }
+.mobile-quicknav {
+  display: none;
+  border-top: 1px solid var(--line);
+  padding: 10px var(--gutter) 12px;
+  gap: 8px;
+}
+.mobile-quicknav a {
+  min-height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  border: 1px solid var(--line-2);
+  color: var(--paper);
+  font-size: 13px;
+  font-weight: 700;
+  background: rgba(235, 230, 221, 0.035);
+}
+.mobile-quicknav a:first-child {
+  background: var(--orange);
+  border-color: var(--orange);
+  color: var(--ink);
+}
 
 /* mobile menu toggle */
 .hamburger { display: none; background: none; border: 1px solid var(--line-2); padding: 8px; border-radius: 8px; }
@@ -243,19 +265,19 @@ ul { list-style: none; }
 }
 .hero-title {
   font-family: var(--f-display);
-  font-weight: 500;
-  font-style: italic;
-  font-size: clamp(48px, 8vw, 132px);
-  line-height: 0.94;
-  letter-spacing: -0.02em;
+  font-weight: 400;
+  font-style: normal;
+  font-size: clamp(52px, 8vw, 122px);
+  line-height: 0.9;
+  letter-spacing: 0.01em;
   color: var(--paper);
   text-wrap: balance;
-  margin-bottom: 32px;
+  margin-bottom: 28px;
 }
-.hero-title .accent { color: var(--orange); font-style: normal; font-weight: 700; }
+.hero-title .accent { color: var(--orange); font-style: normal; font-weight: 400; }
 .hero-title em {
-  font-style: italic;
-  font-weight: 500;
+  font-style: normal;
+  font-weight: 400;
   color: var(--paper-dim);
 }
 .hero-lede {
@@ -342,9 +364,9 @@ ul { list-style: none; }
 }
 .hero-stat .n {
   font-family: var(--f-display);
-  font-weight: 700;
-  font-size: clamp(36px, 3.6vw, 56px);
-  letter-spacing: -0.02em;
+  font-weight: 400;
+  font-size: clamp(44px, 4vw, 68px);
+  letter-spacing: 0.01em;
   line-height: 1;
   color: var(--paper);
   display: flex; align-items: baseline;
@@ -365,6 +387,44 @@ ul { list-style: none; }
   text-transform: uppercase;
   color: var(--paper-low);
   margin-top: 10px;
+}
+.hero-stat a {
+  display: inline-block;
+  transition: color .2s, transform .2s;
+}
+.hero-stat a:hover {
+  color: var(--orange);
+  transform: translateY(-1px);
+}
+.profile-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 24px;
+}
+.profile-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  color: var(--paper-dim);
+  font-size: 13px;
+  font-weight: 600;
+  transition: color .2s, border-color .2s, background .2s;
+}
+.profile-link:hover {
+  color: var(--paper);
+  border-color: var(--orange);
+  background: var(--orange-low);
+}
+.profile-link::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--orange);
 }
 
 /* hero feature image (replaces workshop log) */
@@ -439,14 +499,14 @@ section.block {
 }
 .sec-title {
   font-family: var(--f-display);
-  font-weight: 600;
-  font-size: clamp(36px, 4.5vw, 64px);
-  letter-spacing: -0.02em;
-  line-height: 1;
+  font-weight: 400;
+  font-size: clamp(44px, 5vw, 76px);
+  letter-spacing: 0.01em;
+  line-height: 0.92;
   max-width: 22ch;
   text-wrap: balance;
 }
-.sec-title em { font-style: italic; color: var(--paper-dim); font-weight: 500; }
+.sec-title em { font-style: normal; color: var(--paper-dim); font-weight: 400; }
 .sec-title .accent { color: var(--orange); }
 .sec-sub {
   font-size: 15px;
@@ -580,6 +640,155 @@ section.block {
   font-size: 13.5px;
   color: var(--paper-dim);
   line-height: 1.55;
+}
+
+/* ============ INSPECTION PROOF ============ */
+#inspection-report {
+  background: var(--paper);
+  color: var(--ink);
+}
+#inspection-report .sec-num,
+#inspection-report .sec-title .accent,
+#inspection-report .inspection-kicker,
+#inspection-report .report-evidence {
+  color: var(--orange);
+}
+#inspection-report .sec-title,
+#inspection-report .inspection-summary h3,
+#inspection-report .report-title,
+#inspection-report .report-copy strong,
+#inspection-report .inspection-point strong {
+  color: var(--ink);
+}
+#inspection-report .sec-title em,
+#inspection-report .sec-sub,
+#inspection-report .inspection-summary p,
+#inspection-report .report-copy span,
+#inspection-report .inspection-point,
+#inspection-report .est-total-note {
+  color: rgba(14, 15, 17, 0.68);
+}
+.inspection-wrap {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: var(--gap);
+  align-items: stretch;
+}
+.inspection-summary {
+  border: 1px solid rgba(14, 15, 17, 0.12);
+  border-radius: 22px;
+  padding: 34px;
+  background: rgba(14, 15, 17, 0.035);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.inspection-kicker {
+  font-family: var(--f-mono);
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--orange);
+}
+.inspection-summary h3 {
+  font-family: var(--f-display);
+  font-weight: 400;
+  font-size: clamp(42px, 4vw, 64px);
+  letter-spacing: 0.01em;
+  line-height: 0.92;
+}
+.inspection-summary p {
+  color: var(--paper-dim);
+  font-size: 16px;
+  line-height: 1.55;
+}
+.inspection-report {
+  border: 1px solid rgba(14, 15, 17, 0.12);
+  border-radius: 22px;
+  background: rgba(14, 15, 17, 0.055);
+  padding: 28px;
+}
+.report-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid rgba(14, 15, 17, 0.12);
+  margin-bottom: 18px;
+}
+.report-title {
+  font-family: var(--f-display);
+  font-size: 34px;
+  letter-spacing: 0.02em;
+  line-height: 0.95;
+}
+.report-status {
+  align-self: flex-start;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--orange);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.report-list {
+  display: grid;
+  gap: 12px;
+}
+.report-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 14px;
+  align-items: start;
+  padding: 14px;
+  border: 1px solid rgba(14, 15, 17, 0.10);
+  border-radius: 14px;
+  background: rgba(245, 242, 237, 0.72);
+}
+.report-sev {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-top: 6px;
+  background: var(--orange);
+}
+.report-sev.low { background: #22c55e; }
+.report-copy strong {
+  display: block;
+  color: var(--paper);
+  font-weight: 700;
+  margin-bottom: 3px;
+}
+.report-copy span {
+  display: block;
+  color: var(--paper-dim);
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+.report-evidence {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--orange);
+  white-space: nowrap;
+}
+.inspection-points {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.inspection-point {
+  border: 1px solid rgba(14, 15, 17, 0.10);
+  border-radius: 14px;
+  padding: 14px;
+  font-size: 13.5px;
+  background: rgba(245, 242, 237, 0.68);
+}
+.inspection-point strong {
+  display: block;
+  color: var(--paper);
+  margin-bottom: 4px;
 }
 
 /* ============ PRICING + ESTIMATOR ============ */
@@ -1339,6 +1548,7 @@ section.block {
   .svc[data-size="med"]  { grid-column: span 3; }
   .process { grid-template-columns: repeat(2, 1fr); }
   .process::before { display: none; }
+  .inspection-wrap { grid-template-columns: 1fr; }
   .pricing-wrap { grid-template-columns: 1fr; }
   .promo { grid-template-columns: 1fr; }
   .why-grid { grid-template-columns: repeat(2, 1fr); }
@@ -1348,13 +1558,23 @@ section.block {
 @media (max-width: 700px) {
   .nav-links { display: none; }
   .nav-phone { display: none; }
+  .nav-cta-group { display: none; }
   .hamburger { display: none; }
+  .mobile-quicknav { display: grid; grid-template-columns: repeat(3, 1fr); }
+  .hero-title { font-size: clamp(48px, 13vw, 68px); }
   .sec-head { grid-template-columns: 1fr; }
   .sec-sub { text-align: left; justify-self: start; }
   .svc-grid { grid-template-columns: 1fr; }
   .svc[data-size], .svc { grid-column: span 1; }
   .hero-stats { grid-template-columns: 1fr 1fr; }
   .hero-trust { grid-template-columns: 1fr; }
+  .profile-links { flex-direction: column; }
+  .inspection-summary,
+  .inspection-report { padding: 24px; }
+  .inspection-points { grid-template-columns: 1fr; }
+  .report-head { flex-direction: column; }
+  .report-row { grid-template-columns: auto 1fr; }
+  .report-evidence { grid-column: 2; }
   .why-grid { grid-template-columns: 1fr; }
   .faq-list { grid-template-columns: 1fr; }
   .foot-main { grid-template-columns: 1fr; gap: 28px; }
@@ -1393,6 +1613,7 @@ section.block {
     <div class="nav-links">
       <a href="#services">Services</a>
       <a href="#process">Process</a>
+      <a href="#inspection-report">Inspection</a>
       <a href="#pricing">Packages</a>
       <a href="#promo">Lift kit</a>
       <a href="#reviews">Reviews</a>
@@ -1403,10 +1624,15 @@ section.block {
     <div class="nav-cta-group">
       <span class="nav-phone">083 334 9357</span>
       <a href="https://wa.me/27833349357?text=Hi%2C%20I'd%20like%20to%20enquire%20about%20your%20caravan%20services." class="nav-cta" target="_blank" rel="noopener">
-        Book in
+        Book
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </a>
     </div>
+  </div>
+  <div class="mobile-quicknav" aria-label="Quick links">
+    <a href="https://wa.me/27833349357?text=Hi%2C%20I'd%20like%20to%20book%20a%20service%20slot." target="_blank" rel="noopener">Book</a>
+    <a href="#pricing">Packages</a>
+    <a href="#location">Location</a>
   </div>
 </nav>
 
@@ -1414,17 +1640,13 @@ section.block {
 <header class="hero">
   <div class="container hero-grid">
     <div class="hero-main">
-      <div class="hero-eyebrow">
-        <span>File № 001 · Caravan Specialists</span>
-      </div>
-
       <h1 class="hero-title">
-        Keep her <em>rolling,</em><br>
-        keep her <span class="accent">road-ready.</span>
+        Keep her <span class="accent">road-ready.</span><br>
+        No surprise repairs.
       </h1>
 
       <p class="hero-lede">
-        A small, specialist caravan workshop in Pretoria North. Servicing, repairs, electrical &amp; solar, insurance-accredited recoveries and the modifications that turn a decent trip into a great one.
+        Book a friendly workshop inspection in Pretoria North. We check your caravan or camper properly, show you the findings, quote before work starts, and help you decide what is urgent and what can wait.
       </p>
 
       <div class="hero-actions">
@@ -1450,8 +1672,10 @@ section.block {
           <div class="l">Caravans serviced</div>
         </div>
         <div class="hero-stat">
-          <div class="n">5.0</div>
-          <div class="l">Google rating</div>
+          <a href="https://share.google/T9FFV2QHsZb1VuVMD" target="_blank" rel="noopener" aria-label="Open Noord Karavane Google profile">
+            <div class="n">5.0</div>
+            <div class="l">Google profile</div>
+          </a>
         </div>
         <div class="hero-stat">
           <div class="n">24<span style="font-family:var(--f-mono);font-size:0.4em;letter-spacing:0.1em;color:var(--paper-low);margin-left:6px;">HR</span></div>
@@ -1461,6 +1685,10 @@ section.block {
           <div class="n">5<sup>cty</sup></div>
           <div class="l">Cross-border recoveries</div>
         </div>
+      </div>
+      <div class="profile-links" aria-label="Public profiles">
+        <a class="profile-link" href="https://share.google/T9FFV2QHsZb1VuVMD" target="_blank" rel="noopener">Open Google profile</a>
+        <a class="profile-link" href="https://www.facebook.com/NoordKaravane" target="_blank" rel="noopener">Open Facebook page</a>
       </div>
     </div>
 
@@ -1476,7 +1704,7 @@ section.block {
 <section id="services" class="block">
   <div class="container">
     <div class="sec-head">
-      <div class="sec-num">§ 01 / 07</div>
+      <div class="sec-num">§ 01 / 08</div>
       <h2 class="sec-title">Everything your caravan needs, <em>under one roof.</em></h2>
       <p class="sec-sub">Eight service lines, from a pre-trip safety check to a full off-grid solar build.</p>
     </div>
@@ -1486,56 +1714,56 @@ section.block {
         <div class="svc-num"><span>01 / Service</span><span class="tag">Core</span></div>
         <h3>Service &amp; repairs</h3>
         <p>Full caravan and trailer servicing. Mechanical, structural and cosmetic repairs, executed by technicians who work on caravans every day, not as a side line.</p>
-        <div class="svc-foot"><span>From R949</span><span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div>
+        <div class="svc-foot"><span>From R949</span><a class="arrow" href="https://wa.me/27833349357?text=Hi%2C%20I'd%20like%20to%20book%20a%20caravan%20service%20or%20repair." target="_blank" rel="noopener" aria-label="WhatsApp Noord Karavane about service and repairs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div>
       </article>
 
       <article class="svc" data-size="med">
         <div class="svc-num"><span>02 / Power</span></div>
         <h3>Electrical &amp; solar</h3>
         <p>Panels, charge controllers, LiFePO&#8324; banks, inverters and proper 12 V / 220 V rewiring.</p>
-        <div class="svc-foot"><span>Quote on brief</span><span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div>
+        <div class="svc-foot"><span>Quote on brief</span><a class="arrow" href="https://wa.me/27833349357?text=Hi%2C%20I'd%20like%20a%20quote%20for%20caravan%20electrical%20or%20solar%20work." target="_blank" rel="noopener" aria-label="WhatsApp Noord Karavane about electrical and solar work"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div>
       </article>
 
       <article class="svc" data-size="med">
         <div class="svc-num"><span>03 / Safety</span></div>
         <h3>Pre-trip checks</h3>
         <p>Brakes, tyres, lights, signals, gas seals. We sign it off or we don't.</p>
-        <div class="svc-foot"><span>Same-day</span><span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div>
+        <div class="svc-foot"><span>Same-day</span><a class="arrow" href="https://wa.me/27833349357?text=Hi%2C%20I'd%20like%20to%20book%20a%20pre-trip%20caravan%20safety%20check." target="_blank" rel="noopener" aria-label="WhatsApp Noord Karavane about pre-trip checks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div>
       </article>
 
       <article class="svc" data-size="med">
         <div class="svc-num"><span>04 / Running gear</span></div>
         <h3>Bearings &amp; chassis</h3>
         <p>Wheel bearings, brakes, suspension, leaf springs, coupling and jockey wheel work.</p>
-        <div class="svc-foot"><span>Torque &amp; test</span><span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div>
+        <div class="svc-foot"><span>Torque &amp; test</span><a class="arrow" href="https://wa.me/27833349357?text=Hi%2C%20I'd%20like%20help%20with%20caravan%20bearings%2C%20brakes%20or%20chassis%20work." target="_blank" rel="noopener" aria-label="WhatsApp Noord Karavane about bearings and chassis work"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div>
       </article>
 
       <article class="svc" data-size="wide">
         <div class="svc-num"><span>05 / Recoveries</span><span class="tag">24/7</span></div>
         <h3>Insurance-accredited recoveries</h3>
         <p>Breakdowns, accidents, roadside. Local nationwide and cross-border to Botswana, Mozambique, Zimbabwe, Namibia and Eswatini. One number, one operator. No call-centre tango.</p>
-        <div class="svc-foot"><span>Cross-border ready</span><span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div>
+        <div class="svc-foot"><span>Cross-border ready</span><a class="arrow" href="https://wa.me/27833349357?text=Hi%2C%20I%20need%20help%20with%20a%20caravan%20or%20trailer%20recovery." target="_blank" rel="noopener" aria-label="WhatsApp Noord Karavane about recoveries"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div>
       </article>
 
       <article class="svc" data-size="med">
         <div class="svc-num"><span>06 / Plumbing</span></div>
         <h3>Water systems</h3>
         <p>Pumps, tanks, geysers, pipe repairs and full plumbing overhauls. Gas &amp; electric.</p>
-        <div class="svc-foot"><span>Pressure-tested</span><span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div>
+        <div class="svc-foot"><span>Pressure-tested</span><a class="arrow" href="https://wa.me/27833349357?text=Hi%2C%20I'd%20like%20help%20with%20a%20caravan%20water%20system%20or%20plumbing%20issue." target="_blank" rel="noopener" aria-label="WhatsApp Noord Karavane about water systems"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div>
       </article>
 
       <article class="svc" data-size="med">
         <div class="svc-num"><span>07 / Mods</span><span class="tag">Popular</span></div>
         <h3>50 mm lift kits</h3>
         <p>Fitted at the workshop. Easier towing, better clearance, protects stabilisers.</p>
-        <div class="svc-foot"><span>R1 980 fitted</span><span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div>
+        <div class="svc-foot"><span>R1 980 fitted</span><a class="arrow" href="https://wa.me/27833349357?text=Hi%2C%20I'm%20interested%20in%20the%2050%20mm%20caravan%20lift%20kit%20(R1980)." target="_blank" rel="noopener" aria-label="WhatsApp Noord Karavane about 50 mm lift kits"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div>
       </article>
 
       <article class="svc" data-size="med">
         <div class="svc-num"><span>08 / Structure</span></div>
         <h3>Woodrot repairs</h3>
         <p>Floors, walls and frames restored to solid condition. Prevention, not cosmetics.</p>
-        <div class="svc-foot"><span>Scoped on site</span><span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div>
+        <div class="svc-foot"><span>Scoped on site</span><a class="arrow" href="https://wa.me/27833349357?text=Hi%2C%20I'd%20like%20to%20book%20a%20woodrot%20inspection%20or%20repair%20quote." target="_blank" rel="noopener" aria-label="WhatsApp Noord Karavane about woodrot repairs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div>
       </article>
     </div>
   </div>
@@ -1545,7 +1773,7 @@ section.block {
 <section id="process" class="block">
   <div class="container">
     <div class="sec-head">
-      <div class="sec-num">§ 02 / 07</div>
+      <div class="sec-num">§ 02 / 08</div>
       <h2 class="sec-title">How a service actually <em>runs through</em> our workshop.</h2>
       <p class="sec-sub">No mystery, no surprises. Five steps from WhatsApp to keys-back.</p>
     </div>
@@ -1560,11 +1788,72 @@ section.block {
   </div>
 </section>
 
+<!-- ============ INSPECTION REPORT PROOF ============ -->
+<section id="inspection-report" class="block">
+  <div class="container">
+    <div class="sec-head">
+      <div class="sec-num">§ 03 / 08</div>
+      <h2 class="sec-title">Know what is urgent, <span class="accent">and what can wait.</span></h2>
+      <p class="sec-sub">Photos, checklist notes and plain-language findings before any extra work is approved.</p>
+    </div>
+
+    <div class="inspection-wrap">
+      <div class="inspection-summary">
+        <div class="inspection-kicker">Workshop inspection app</div>
+        <h3>You leave with a clear picture.</h3>
+        <p>When your caravan or camper arrives, we inspect the running gear, electrics, seals, structure and trip-readiness. Findings are logged with photos and turned into a clear report so you can see what is safe, what needs attention, and what can wait for later.</p>
+        <div class="inspection-points">
+          <div class="inspection-point"><strong>Evidence first</strong>Photos and notes are attached to findings, not kept in someone's head.</div>
+          <div class="inspection-point"><strong>Priority clear</strong>Safety-critical work is separated from nice-to-have upgrades.</div>
+          <div class="inspection-point"><strong>Quote before work</strong>You approve the scope before spanners go further.</div>
+          <div class="inspection-point"><strong>Plain language</strong>No workshop shorthand when you need a decision.</div>
+        </div>
+      </div>
+
+      <div class="inspection-report" aria-label="Example inspection report format">
+        <div class="report-head">
+          <div>
+            <div class="report-title">Service inspection summary</div>
+            <div class="est-total-note">Example format, no customer data shown</div>
+          </div>
+          <div class="report-status">Quote ready</div>
+        </div>
+        <div class="report-list">
+          <div class="report-row">
+            <span class="report-sev"></span>
+            <div class="report-copy">
+              <strong>Wheel bearing play detected</strong>
+              <span>Recommend bearing service before long-distance towing.</span>
+            </div>
+            <span class="report-evidence">4 photos</span>
+          </div>
+          <div class="report-row">
+            <span class="report-sev"></span>
+            <div class="report-copy">
+              <strong>Roof latch and gas strut check</strong>
+              <span>Parts flagged separately so the customer can approve the repair.</span>
+            </div>
+            <span class="report-evidence">2 notes</span>
+          </div>
+          <div class="report-row">
+            <span class="report-sev low"></span>
+            <div class="report-copy">
+              <strong>Solar controller and battery health</strong>
+              <span>Electrical reading logged and explained in customer-friendly terms.</span>
+            </div>
+            <span class="report-evidence">Passed</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ============ PRICING + ESTIMATOR ============ -->
 <section id="pricing" class="block">
   <div class="container">
     <div class="sec-head">
-      <div class="sec-num">§ 03 / 07</div>
+      <div class="sec-num">§ 04 / 08</div>
       <h2 class="sec-title">Straightforward <span class="accent">packages.</span></h2>
       <p class="sec-sub">Pick a package or build a custom estimate. Parts quoted separately; nothing sneaks on.</p>
     </div>
@@ -1644,7 +1933,7 @@ section.block {
 <section id="promo" class="block">
   <div class="container">
     <div class="sec-head">
-      <div class="sec-num">§ 04 / 07</div>
+      <div class="sec-num">§ 05 / 08</div>
       <h2 class="sec-title">The <em>simplest</em> upgrade you'll make.</h2>
       <p class="sec-sub">A fitted 50 mm lift kit. The modification that pays for itself on the first proper trip.</p>
     </div>
@@ -1653,7 +1942,7 @@ section.block {
       <div class="promo-media">
         <img src="assets/images/lift-kit.jpg" alt="Jurgens Penta with 50mm lift kit installed at Noord Karavane" loading="lazy">
         <span class="promo-ticket">Fitted at our workshop</span>
-        <span class="promo-label">File № 11 · Lift kit</span>
+        <span class="promo-label">Lift kit fitment</span>
       </div>
       <div class="promo-detail">
         <div class="promo-eyebrow">Featured modification</div>
@@ -1684,7 +1973,7 @@ section.block {
 <section id="why-us" class="block">
   <div class="container">
     <div class="sec-head">
-      <div class="sec-num">§ 05 / 07</div>
+      <div class="sec-num">§ 06 / 08</div>
       <h2 class="sec-title">Why Pretoria's caravanners <em>keep coming back.</em></h2>
       <p class="sec-sub">Four things the regulars say, every time.</p>
     </div>
@@ -1718,9 +2007,13 @@ section.block {
 <section id="reviews" class="block">
   <div class="container">
     <div class="sec-head">
-      <div class="sec-num">§ 06 / 08</div>
-      <h2 class="sec-title">500+ caravans · <span class="accent">5.0 average.</span></h2>
-      <p class="sec-sub">A handful of what the regulars have said.</p>
+      <div class="sec-num">§ 07 / 08</div>
+      <h2 class="sec-title">Public profiles and <span class="accent">workshop feedback.</span></h2>
+      <p class="sec-sub">Check the live profiles, then message the workshop directly.</p>
+    </div>
+    <div class="profile-links" style="margin:0 0 28px;">
+      <a class="profile-link" href="https://share.google/T9FFV2QHsZb1VuVMD" target="_blank" rel="noopener">Read Google profile</a>
+      <a class="profile-link" href="https://www.facebook.com/NoordKaravane" target="_blank" rel="noopener">Visit Facebook page</a>
     </div>
 
     <div class="reviews">
@@ -1728,24 +2021,24 @@ section.block {
         <div class="review-stars">★★★★★</div>
         <p class="review-body">Picked up a bearing issue the week before we left for Moz. Fitted, tested, logbook signed, and we made every border crossing.</p>
         <div class="review-meta">
-          <div class="review-author">Hannes &amp; Marlize du Toit<small>Centurion</small></div>
-          <div class="review-date">Mar 2026</div>
+          <div class="review-author">Common feedback<small>Road-trip readiness</small></div>
+          <div class="review-date">Service</div>
         </div>
       </article>
       <article class="review">
         <div class="review-stars">★★★★★</div>
         <p class="review-body">Solar install on our Sprite was honest, neat and explained from first principles. They treat the wiring like furniture.</p>
         <div class="review-meta">
-          <div class="review-author">P. van Rensburg<small>Montana</small></div>
-          <div class="review-date">Feb 2026</div>
+          <div class="review-author">Common feedback<small>Electrical &amp; solar</small></div>
+          <div class="review-date">Fitment</div>
         </div>
       </article>
       <article class="review">
         <div class="review-stars">★★★★★</div>
         <p class="review-body">Quoted R5 900, came in at R5 400 because a part wasn't needed. First workshop in years that actually called to lower the number.</p>
         <div class="review-meta">
-          <div class="review-author">Tannie Susan K.<small>Akasia</small></div>
-          <div class="review-date">Jan 2026</div>
+          <div class="review-author">Common feedback<small>Quote before work</small></div>
+          <div class="review-date">Repairs</div>
         </div>
       </article>
     </div>
@@ -1763,7 +2056,7 @@ section.block {
 <section id="kampi-widget" class="block">
   <div class="container">
     <div class="sec-head">
-      <div class="sec-num">§ 07 / 08</div>
+      <div class="sec-num">§ 08 / 08</div>
       <h2 class="sec-title">Don't own one yet? <em>Rent one.</em></h2>
       <p class="sec-sub">Search caravans via our partner Kampi. SA's caravan rental marketplace.</p>
     </div>
@@ -1900,8 +2193,8 @@ section.block {
         <ul>
           <li><a href="#services">Services</a></li>
           <li><a href="#process">Process</a></li>
+          <li><a href="#inspection-report">Inspection report</a></li>
           <li><a href="#pricing">Packages</a></li>
-          <li><a href="#promo">Lift kit</a></li>
         </ul>
       </div>
       <div class="foot-col">
@@ -1925,7 +2218,7 @@ section.block {
     </div>
     <div class="foot-bottom">
       <span>&copy; 2026 Noord Karavane · Pretoria North · ZA</span>
-      <span>File № ∞ · Road-ready since always</span>
+      <span>Road-ready from Pretoria North</span>
     </div>
   </div>
 </footer>
