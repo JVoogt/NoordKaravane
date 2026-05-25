@@ -14,8 +14,19 @@ echo "==> refresh nginx container"
 DOCKER_API_VERSION=1.41 docker compose up -d --force-recreate --no-deps noordkaravane
 
 echo "==> health check"
-curl -sI -o /dev/null -w "HTTP %{http_code}\n" http://localhost:8260/
-curl -sI -o /dev/null -w "robots.txt HTTP %{http_code}\n" http://localhost:8260/robots.txt
-curl -sI -o /dev/null -w "sitemap.xml HTTP %{http_code}\n" http://localhost:8260/sitemap.xml
+for path in / /robots.txt /sitemap.xml; do
+  for attempt in 1 2 3 4 5; do
+    code="$(curl -sI -o /dev/null -w "%{http_code}" "http://localhost:8260${path}" || true)"
+    if [ "$code" = "200" ]; then
+      echo "${path} HTTP ${code}"
+      break
+    fi
+    if [ "$attempt" = "5" ]; then
+      echo "${path} HTTP ${code}"
+      exit 1
+    fi
+    sleep 1
+  done
+done
 
 echo "==> done"
