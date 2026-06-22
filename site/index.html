@@ -2155,11 +2155,11 @@ section.block {
 
     <div class="faq-list" id="faq-list">
       <div class="faq-item open">
-        <button class="faq-q"><span class="faq-num">01</span><span>What caravan services do you offer in Pretoria North?</span><span class="faq-toggle"></span></button>
+        <button class="faq-q" aria-expanded="true"><span class="faq-num">01</span><span>What caravan services do you offer in Pretoria North?</span><span class="faq-toggle"></span></button>
         <div class="faq-a"><p>We offer comprehensive caravan and trailer services including mechanical servicing, electrical and solar installations, safety inspections, wheel bearing service, brake repairs, water system overhauls, lift kit installations, woodrot repairs, and insurance accredited caravan and trailer recoveries including cross-border recovery.</p></div>
       </div>
       <div class="faq-item faq-wide">
-        <button class="faq-q"><span class="faq-num">02</span><span>What's included in a basic caravan service?</span><span class="faq-toggle"></span></button>
+        <button class="faq-q" aria-expanded="false"><span class="faq-num">02</span><span>What's included in a basic caravan service?</span><span class="faq-toggle"></span></button>
         <div class="faq-a">
           <p>A basic service is a full safety and roadworthy check, not a quick once-over. On every one we:</p>
           <ul class="svc-checklist">
@@ -2177,23 +2177,23 @@ section.block {
         </div>
       </div>
       <div class="faq-item">
-        <button class="faq-q"><span class="faq-num">03</span><span>How much does a caravan service cost?</span><span class="faq-toggle"></span></button>
+        <button class="faq-q" aria-expanded="false"><span class="faq-num">03</span><span>How much does a caravan service cost?</span><span class="faq-toggle"></span></button>
         <div class="faq-a"><p>Our service packages start at R949 for a single unbraked axle, R1,499 for a single braked axle (most popular), and R2,299 for a double braked axle. All packages include safety and electrical checks, brake inspection, and bearing service. Parts are quoted separately with no hidden costs.</p></div>
       </div>
       <div class="faq-item">
-        <button class="faq-q"><span class="faq-num">04</span><span>Do you do caravan and trailer recoveries?</span><span class="faq-toggle"></span></button>
+        <button class="faq-q" aria-expanded="false"><span class="faq-num">04</span><span>Do you do caravan and trailer recoveries?</span><span class="faq-toggle"></span></button>
         <div class="faq-a"><p>Yes. We are insurance accredited for caravan and trailer recoveries. We handle breakdowns, accidents and roadside recovery nationwide as well as cross-border recoveries to Botswana, Mozambique, Zimbabwe, Namibia and Eswatini. WhatsApp us for immediate assistance.</p></div>
       </div>
       <div class="faq-item">
-        <button class="faq-q"><span class="faq-num">05</span><span>How long does a caravan service take?</span><span class="faq-toggle"></span></button>
+        <button class="faq-q" aria-expanded="false"><span class="faq-num">05</span><span>How long does a caravan service take?</span><span class="faq-toggle"></span></button>
         <div class="faq-a"><p>Most caravan services and repairs are completed same or next day. Larger jobs like full electrical rewiring, solar installations or structural woodrot repairs may take 2&ndash;3 days. We'll give you an accurate timeline when you book.</p></div>
       </div>
       <div class="faq-item">
-        <button class="faq-q"><span class="faq-num">06</span><span>Can you install solar panels on my caravan?</span><span class="faq-toggle"></span></button>
+        <button class="faq-q" aria-expanded="false"><span class="faq-num">06</span><span>Can you install solar panels on my caravan?</span><span class="faq-toggle"></span></button>
         <div class="faq-a"><p>Absolutely. We install complete solar systems for caravans including panels, charge controllers, battery banks (lithium and AGM), inverters, and full 12V/220V wiring. We'll design a system to suit your off-grid needs and budget.</p></div>
       </div>
       <div class="faq-item">
-        <button class="faq-q"><span class="faq-num">07</span><span>Where is Noord Karavane located?</span><span class="faq-toggle"></span></button>
+        <button class="faq-q" aria-expanded="false"><span class="faq-num">07</span><span>Where is Noord Karavane located?</span><span class="faq-toggle"></span></button>
         <div class="faq-a"><p>252 General Beyers Street, Pretoria North. Open Monday to Friday 08:00 &ndash; 17:00. Closed on weekends. We also offer on-site services at your location for a call-out fee.</p></div>
       </div>
     </div>
@@ -2279,7 +2279,10 @@ section.block {
 <script>
 /* ============ FAQ ============ */
 document.querySelectorAll('.faq-q').forEach(q => {
-  q.addEventListener('click', () => q.closest('.faq-item').classList.toggle('open'));
+  q.addEventListener('click', () => {
+    const open = q.closest('.faq-item').classList.toggle('open');
+    q.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
 });
 
 /* ============ PRICING SELECT ============ */
