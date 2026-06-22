@@ -1,4 +1,5 @@
 # cc10x orchestration state (local)
+.cc10x/
 .claude/cc10x/
 .claude/cache/
 

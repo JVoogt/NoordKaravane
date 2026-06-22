@@ -1397,6 +1397,35 @@ section.block {
 }
 .faq-item.open .faq-a { max-height: 500px; }
 
+.faq-item.faq-wide { grid-column: 1 / -1; }
+.faq-item.faq-wide.open .faq-a { max-height: 1200px; }
+.faq-a .faq-note { color: var(--paper); }
+.svc-checklist {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 32px;
+}
+.svc-checklist li {
+  position: relative;
+  padding-left: 22px;
+  color: var(--paper-dim);
+  font-size: 14.5px;
+  line-height: 1.5;
+}
+.svc-checklist li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--orange);
+}
+
 .service-areas {
   margin-top: 56px;
   padding: 32px;
@@ -1577,6 +1606,7 @@ section.block {
   .report-evidence { grid-column: 2; }
   .why-grid { grid-template-columns: 1fr; }
   .faq-list { grid-template-columns: 1fr; }
+  .svc-checklist { grid-template-columns: 1fr; }
   .foot-main { grid-template-columns: 1fr; gap: 28px; }
   .foot-bottom { flex-direction: column; gap: 12px; text-align: center; }
   .contact { padding: 40px 24px; }
@@ -2128,24 +2158,42 @@ section.block {
         <button class="faq-q"><span class="faq-num">01</span><span>What caravan services do you offer in Pretoria North?</span><span class="faq-toggle"></span></button>
         <div class="faq-a"><p>We offer comprehensive caravan and trailer services including mechanical servicing, electrical and solar installations, safety inspections, wheel bearing service, brake repairs, water system overhauls, lift kit installations, woodrot repairs, and insurance accredited caravan and trailer recoveries including cross-border recovery.</p></div>
       </div>
+      <div class="faq-item faq-wide">
+        <button class="faq-q"><span class="faq-num">02</span><span>What's included in a basic caravan service?</span><span class="faq-toggle"></span></button>
+        <div class="faq-a">
+          <p>A basic service is a full safety and roadworthy check, not a quick once-over. On every one we:</p>
+          <ul class="svc-checklist">
+            <li>Remove, clean, inspect, grease and refit the wheel bearings (replacements quoted separately)</li>
+            <li>Strip and clean the brakes and wheel hubs</li>
+            <li>Adjust and set up the brakes</li>
+            <li>Test and grease the coupler and front shock absorber</li>
+            <li>Test the front and rear lights</li>
+            <li>Clean and grease the steadies and jacks</li>
+            <li>Test all plugs, switches, lights, 12V electrics and the battery</li>
+            <li>Run a full inspection and hand you a written report</li>
+            <li>Wash the caravan inside and out (canvas excluded, available on request)</li>
+          </ul>
+          <p class="faq-note">We show you the cost of any extra parts before we fit them. No surprises on the bill.</p>
+        </div>
+      </div>
       <div class="faq-item">
-        <button class="faq-q"><span class="faq-num">02</span><span>How much does a caravan service cost?</span><span class="faq-toggle"></span></button>
+        <button class="faq-q"><span class="faq-num">03</span><span>How much does a caravan service cost?</span><span class="faq-toggle"></span></button>
         <div class="faq-a"><p>Our service packages start at R949 for a single unbraked axle, R1,499 for a single braked axle (most popular), and R2,299 for a double braked axle. All packages include safety and electrical checks, brake inspection, and bearing service. Parts are quoted separately with no hidden costs.</p></div>
       </div>
       <div class="faq-item">
-        <button class="faq-q"><span class="faq-num">03</span><span>Do you do caravan and trailer recoveries?</span><span class="faq-toggle"></span></button>
+        <button class="faq-q"><span class="faq-num">04</span><span>Do you do caravan and trailer recoveries?</span><span class="faq-toggle"></span></button>
         <div class="faq-a"><p>Yes. We are insurance accredited for caravan and trailer recoveries. We handle breakdowns, accidents and roadside recovery nationwide as well as cross-border recoveries to Botswana, Mozambique, Zimbabwe, Namibia and Eswatini. WhatsApp us for immediate assistance.</p></div>
       </div>
       <div class="faq-item">
-        <button class="faq-q"><span class="faq-num">04</span><span>How long does a caravan service take?</span><span class="faq-toggle"></span></button>
+        <button class="faq-q"><span class="faq-num">05</span><span>How long does a caravan service take?</span><span class="faq-toggle"></span></button>
         <div class="faq-a"><p>Most caravan services and repairs are completed same or next day. Larger jobs like full electrical rewiring, solar installations or structural woodrot repairs may take 2&ndash;3 days. We'll give you an accurate timeline when you book.</p></div>
       </div>
       <div class="faq-item">
-        <button class="faq-q"><span class="faq-num">05</span><span>Can you install solar panels on my caravan?</span><span class="faq-toggle"></span></button>
+        <button class="faq-q"><span class="faq-num">06</span><span>Can you install solar panels on my caravan?</span><span class="faq-toggle"></span></button>
         <div class="faq-a"><p>Absolutely. We install complete solar systems for caravans including panels, charge controllers, battery banks (lithium and AGM), inverters, and full 12V/220V wiring. We'll design a system to suit your off-grid needs and budget.</p></div>
       </div>
       <div class="faq-item">
-        <button class="faq-q"><span class="faq-num">06</span><span>Where is Noord Karavane located?</span><span class="faq-toggle"></span></button>
+        <button class="faq-q"><span class="faq-num">07</span><span>Where is Noord Karavane located?</span><span class="faq-toggle"></span></button>
         <div class="faq-a"><p>252 General Beyers Street, Pretoria North. Open Monday to Friday 08:00 &ndash; 17:00. Closed on weekends. We also offer on-site services at your location for a call-out fee.</p></div>
       </div>
     </div>
@@ -2383,6 +2431,7 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
     "@type": "FAQPage",
     "mainEntity": [
         {"@type": "Question", "name": "What caravan services do you offer in Pretoria North?", "acceptedAnswer": {"@type": "Answer", "text": "We offer comprehensive caravan and trailer services including mechanical servicing, electrical and solar installations, safety inspections, wheel bearing service, brake repairs, water system overhauls, lift kit installations, woodrot repairs, and insurance accredited caravan and trailer recoveries including cross-border recovery."}},
+        {"@type": "Question", "name": "What's included in a basic caravan service?", "acceptedAnswer": {"@type": "Answer", "text": "A basic caravan service is a full safety and roadworthy check. It includes: wheel bearings removed, cleaned, inspected, greased and refitted; brakes and wheel hubs stripped and cleaned; brakes adjusted; the coupler and front shock absorber tested and greased; front and rear lights tested; steadies and jacks cleaned and greased; all plugs, switches, lights, 12V electrics and the battery tested; a full inspection with a written report; and a wash inside and out (canvas excluded). Replacement parts are quoted before fitting, with no hidden costs."}},
         {"@type": "Question", "name": "How much does a caravan service cost?", "acceptedAnswer": {"@type": "Answer", "text": "Our service packages start at R949 for a single unbraked axle, R1,499 for a single braked axle (most popular), and R2,299 for a double braked axle. All packages include safety and electrical checks, brake inspection, and bearing service. Parts are quoted separately with no hidden costs."}},
         {"@type": "Question", "name": "Do you do caravan and trailer recoveries?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, we are insurance accredited for caravan and trailer recoveries. We handle breakdowns, accidents, and roadside recovery nationwide as well as cross-border recoveries to Botswana, Mozambique, Zimbabwe, Namibia, and Eswatini."}},
         {"@type": "Question", "name": "How long does a caravan service take?", "acceptedAnswer": {"@type": "Answer", "text": "Most caravan services and repairs are completed same day or next day. Larger jobs like full electrical rewiring, solar installations, or structural woodrot repairs may take 2-3 days."}},
