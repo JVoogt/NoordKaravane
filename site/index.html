@@ -48,7 +48,7 @@
   --line-2:     rgba(235, 230, 221, 0.18);
   --paper:      #ebe6dd;
   --paper-dim:  rgba(235, 230, 221, 0.62);
-  --paper-low:  rgba(235, 230, 221, 0.38);
+  --paper-low:  rgba(235, 230, 221, 0.58);
   --orange:     #e95e1d;
   --orange-2:   #ff7a3b;
   --orange-low: rgba(233, 94, 29, 0.12);
@@ -208,6 +208,7 @@ ul { list-style: none; }
 }
 .mobile-quicknav a {
   min-height: 42px;
+  flex: 1 1 30%;
   display: grid;
   place-items: center;
   border-radius: 999px;
@@ -909,7 +910,7 @@ section.block {
   gap: 8px;
 }
 .est-opt {
-  padding: 10px 14px;
+  padding: 12px 14px;
   border: 1px solid var(--line);
   border-radius: 10px;
   font-size: 13px;
@@ -927,7 +928,7 @@ section.block {
 .est-checks { display: grid; gap: 8px; }
 .est-chk {
   display: flex; justify-content: space-between; align-items: center;
-  padding: 10px 14px;
+  padding: 12px 14px;
   border: 1px solid var(--line);
   border-radius: 10px;
   font-size: 13px;
@@ -1244,6 +1245,13 @@ section.block {
   display: block;
   background: var(--ink-2);
 }
+.frame-fallback {
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--paper-dim);
+}
+.frame-fallback a { color: var(--orange); font-weight: 600; }
+.frame-fallback a:hover { color: var(--orange-2); }
 
 /* ============ LOCATION ============ */
 .loc-grid {
@@ -1306,11 +1314,11 @@ section.block {
 .loc-map iframe {
   width: 100%; height: 100%;
   border: 0;
-  filter: grayscale(0.8) brightness(0.55) contrast(1.2) invert(0.92) hue-rotate(180deg);
+  filter: grayscale(0.5) brightness(0.65) contrast(1.1) invert(0.85) hue-rotate(180deg);
   transition: filter .3s;
 }
 .loc-map:hover iframe {
-  filter: grayscale(0.6) brightness(0.65) contrast(1.15) invert(0.92) hue-rotate(180deg);
+  filter: grayscale(0.35) brightness(0.72) contrast(1.08) invert(0.85) hue-rotate(180deg);
 }
 .loc-map-pill {
   position: absolute; top: 16px; left: 16px;
@@ -1566,6 +1574,26 @@ section.block {
   50% { box-shadow: 0 10px 40px rgba(37,211,102,0.55), 0 0 0 10px rgba(37,211,102,0.10); }
 }
 
+/* ============ FOCUS-VISIBLE ============ */
+.btn:focus-visible,
+.price:focus-visible,
+.faq-q:focus-visible,
+.nav-links a:focus-visible,
+.profile-link:focus-visible,
+.hero-stat a:focus-visible,
+.foot-col a:focus-visible,
+.svc-foot .arrow:focus-visible,
+.mobile-quicknav a:focus-visible,
+.frame-fallback a:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 2px;
+}
+.est-opt:focus-visible,
+.est-chk:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: -2px;
+}
+
 /* ============ RESPONSIVE ============ */
 @media (max-width: 1100px) {
   .hero-grid { grid-template-columns: 1fr; }
@@ -1589,7 +1617,7 @@ section.block {
   .nav-phone { display: none; }
   .nav-cta-group { display: none; }
   .hamburger { display: none; }
-  .mobile-quicknav { display: grid; grid-template-columns: repeat(3, 1fr); }
+  .mobile-quicknav { display: flex; flex-wrap: wrap; }
   .hero-title { font-size: clamp(48px, 13vw, 68px); }
   .sec-head { grid-template-columns: 1fr; }
   .sec-sub { text-align: left; justify-self: start; }
@@ -1661,8 +1689,10 @@ section.block {
   </div>
   <div class="mobile-quicknav" aria-label="Quick links">
     <a href="https://wa.me/27833349357?text=Hi%2C%20I'd%20like%20to%20book%20a%20service%20slot." target="_blank" rel="noopener">Book</a>
+    <a href="#services">Services</a>
     <a href="#pricing">Packages</a>
     <a href="#location">Location</a>
+    <a href="#faq">FAQ</a>
   </div>
 </nav>
 
@@ -1950,7 +1980,7 @@ section.block {
           <div class="est-total-amt" id="est-amt">R1 499</div>
         </div>
 
-        <a href="#" id="est-cta" class="btn btn-whatsapp est-cta" target="_blank" rel="noopener">
+        <a href="https://wa.me/27833349357?text=Hi%2C%20I'd%20like%20an%20estimate%20for%20a%20caravan%20service." id="est-cta" class="btn btn-whatsapp est-cta" target="_blank" rel="noopener">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.1-1.7-.9-2-1-.3-.1-.5-.1-.7.1-.2.3-.8 1-.9 1.2-.2.2-.3.2-.6.1-.3-.1-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.6.1-.1.3-.3.4-.5s.2-.3.3-.5c.1-.2 0-.4 0-.5s-.7-1.6-.9-2.2c-.2-.6-.5-.5-.7-.5s-.4 0-.6 0-.5.1-.8.4c-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.1.2 2.1 3.2 5.1 4.5.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.8-.7 2-1.4.2-.7.2-1.3.2-1.4-.1-.1-.3-.2-.6-.3z"/></svg>
           Send my estimate to WhatsApp
         </a>
@@ -2101,6 +2131,7 @@ section.block {
         allow="fullscreen"
       ></iframe>
     </div>
+    <p class="frame-fallback">Prefer to browse directly? <a href="https://kampi.co.za" target="_blank" rel="noopener">Search rentals on kampi.co.za</a></p>
   </div>
 </section>
 
@@ -2141,6 +2172,7 @@ section.block {
         <iframe src="https://maps.google.com/maps?q=252+General+Beyers+Street,+Pretoria+North,+Pretoria,+South+Africa&t=&z=16&ie=UTF8&iwloc=B&output=embed" loading="lazy" title="Workshop map"></iframe>
       </div>
     </div>
+    <p class="frame-fallback">Can't see the map? <a href="https://maps.google.com/maps?q=252+General+Beyers+Street,+Pretoria+North,+Pretoria,+South+Africa" target="_blank" rel="noopener">Open in Google Maps</a></p>
   </div>
 </section>
 
@@ -2178,7 +2210,7 @@ section.block {
       </div>
       <div class="faq-item">
         <button class="faq-q" aria-expanded="false"><span class="faq-num">03</span><span>How much does a caravan service cost?</span><span class="faq-toggle"></span></button>
-        <div class="faq-a"><p>Our service packages start at R949 for a single unbraked axle, R1,499 for a single braked axle (most popular), and R2,299 for a double braked axle. All packages include safety and electrical checks, brake inspection, and bearing service. Parts are quoted separately with no hidden costs.</p></div>
+        <div class="faq-a"><p>Our service packages start at R949 for a single unbraked axle, R1 499 for a single braked axle (most popular), and R2 299 for a double braked axle. All packages include safety and electrical checks, brake inspection, and bearing service. Parts are quoted separately with no hidden costs.</p></div>
       </div>
       <div class="faq-item">
         <button class="faq-q" aria-expanded="false"><span class="faq-num">04</span><span>Do you do caravan and trailer recoveries?</span><span class="faq-toggle"></span></button>
@@ -2306,7 +2338,9 @@ const addonChks = document.querySelectorAll('#addons .est-chk');
 
 function currentAxle() {
   const on = document.querySelector('#axle-opts .est-opt.on');
-  return on ? { label: on.textContent.trim(), price: +on.dataset.price } : { label: 'Single, braked', price: 1499 };
+  return on
+    ? { label: on.textContent.trim(), price: +on.dataset.price, axle: on.dataset.axle }
+    : { label: 'Single, braked', price: 1499, axle: 'braked-1' };
 }
 function currentAddons() {
   return Array.from(document.querySelectorAll('#addons .est-chk.on')).map(c => ({
@@ -2323,9 +2357,10 @@ function updateEstimate() {
   const total = axle.price + addons.reduce((s, a) => s + a.price, 0);
   document.getElementById('est-amt').textContent = fmtR(total);
 
+  const axleCaveat = axle.axle === 'other' ? ' (not sure on axle config, please confirm)' : '';
   const lines = [
     `Hi Noord Karavane, estimate from your site:`,
-    `• ${axle.label}: ${fmtR(axle.price)}`,
+    `• ${axle.label}: ${fmtR(axle.price)}${axleCaveat}`,
     ...addons.map(a => `• ${a.label}: ${a.price ? '+ ' + fmtR(a.price) : 'POA'}`),
     `Total est.: ${fmtR(total)} (excl. parts)`,
     `Can you confirm availability?`
@@ -2435,7 +2470,7 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
     "mainEntity": [
         {"@type": "Question", "name": "What caravan services do you offer in Pretoria North?", "acceptedAnswer": {"@type": "Answer", "text": "We offer comprehensive caravan and trailer services including mechanical servicing, electrical and solar installations, safety inspections, wheel bearing service, brake repairs, water system overhauls, lift kit installations, woodrot repairs, and insurance accredited caravan and trailer recoveries including cross-border recovery."}},
         {"@type": "Question", "name": "What's included in a basic caravan service?", "acceptedAnswer": {"@type": "Answer", "text": "A basic caravan service is a full safety and roadworthy check. It includes: wheel bearings removed, cleaned, inspected, greased and refitted; brakes and wheel hubs stripped and cleaned; brakes adjusted; the coupler and front shock absorber tested and greased; front and rear lights tested; steadies and jacks cleaned and greased; all plugs, switches, lights, 12V electrics and the battery tested; a full inspection with a written report; and a wash inside and out (canvas excluded). Replacement parts are quoted before fitting, with no hidden costs."}},
-        {"@type": "Question", "name": "How much does a caravan service cost?", "acceptedAnswer": {"@type": "Answer", "text": "Our service packages start at R949 for a single unbraked axle, R1,499 for a single braked axle (most popular), and R2,299 for a double braked axle. All packages include safety and electrical checks, brake inspection, and bearing service. Parts are quoted separately with no hidden costs."}},
+        {"@type": "Question", "name": "How much does a caravan service cost?", "acceptedAnswer": {"@type": "Answer", "text": "Our service packages start at R949 for a single unbraked axle, R1 499 for a single braked axle (most popular), and R2 299 for a double braked axle. All packages include safety and electrical checks, brake inspection, and bearing service. Parts are quoted separately with no hidden costs."}},
         {"@type": "Question", "name": "Do you do caravan and trailer recoveries?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, we are insurance accredited for caravan and trailer recoveries. We handle breakdowns, accidents, and roadside recovery nationwide as well as cross-border recoveries to Botswana, Mozambique, Zimbabwe, Namibia, and Eswatini."}},
         {"@type": "Question", "name": "How long does a caravan service take?", "acceptedAnswer": {"@type": "Answer", "text": "Most caravan services and repairs are completed same day or next day. Larger jobs like full electrical rewiring, solar installations, or structural woodrot repairs may take 2-3 days."}},
         {"@type": "Question", "name": "Can you install solar panels on my caravan?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. We install complete solar systems for caravans including panels, charge controllers, battery banks (lithium and AGM), inverters, and full 12V/220V wiring."}},
