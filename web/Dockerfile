@@ -11,3 +11,9 @@ RUN npm run check && npm test && npm run build && npm run guard:dist
 
 FROM nginx:alpine
 COPY --from=build /src/dist /usr/share/nginx/html
+# The nginx config is baked in (no bind mounts): docker/ is passed as the named build context "nkdocker"
+# (compose: additional_contexts; by hand: docker build --build-context nkdocker=docker web).
+COPY --from=nkdocker nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=nkdocker security-headers.conf /etc/nginx/snippets/security-headers.conf
+# An invalid config fails the image BUILD, so it can never reach a running container or a later restart.
+RUN nginx -t

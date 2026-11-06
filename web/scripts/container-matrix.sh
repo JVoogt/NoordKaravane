@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 # Container curl matrix for the nginx image.
+# Build and run the image (the nginx config is baked in, no bind mounts):
+#   DOCKER_BUILDKIT=1 docker build --build-context nkdocker=docker -t nk-web:test web
+#   docker run -d --rm --name nk-web-test -p 127.0.0.1:18260:80 nk-web:test
 # Usage: BASE=http://127.0.0.1:18260 bash web/scripts/container-matrix.sh [--quick]
 #   --quick (or MATRIX_QUICK=1): only the rows that gate nginx behaviour before production:
 #   security headers, Cache-Control, and the hostile-path redirect rows. deploy.sh runs this mode.
