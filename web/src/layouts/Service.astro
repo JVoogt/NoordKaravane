@@ -6,9 +6,10 @@ import CtaButton from '../components/CtaButton.astro';
 import Faq from '../components/Faq.astro';
 import Hours from '../components/Hours.astro';
 import ServiceCard from '../components/ServiceCard.astro';
+import { BUSINESS } from '../data/business';
 import { servicePath, type ServiceSlug } from '../data/routes';
 import { serviceMeta } from '../data/services';
-import { buildGraph, breadcrumbNode, faqNode, jsonLd, orgRef, serviceNode } from '../lib/schema';
+import { buildGraph, breadcrumbNode, faqNode, jsonLd, orgStubNode, serviceNode } from '../lib/schema';
 import { waUrl } from '../lib/whatsapp';
 
 interface Props {
@@ -25,7 +26,7 @@ const crumbs = [
 ];
 
 const graph = buildGraph([
-  orgRef(),
+  orgStubNode(),
   breadcrumbNode(crumbs),
   serviceNode({ name: d.schemaName, description: d.description, path, price: d.priceFrom }),
   faqNode(d.faq),
@@ -51,6 +52,7 @@ const graph = buildGraph([
         <slot name="hero-extra" />
         <div class="hero-actions hero-actions--spaced">
           <CtaButton href={waUrl(d.whatsappText)} variant="primary" external arrow>{d.ctaLabel}</CtaButton>
+          <CtaButton href={`tel:${BUSINESS.phone.e164}`} variant="ghost">Call {BUSINESS.phone.display}</CtaButton>
         </div>
       </div>
     </div>
@@ -77,7 +79,7 @@ const graph = buildGraph([
           <h2 class="sec-title">Related <em>services.</em></h2>
         </div>
         <div class="related-grid">
-          {d.related.map((slug) => <ServiceCard slug={slug} />)}
+          {d.related.map((rel) => <ServiceCard slug={rel} />)}
         </div>
       </div>
     </section>

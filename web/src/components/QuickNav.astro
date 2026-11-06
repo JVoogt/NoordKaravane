@@ -7,7 +7,7 @@ interface Props {
 const { links } = Astro.props;
 ---
 
-<div class="mobile-quicknav" aria-label="Quick links">
+<div class="mobile-quicknav">
   <a href={`tel:${BUSINESS.phone.e164}`}>Call</a>
   {links.map((l) => <a href={l.href} aria-current={l.current ? 'page' : undefined}>{l.label}</a>)}
 </div>

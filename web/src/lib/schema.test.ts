@@ -13,6 +13,7 @@ import {
   jsonLd,
   orgNode,
   orgRef,
+  orgStubNode,
   priceRange,
   serviceNode,
 } from './schema';
@@ -59,6 +60,25 @@ describe('priceRange', () => {
     expect(priceRange()).toBe('R949 - R2 299');
     expect(priceRange()).toBe(fmtR(Math.min(...prices)) + ' - ' + fmtR(Math.max(...prices)));
     for (const bad of ['R2299', 'R1499', 'R1980']) expect(priceRange()).not.toContain(bad);
+  });
+});
+
+describe('orgStubNode', () => {
+  it('defines the @id that Service.provider points at, as a minimal typed node', () => {
+    const stub = orgStubNode() as Obj;
+    expect(stub).toEqual({
+      '@id': ORG_ID,
+      '@type': ['Organization', 'AutoRepair'],
+      name: BUSINESS.name,
+      url: BUSINESS.url + '/',
+    });
+  });
+
+  it('resolves the provider reference inside a service-page graph', () => {
+    const g = buildGraph([orgStubNode(), serviceNode({ name: 'R', description: 'd', path: '/services/recoveries/' })]);
+    const ids = g['@graph'].map((n: Obj) => n['@id']);
+    const provider = (g['@graph'].find((n: Obj) => n['@type'] === 'Service') as Obj).provider['@id'];
+    expect(ids).toContain(provider);
   });
 });
 

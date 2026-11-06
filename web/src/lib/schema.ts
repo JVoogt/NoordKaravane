@@ -60,6 +60,11 @@ export function orgNode(): Node {
   };
 }
 
+/** Minimal typed Organization node for service pages: defines the @id that Service.provider points at. */
+export function orgStubNode(): Node {
+  return { '@id': ORG_ID, '@type': ['Organization', BUSINESS.schemaType], name: BUSINESS.name, url: abs('/') };
+}
+
 export function orgRef(): { '@id': string } {
   return { '@id': ORG_ID };
 }
