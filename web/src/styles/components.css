@@ -71,6 +71,7 @@
 .brand-mark img { width: 34px; height: 34px; object-fit: contain; }
 .brand-txt { line-height: 1; }
 .brand-txt small {
+  /* Brand lockup small print: the one deliberate sub-12px label (hidden at <= 400px). */
   display: block;
   font-family: var(--f-body);
   font-weight: 500;
@@ -127,7 +128,9 @@
 .nav-cta svg { width: 14px; height: 14px; }
 .mobile-quicknav {
   display: none;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
   border-top: 1px solid var(--line);
   padding: 6px var(--gutter) 8px;
   gap: 8px;
@@ -226,12 +229,14 @@
 .hero-actions--spaced { margin-top: 36px; }
 
 .hero-trust {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  /* Flex wrap, not grid: a lone last tile grows to the full row, so no orphan at any width. */
+  display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   margin-bottom: 28px;
 }
 .hero-trust-item {
+  flex: 1 1 170px;
   display: grid;
   grid-template-columns: auto 1fr;
   align-items: center;
@@ -300,7 +305,7 @@
 .hero-media-tag {
   position: absolute; top: 20px; left: 20px;
   font-family: var(--f-mono);
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--ink);
@@ -319,7 +324,7 @@
   backdrop-filter: blur(6px);
   font-family: var(--f-display);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 400;
   letter-spacing: 0.08em;
   display: grid; place-items: center;
   text-align: center;
@@ -388,7 +393,7 @@ section.block {
 .svc:hover { border-color: var(--line-2); transform: translateY(-2px); }
 .svc-num {
   font-family: var(--f-mono);
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.2em;
   color: var(--paper-low);
   margin-bottom: 20px;
@@ -399,11 +404,11 @@ section.block {
   padding: 2px 8px;
   background: var(--orange-low);
   border-radius: 99px;
-  font-size: 10px;
+  font-size: 12px;
 }
 .svc h3 {
   font-family: var(--f-display);
-  font-weight: 600;
+  font-weight: 400;
   font-size: 26px;
   letter-spacing: -0.015em;
   line-height: 1.05;
@@ -422,7 +427,7 @@ section.block {
   padding-top: 16px;
   border-top: 1px dashed var(--line);
   font-family: var(--f-mono);
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.12em;
   color: var(--paper-low);
   text-transform: uppercase;
@@ -462,13 +467,13 @@ section.block {
 }
 .fact dt {
   font-family: var(--f-mono);
-  font-size: 10px;
+  font-size: 12px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--orange);
   margin-bottom: 4px;
 }
-.fact dd { font-family: var(--f-display); font-weight: 600; font-size: 17px; line-height: 1.25; color: var(--paper); }
+.fact dd { font-family: var(--f-display); font-weight: 400; font-size: 17px; line-height: 1.25; color: var(--paper); }
 .chip-list { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
 .chip-list li {
   padding: 9px 16px;
@@ -487,14 +492,14 @@ section.block {
 .why { padding: 32px 28px; border: 1px solid var(--line); border-radius: 18px; position: relative; }
 .why-n {
   font-family: var(--f-mono);
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.2em;
   color: var(--orange);
   margin-bottom: 40px;
 }
 .why h3 {
   font-family: var(--f-display);
-  font-weight: 600;
+  font-weight: 400;
   font-size: 24px;
   letter-spacing: -0.015em;
   line-height: 1.05;
@@ -537,7 +542,7 @@ section.block {
 .review-author { font-weight: 600; font-size: 14px; color: var(--paper); }
 .review-date {
   font-family: var(--f-mono);
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.1em;
   color: var(--paper-low);
   text-transform: uppercase;
@@ -545,7 +550,7 @@ section.block {
 .review-card { grid-column: 1 / -1; }
 .review-card .review-big {
   font-family: var(--f-display);
-  font-weight: 600;
+  font-weight: 400;
   font-size: clamp(24px, 3vw, 34px);
   line-height: 1.15;
   color: var(--paper);
@@ -588,7 +593,7 @@ section.block {
 }
 .loc-k {
   font-family: var(--f-mono);
-  font-size: 10px;
+  font-size: 12px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--paper-low);
@@ -596,7 +601,7 @@ section.block {
 }
 .loc-v {
   font-family: var(--f-display);
-  font-weight: 500;
+  font-weight: 400;
   font-size: 18px;
   letter-spacing: -0.005em;
   line-height: 1.35;
@@ -628,7 +633,7 @@ section.block {
   cursor: pointer;
   list-style: none;
   font-family: var(--f-display);
-  font-weight: 600;
+  font-weight: 400;
   font-size: 19px;
   letter-spacing: -0.01em;
   line-height: 1.2;
@@ -723,7 +728,7 @@ section.block {
 }
 .contact h2 {
   font-family: var(--f-display);
-  font-weight: 700;
+  font-weight: 400;
   font-size: clamp(48px, 6vw, 96px);
   letter-spacing: -0.028em;
   line-height: 0.95;
@@ -741,7 +746,7 @@ section.block {
 .foot-brand p { color: var(--paper-dim); font-size: 14px; max-width: 36ch; line-height: 1.5; }
 .foot-heading {
   font-family: var(--f-mono);
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--paper-low);
@@ -761,7 +766,7 @@ section.block {
   padding-top: 24px;
   border-top: 1px solid var(--line);
   font-family: var(--f-mono);
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.1em;
   color: var(--paper-low);
   text-transform: uppercase;
@@ -781,6 +786,8 @@ section.block {
   animation: wa-pulse 3s ease-in-out infinite;
 }
 .wa-float svg { width: 26px; height: 26px; }
+/* The header already carries the WhatsApp CTA; on phones the float only covers tappable cards. */
+@media (max-width: 700px) { .wa-float { display: none; } }
 @keyframes wa-pulse {
   0%, 100% { box-shadow: 0 10px 30px rgba(37,211,102,0.35); }
   50% { box-shadow: 0 10px 40px rgba(37,211,102,0.55), 0 0 0 10px rgba(37,211,102,0.10); }
@@ -837,3 +844,6 @@ section.block {
 @media (max-width: 340px) {
   .brand-txt { display: none; }
 }
+
+/* Footer hours: a time range must never break mid-range; wrapping happens between segments only. */
+.foot-hours-seg { white-space: nowrap; }

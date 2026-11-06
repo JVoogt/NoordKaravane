@@ -110,7 +110,88 @@ for (const path of PAGES) {
         break;
       }
     }
+    if (stops < 1) {
+      walkOk = false;
+      walkDetail = 'tab walk reached 0 focusable stops';
+    }
     record(path, width, 'tab walk shows focus ring', walkOk, walkOk ? `${stops} stops` : walkDetail);
+
+    // Sticky header height: the quick-link row must not wrap to a second row on phones.
+    const headerH = await page.evaluate(() => document.querySelector('.nav')?.getBoundingClientRect().height ?? -1);
+    const limit = width <= 320 ? 140 : width <= 390 ? 130 : width <= 768 ? 140 : null;
+    if (limit !== null) record(path, width, `sticky header <= ${limit}px`, headerH > 0 && headerH <= limit, `${Math.round(headerH)}px`);
+
+    // Bebas Neue ships weight 400 only: any heavier computed weight is a synthesised bold.
+    const bebas = await page.evaluate(() => {
+      const bad = [];
+      for (const el of document.querySelectorAll('body *')) {
+        const cs = getComputedStyle(el);
+        if (/bebas/i.test(cs.fontFamily.split(',')[0]) && cs.fontWeight !== '400' && el.textContent.trim()) {
+          bad.push(`${el.tagName.toLowerCase()}.${String(el.className).split(' ')[0]}=${cs.fontWeight}`);
+        }
+      }
+      return [...new Set(bad)];
+    });
+    record(path, width, 'Bebas elements are weight 400', bebas.length === 0, bebas.slice(0, 4).join(' '));
+
+    // Trust strip: no orphan tile (a lone last-row tile narrower than the strip).
+    const orphan = await page.evaluate(() => {
+      const ul = document.querySelector('.hero-trust');
+      if (!ul) return null;
+      const tiles = [...ul.children].map((t) => t.getBoundingClientRect());
+      const top = Math.max(...tiles.map((r) => Math.round(r.top)));
+      const last = tiles.filter((r) => Math.round(r.top) === top);
+      const strip = ul.getBoundingClientRect().width;
+      const rowsCount = new Set(tiles.map((r) => Math.round(r.top))).size;
+      return { lone: last.length === 1 && rowsCount > 1 && last[0].width < strip * 0.9, rowsCount, last: last.length };
+    });
+    if (orphan) record(path, width, 'trust strip has no orphan tile', !orphan.lone, `rows=${orphan.rowsCount} lastRow=${orphan.last}`);
+
+    // Floating WhatsApp button: hidden on phones (the header carries the CTA), shown on larger screens.
+    const wa = await page.evaluate(() => {
+      const el = document.querySelector('.wa-float');
+      return el ? getComputedStyle(el).display : 'missing';
+    });
+    record(path, width, width <= 700 ? 'wa-float hidden <= 700px' : 'wa-float shown > 700px', width <= 700 ? wa === 'none' : wa !== 'none' && wa !== 'missing', wa);
+
+    // Body-bearing text must be >= 12px (the brand lockup subtitle is the one allowed exception).
+    const tiny = await page.evaluate(() => {
+      const bad = [];
+      for (const el of document.querySelectorAll('body *')) {
+        if (el.closest('.brand-txt')) continue;
+        const own = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
+        if (!own) continue;
+        const cs = getComputedStyle(el);
+        if (cs.display === 'none' || cs.visibility === 'hidden') continue;
+        if (parseFloat(cs.fontSize) < 12) bad.push(`${el.tagName.toLowerCase()}.${String(el.className).split(' ')[0]}=${cs.fontSize}`);
+      }
+      return [...new Set(bad)];
+    });
+    record(path, width, 'text >= 12px', tiny.length === 0, tiny.slice(0, 5).join(' '));
+
+    // Decorative section numbers are hidden from screen readers.
+    const secNums = await page.evaluate(() =>
+      [...document.querySelectorAll('.sec-num')].filter((e) => e.textContent.trim().startsWith('\u00a7') && e.getAttribute('aria-hidden') !== 'true').length,
+    );
+    record(path, width, 'section numbers aria-hidden', secNums === 0, `${secNums} exposed`);
+
+    // Service pages: a visible 44px+ call button next to the WhatsApp hero button.
+    if (path.startsWith('/services/')) {
+      const call = await page.evaluate(() => {
+        const a = document.querySelector('.hero-actions a[href^="tel:"]');
+        if (!a) return null;
+        const r = a.getBoundingClientRect();
+        return { h: r.height, text: a.textContent.trim(), href: a.getAttribute('href') };
+      });
+      record(path, width, 'hero call button 44px+ with number', !!call && call.h >= 44 && call.text === 'Call 083 334 9357' && call.href === 'tel:+27833349357', call ? `${call.text} h=${call.h}` : 'missing');
+    }
+
+    // Footer hours: every segment is nowrap so a time never breaks mid-range.
+    const hoursWrap = await page.evaluate(() => {
+      const segs = [...document.querySelectorAll('.foot-hours-seg')];
+      return segs.length === 0 ? 'none' : segs.every((e) => getComputedStyle(e).whiteSpace === 'nowrap') ? 'ok' : 'wrap';
+    });
+    record(path, width, 'footer hours segments nowrap', hoursWrap === 'ok', hoursWrap);
 
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.screenshot({ path: join(SHOTS_DIR, `${slug(path)}-${width}.png`), fullPage: true });
@@ -122,7 +203,8 @@ for (const path of PAGES) {
 for (const path of PAGES) {
   const context = await browser.newContext({ viewport: { width: 390, height: 900 }, javaScriptEnabled: false });
   const page = await context.newPage();
-  await page.goto(BASE + path, { waitUntil: 'load' });
+  const nojs = await page.goto(BASE + path, { waitUntil: 'load' });
+  record(path, 'nojs', 'status 200', nojs?.status() === 200, String(nojs?.status()));
 
   const href = await page.getAttribute('.nav-cta', 'href');
   record(path, 'nojs', 'CTA href is a wa.me link', !!href && href.startsWith(WA_PREFIX), href ?? 'missing');

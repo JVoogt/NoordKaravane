@@ -61,8 +61,8 @@ export function hoursToSchema(hours: Hours): Array<{
     }));
 }
 
-/** 'Mon–Thu 08:00–16:00 · Fri 08:00–14:00' (closed days omitted). */
-export function formatHoursCompact(hours: Hours): string {
+/** ['Mon–Thu 08:00–16:00', 'Fri 08:00–14:00'] (closed days omitted). */
+export function formatHoursSegments(hours: Hours): string[] {
   return groupHours(hours)
     .filter((g) => g.opens !== null)
     .map((g) => {
@@ -70,8 +70,12 @@ export function formatHoursCompact(hours: Hours): string {
       const last = SHORT[g.days[g.days.length - 1]];
       const label = g.days.length === 1 ? first : `${first}${EN_DASH}${last}`;
       return `${label} ${g.opens}${EN_DASH}${g.closes}`;
-    })
-    .join(` ${MIDDOT} `);
+    });
+}
+
+/** 'Mon–Thu 08:00–16:00 · Fri 08:00–14:00' (closed days omitted). */
+export function formatHoursCompact(hours: Hours): string {
+  return formatHoursSegments(hours).join(` ${MIDDOT} `);
 }
 
 function shortLabel(days: DayKey[]): string {

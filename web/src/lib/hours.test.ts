@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { BUSINESS, type DayHours, type DayKey } from '../data/business';
 import {
   formatHoursCompact,
+  formatHoursSegments,
   formatHoursLines,
   formatHoursProse,
   groupHours,
@@ -64,6 +65,10 @@ describe('hoursToSchema', () => {
 describe('formatters', () => {
   it('compact equals the old ticker string with en dashes', () => {
     expect(formatHoursCompact(BUSINESS.hours)).toBe('Mon–Thu 08:00–16:00 · Fri 08:00–14:00');
+  });
+
+  it('segments are the compact string split per day group, so the footer can keep each unbreakable', () => {
+    expect(formatHoursSegments(BUSINESS.hours)).toEqual(['Mon–Thu 08:00–16:00', 'Fri 08:00–14:00']);
   });
 
   it('lines equal the plan strings', () => {

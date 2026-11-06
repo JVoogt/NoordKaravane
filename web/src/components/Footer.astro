@@ -4,7 +4,7 @@ import logo from '../assets/logo.png';
 import { BUSINESS } from '../data/business';
 import { servicePath } from '../data/routes';
 import { SERVICE_LIST } from '../data/services';
-import { formatHoursCompact } from '../lib/hours';
+import { formatHoursSegments } from '../lib/hours';
 import { waUrl } from '../lib/whatsapp';
 
 const year = new Date().getFullYear();
@@ -40,7 +40,7 @@ const year = new Date().getFullYear();
           <li><a href={waUrl()} target="_blank" rel="noopener">WhatsApp {BUSINESS.phone.display}</a></li>
           <li><a href={`tel:${BUSINESS.phone.e164}`}>Call {BUSINESS.phone.display}</a></li>
           <li><a href="/find-us/">{BUSINESS.address.street}</a></li>
-          <li><a href="/find-us/">{formatHoursCompact(BUSINESS.hours)}</a></li>
+          <li><a href="/find-us/">{formatHoursSegments(BUSINESS.hours).map((seg, i) => (<Fragment>{i > 0 && " \u00b7 "}<span class="foot-hours-seg">{seg}</span></Fragment>))}</a></li>
         </ul>
       </div>
     </div>
