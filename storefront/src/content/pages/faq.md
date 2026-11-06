@@ -15,7 +15,7 @@ We prepare orders within {{production_lead_time_days}} after payment is confirme
 
 ## Can I collect my order?
 
-Yes, free. Choose collection at checkout and we will contact you when it is ready at 252 General Beyers Street, Pretoria North (weekdays 08:00 to 17:00). Bring your order reference.
+Yes, free. Choose collection at checkout and we will contact you when it is ready at 252 General Beyers Street, Pretoria North (Mon to Thu 08:00 to 16:00, Fri 08:00 to 14:00). Bring your order reference.
 
 ## How much is delivery?
 

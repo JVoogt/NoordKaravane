@@ -20,6 +20,6 @@ The things we fit are the things people ask us where to buy. Lithium batteries t
 
 ## Find us
 
-252 General Beyers Street, Pretoria North, Pretoria, 0182. Weekdays 08:00 to 17:00. Phone {{phone}}, WhatsApp +{{whatsapp}}.
+252 General Beyers Street, Pretoria North, Pretoria, 0182. Mon to Thu 08:00 to 16:00, Fri 08:00 to 14:00. Phone {{phone}}, WhatsApp +{{whatsapp}}.
 
 Looking for a service or repair instead? Visit the [workshop page](/).

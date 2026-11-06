@@ -17,7 +17,7 @@ Courier prices depend on the size and weight of your parcel. The exact delivery 
 
 | Option | Price | Typical courier time after dispatch |
 |---|---|---|
-| Collect from the workshop, 252 General Beyers Street, Pretoria North | Free | We contact you when it is ready (weekdays 08:00 to 17:00) |
+| Collect from the workshop, 252 General Beyers Street, Pretoria North | Free | We contact you when it is ready (Mon to Thu 08:00 to 16:00, Fri 08:00 to 14:00) |
 | Pudo Locker (small parcels up to {{shipping.pudo_max_weight_g}} g) | R{{shipping.pudo_locker_price_zar}} | about 2 to 4 working days |
 | The Courier Guy, door-to-door, parcels up to 1 kg | from R85 | about 2 to 5 working days (longer for remote areas) |
 | The Courier Guy, door-to-door, parcels up to 5 kg | R130 | about 2 to 5 working days |
@@ -31,7 +31,7 @@ Pudo lockers take small parcels only. If your order is too big for a locker, tha
 
 ## 4. Collection from the workshop
 
-Choose collection at checkout. We will contact you when your order is ready. Collect at **252 General Beyers Street, Pretoria North, weekdays 08:00 to 17:00** and bring your order reference. If you also want something fitted, tell us and we will book a slot.
+Choose collection at checkout. We will contact you when your order is ready. Collect at **252 General Beyers Street, Pretoria North, Mon to Thu 08:00 to 16:00, Fri 08:00 to 14:00** and bring your order reference. If you also want something fitted, tell us and we will book a slot.
 
 ## 5. Items shipped directly by our suppliers
 

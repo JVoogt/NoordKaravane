@@ -36,7 +36,7 @@ We confirm your payment by email and prepare your order. Allow {{production_lead
 ## 5. Delivery or collection
 
 - **Courier or Pudo:** you get a tracking link by email when it ships. See [delivery details](/shop/shipping).
-- **Collection:** we contact you when it is ready at 252 General Beyers Street, weekdays 08:00 to 17:00. Bring your order reference.
+- **Collection:** we contact you when it is ready at 252 General Beyers Street, Mon to Thu 08:00 to 16:00, Fri 08:00 to 14:00. Bring your order reference.
 
 ## Need to change something?
 

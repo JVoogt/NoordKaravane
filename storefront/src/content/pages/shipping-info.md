@@ -7,7 +7,7 @@ order: 3
 
 ## Your options
 
-**Collect free from the workshop.** 252 General Beyers Street, Pretoria North, weekdays 08:00 to 17:00. We contact you when your order is ready.
+**Collect free from the workshop.** 252 General Beyers Street, Pretoria North, Mon to Thu 08:00 to 16:00, Fri 08:00 to 14:00. We contact you when your order is ready.
 
 **The Courier Guy, door-to-door.** Delivered to your address. The price depends on the size and weight of your parcel:
 
