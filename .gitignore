@@ -41,4 +41,5 @@ infra/.last_tag
 infra/build-*.log
 
 # real business details (bank, VAT, reg no). Public repo: never commit.
-config/business.json
+**/business.json
+!**/business.example.json
