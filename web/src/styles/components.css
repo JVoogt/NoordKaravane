@@ -443,7 +443,7 @@ section.block {
 .crumbs li + li::before { content: '/'; margin-right: 6px; color: var(--line-2); }
 .crumbs a { color: var(--paper-dim); padding: 10px 0; display: inline-block; }
 .crumbs a:hover { color: var(--paper); }
-.crumbs [aria-current="page"] { color: var(--paper); }
+.crumbs [aria-current="page"] { color: var(--paper); padding: 10px 0; display: inline-block; }
 
 .svc-body { max-width: 68ch; color: var(--paper-dim); font-size: 17px; line-height: 1.6; }
 .svc-body p + p { margin-top: 18px; }
