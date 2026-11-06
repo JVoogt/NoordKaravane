@@ -2,13 +2,13 @@
 # Candidate-first deploy for the landing site. Run from the cloned repo root on DockPi.
 #
 #   1. take the deploy lock, git pull --ff-only, then re-run the PULLED copy of this script
-#   2. build the image (type check, tests, guard and `nginx -t` run inside the build; the nginx
-#      config is baked into the image, so there are no bind mounts)
-#   3. tag the running web image :prev (a manual rollback aid)
-#   4. start the new image as a throwaway candidate on 127.0.0.1:${NK_CANDIDATE_PORT:-8261}, run the
+#   2. tag the running web image :prev (a manual rollback aid), then build the new image (type check,
+#      tests, guard and `nginx -t` run inside the build; the nginx config is baked into the image,
+#      so there are no bind mounts)
+#   3. start the new image as a throwaway candidate on 127.0.0.1:${NK_CANDIDATE_PORT:-8261}, run the
 #      probes and the quick container matrix against it
-#   5. only if the candidate passes: recreate the real container and probe it again
-# A failure before step 5 never touches the running site. Nothing is restored automatically and no
+#   4. only if the candidate passes: recreate the real container and probe it again
+# A failure before step 4 never touches the running site. Nothing is restored automatically and no
 # state file is written; the rollback is manual (below).
 #
 # Env knobs: NK_CANDIDATE_PORT (candidate port, default 8261), NK_BASE (live URL, default http://localhost:8260).
@@ -88,17 +88,18 @@ abort() {
 IMAGE_REF="$(docker compose config --images | head -n 1)"   # for example noordkaravane-web:latest
 PREV_IMAGE="${IMAGE_REF%:*}:prev"
 
-echo "==> build ${IMAGE_REF} (a failed build or nginx -t stops here; the running container is untouched)"
-docker compose build noordkaravane
-
+# Tag the running web image :prev (a manual rollback aid) while it still exists under that id: a build
+# below moves the :latest tag, and some Docker image stores then drop the old image. Best effort.
 echo "==> tag the running image as ${PREV_IMAGE}"
 cid="$(docker compose ps -q noordkaravane 2>/dev/null || true)"
 if [ -n "$cid" ] && [ "$(docker inspect --format '{{.Config.Image}}' "$cid")" = "$IMAGE_REF" ]; then
-  docker tag "$(docker inspect --format '{{.Image}}' "$cid")" "$PREV_IMAGE"
-  echo "tagged"
+  docker tag "$(docker inspect --format '{{.Image}}' "$cid")" "$PREV_IMAGE" && echo "tagged" || echo "could not tag; no ${PREV_IMAGE} this time"
 else
   echo "skipped (nothing running, or the running container is the legacy stack)"
 fi
+
+echo "==> build ${IMAGE_REF} (a failed build or nginx -t stops here; the running container is untouched)"
+docker compose build noordkaravane
 
 echo "==> candidate on ${CANDIDATE_BASE}"
 remove_candidate   # a stale candidate from a crashed run
