@@ -2,7 +2,8 @@ services:
   noordkaravane:
     build:
       context: ./web
-    image: noordkaravane-web:latest
+    # NK_WEB_IMAGE is only set by deploy.sh to roll back to the previous image; normal runs use :latest.
+    image: ${NK_WEB_IMAGE:-noordkaravane-web:latest}
     container_name: noordkaravane
     restart: unless-stopped
     ports:
