@@ -39,7 +39,9 @@ sync:
 	  --exclude='.medusa/' --exclude='dist/' --exclude='.astro/' --exclude='.DS_Store' \
 	  --exclude='.git/' --exclude='node_modules/' --exclude='/social-media-posts/' --exclude='.env' --exclude='.env.local' --exclude='.env.production' --exclude='/infra/.env.staging' \
 	  --exclude='/infra/backups/' --exclude='/infra/backups-staging/' \
-	  --exclude='/config/business.json' --exclude='/infra/.last_tag' --exclude='/infra/build-*.log' \
+	  --exclude='/config/business.json' --exclude='/backend/src/config/business.json' \
+	  --exclude='/infra/.last_tag' --exclude='/infra/build-*.log' \
+	  --exclude='/.cc10x/' --exclude='/.claude/' --exclude='/.remember/' --exclude='/.impeccable/' \
 	  $(ROOT)/ $(HOST):$(REMOTE_DIR)/
 	$(SSH) 'mkdir -p $(INFRA)/backups $(INFRA)/backups-staging && chown -R $(OWNER):$(OWNER) $(REMOTE_DIR) && \
 	  for f in $(INFRA)/.env $(INFRA)/.env.staging; do [ -f $$f ] && chmod 600 $$f; done; true'
