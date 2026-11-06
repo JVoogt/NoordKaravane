@@ -127,7 +127,7 @@ export default async function seed({ container }: ExecArgs) {
     { id: "pudo-locker", name: "Pudo Locker (locker-to-locker)", description: `R${shipping.pudo_locker_price_zar} for small parcels up to ${shipping.pudo_max_weight_g / 1000}kg, ${free}` },
     { id: "tcg-door", name: "The Courier Guy (door-to-door)", description: `From R${shipping.tcg_bands[0].price_zar} by parcel weight, ${free}` },
     ...(shipping.collect_from_workshop
-      ? [{ id: "workshop-collect", name: "Collect from the workshop (Pretoria North)", description: "Free. We email you when it is ready, weekdays 08:00 to 17:00" }]
+      ? [{ id: "workshop-collect", name: "Collect from the workshop (Pretoria North)", description: "Free. We email you when it is ready, Mon to Thu 08:00 to 16:00, Fri 08:00 to 14:00" }]
       : []),
   ]
   const existingOptions = (await fulfillment.listShippingOptions({ service_zone: { id: zone.id } } as any)) as any[]
