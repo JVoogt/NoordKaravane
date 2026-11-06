@@ -1,0 +1,34 @@
+---
+/** Authored golden-hour field silhouette: seeded grass blades and wildflowers. Decorative. */
+interface Props { class?: string; seed?: number; density?: number }
+const { class: cls = '', seed = 7, density = 1 } = Astro.props;
+let s = seed;
+const rnd = () => ((s = (s * 1664525 + 1013904223) % 4294967296) / 4294967296);
+const W = 1600, H = 420;
+const blades: string[] = [];
+const heads: { x: number; y: number; r: number; rot: number }[] = [];
+const n = Math.round(150 * density);
+for (let i = 0; i < n; i++) {
+  const x = rnd() * W;
+  const h = 70 + Math.pow(rnd(), 1.7) * 300;
+  const lean = (rnd() - 0.5) * 90;
+  const w = 2.2 + rnd() * 3.2;
+  const tipX = x + lean, tipY = H - h;
+  const cx = x + lean * 0.2 + (rnd() - 0.5) * 30;
+  blades.push(`M${(x - w).toFixed(1)} ${H}Q${cx.toFixed(1)} ${(H - h * 0.55).toFixed(1)} ${tipX.toFixed(1)} ${tipY.toFixed(1)}Q${(cx + w * 1.2).toFixed(1)} ${(H - h * 0.5).toFixed(1)} ${(x + w).toFixed(1)} ${H}Z`);
+  if (h > 190 && rnd() < 0.32) heads.push({ x: tipX, y: tipY, r: 9 + rnd() * 11, rot: rnd() * 60 });
+}
+const petals = (r: number) => Array.from({ length: 8 }, (_, k) => `rotate(${k * 45} 0 0) translate(0 ${-r * 0.95})`);
+---
+<svg class={cls} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMax slice" aria-hidden="true" focusable="false">
+  <g fill="#0f0e0d">
+    {blades.map((d) => <path d={d} />)}
+    <rect x="0" y={H - 14} width={W} height="16" />
+    {heads.map((h) => (
+      <g transform={`translate(${h.x.toFixed(1)} ${h.y.toFixed(1)}) rotate(${h.rot.toFixed(0)})`}>
+        {petals(h.r).map((t) => <ellipse rx={h.r * 0.28} ry={h.r * 0.62} transform={t} />)}
+        <circle r={h.r * 0.28} />
+      </g>
+    ))}
+  </g>
+</svg>

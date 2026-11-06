@@ -1,0 +1,20 @@
+---
+import TurnstileField from './TurnstileField.astro';
+import { u } from '~/lib/url';
+---
+<form id="newsletter" class="grid gap-3" method="post" action={u("/api/newsletter")} data-enhance="newsletter" novalidate>
+  <div class="field">
+    <label for="nl-email">Email, for new stock and workshop news</label>
+    <div class="flex gap-2 max-[30rem]:flex-col">
+      <input id="nl-email" name="email" type="email" inputmode="email" autocomplete="email" required class="input" placeholder="you@email.co.za" />
+      <button class="btn shrink-0" type="submit">Join the list</button>
+    </div>
+  </div>
+  <label class="flex items-start gap-3 text-[0.92rem]">
+    <input type="checkbox" name="consent" required class="mt-1 size-5 shrink-0 accent-[var(--color-wine)]" />
+    <span>Yes, send me marketing emails. I can unsubscribe any time. See the <a href={u("/legal/privacy")}>privacy policy</a>.</span>
+  </label>
+  <input type="text" name="website" tabindex="-1" autocomplete="off" class="sr-only" aria-hidden="true" />
+  <TurnstileField />
+  <p class="hint min-h-6" role="status" aria-live="polite" data-msg></p>
+</form>

@@ -1,0 +1,11 @@
+---
+import ContentPage from '~/components/ContentPage.astro';
+import { u } from '~/lib/url';
+const TITLES: Record<string, string> = {
+  privacy: 'Privacy policy', 'data-retention': 'Data retention and protection', returns: 'Refunds and returns',
+  'shipping-policy': 'Shipping policy', terms: 'Terms and conditions', cookies: 'Cookie policy', 'business-info': 'Business information',
+};
+const { slug } = Astro.params;
+if (!slug || !TITLES[slug]) return Astro.rewrite(u('/404'));
+---
+<ContentPage collection="legal" id={slug} path={u(`/legal/${slug}`)} fallbackTitle={TITLES[slug]} />

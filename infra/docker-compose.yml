@@ -1,0 +1,354 @@
+# Noord Karavane production stack for DockPi (Raspberry Pi 5, linux/arm64).
+#
+# Project dir on the Pi : /home/voogiepi/docker/nkshop/infra
+# Every docker call on the Pi must be prefixed with DOCKER_API_VERSION=1.41 (the Makefile does this).
+# TLS is NOT handled here: the shared Traefik v3 (Let's Encrypt) routes to the host ports published
+# below. See traefik/nkshop.yml.example. No tunnel, no Caddy, no nginx.
+#
+# Images are built ON the Pi (no registry):  make build   (tags nkshop-*:<git-sha>, :latest, and keeps :prev)
+# Staging: compose.staging.yml (separate project, DB, volumes, ports 8552/8553).
+#
+# Memory budget (hard limits, running set): storefront 384 + server 768 + worker 512 + postgres 512
+#   + redis 192 + pgdump 32 = 2400 MB  (contract ceiling ~2.5 GB). The one-shot `migrate` job (768 MB)
+#   only runs while server/worker are still waiting for it, so it does not stack on top of them
+#   at start. On a redeploy with the old server still running it briefly adds up to 768 MB.
+name: nkshop
+
+x-hardening: &hardening
+  security_opt: ["no-new-privileges:true"]
+  cap_drop: ["ALL"]
+  init: true
+
+x-logging: &logging
+  logging:
+    driver: json-file
+    options: { max-size: "5m", max-file: "3" }
+
+# Env shared by every process that runs the Medusa image (server, worker, migrate/seed/tools).
+x-medusa-env: &medusa-env
+  NODE_ENV: production
+  PORT: "9000"
+  TZ: ${TZ:-Africa/Johannesburg}
+  NODE_OPTIONS: ${MEDUSA_NODE_OPTIONS:---max-old-space-size=640}
+  DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL}
+  REDIS_URL: ${REDIS_URL:?set REDIS_URL}
+  JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET}
+  COOKIE_SECRET: ${COOKIE_SECRET:?set COOKIE_SECRET}
+  STORE_CORS: ${STORE_CORS:?set STORE_CORS}
+  ADMIN_CORS: ${ADMIN_CORS:?set ADMIN_CORS}
+  AUTH_CORS: ${AUTH_CORS:?set AUTH_CORS}
+  MEDUSA_BACKEND_URL: ${MEDUSA_BACKEND_URL:?set MEDUSA_BACKEND_URL}
+  # admin host, used at runtime for password-reset links
+  ADMIN_BACKEND_URL: ${ADMIN_BACKEND_URL:-https://admin.noordkaravane.co.za}
+  SITE_URL: ${SITE_URL:?set SITE_URL}
+  # business.json and catalogue are bind-mounted read-only (see volumes on each service)
+  BUSINESS_CONFIG_PATH: /config/business.json
+  CATALOGUE_PATH: /catalogue/products.json
+  S3_FILE_URL: ${S3_FILE_URL:-}
+  S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-}
+  S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-}
+  S3_REGION: ${S3_REGION:-auto}
+  S3_BUCKET: ${S3_BUCKET:-}
+  S3_ENDPOINT: ${S3_ENDPOINT:-}
+  SMTP_HOST: ${SMTP_HOST:-}
+  SMTP_PORT: ${SMTP_PORT:-587}
+  SMTP_USER: ${SMTP_USER:-}
+  SMTP_PASS: ${SMTP_PASS:-}
+  SMTP_FROM: ${SMTP_FROM:-}
+  CF_ZONE_ID: ${CF_ZONE_ID:-}
+  CF_API_TOKEN: ${CF_API_TOKEN:-}
+  META_PIXEL_ID: ${META_PIXEL_ID:-}
+  META_CAPI_TOKEN: ${META_CAPI_TOKEN:-}
+  META_TEST_EVENT_CODE: ${META_TEST_EVENT_CODE:-}
+  PAYFAST_ENABLED: ${PAYFAST_ENABLED:-false}
+  PAYFAST_MERCHANT_ID: ${PAYFAST_MERCHANT_ID:-}
+  PAYFAST_MERCHANT_KEY: ${PAYFAST_MERCHANT_KEY:-}
+  PAYFAST_PASSPHRASE: ${PAYFAST_PASSPHRASE:-}
+  PAYFAST_SANDBOX: ${PAYFAST_SANDBOX:-true}
+
+x-medusa-build: &medusa-build
+  context: ../backend
+  # Falls back to infra/docker/backend.Dockerfile. Set BACKEND_DOCKERFILE=Dockerfile to use backend/Dockerfile instead.
+  dockerfile: ${BACKEND_DOCKERFILE:-../infra/docker/backend.Dockerfile}
+  args:
+    # The Medusa admin bundle bakes its API base URL at build time. Same-origin (the admin host) so
+    # that everything the admin SPA calls sits behind Cloudflare Access. Runtime MEDUSA_BACKEND_URL
+    # stays the api. host (used for Payfast notify URLs etc).
+    ADMIN_BACKEND_URL: ${ADMIN_BACKEND_URL:-https://admin.noordkaravane.co.za}
+
+services:
+  # ---------------------------------------------------------------- one-shot migrations / tools
+  # Runs `medusa db:migrate` (migrations + link sync) on every `up`; server and worker wait for it.
+  # Also the vehicle for `make seed` / `make create-admin-user` (docker compose run --rm migrate <cmd>).
+  migrate:
+    build: *medusa-build
+    image: nkshop-backend:${IMAGE_TAG:-latest}
+    container_name: nkshop-migrate
+    restart: "no"
+    <<: [*hardening, *logging]
+    user: "1000:1000"
+    command: ["npx", "medusa", "db:migrate"]
+    environment:
+      <<: *medusa-env
+      MEDUSA_WORKER_MODE: shared
+      DISABLE_MEDUSA_ADMIN: "true"
+    volumes:
+      - ../config:/config:ro
+      - ../catalogue:/catalogue:ro
+    tmpfs: ["/tmp"]
+    networks: [default, data]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    deploy:
+      resources:
+        limits: { cpus: "1.0", memory: 768M }
+
+  # ---------------------------------------------------------------- apps
+  medusa-server:
+    image: nkshop-backend:${IMAGE_TAG:-latest}
+    container_name: nkshop-medusa-server
+    restart: unless-stopped
+    <<: [*hardening, *logging]
+    user: "1000:1000"
+    environment:
+      <<: *medusa-env
+      MEDUSA_WORKER_MODE: server
+      DISABLE_MEDUSA_ADMIN: "false"
+    ports:
+      - "${BIND_IP:-192.168.0.120}:${PORT_API:-8551}:9000"
+    volumes:
+      - ../config:/config:ro
+    tmpfs: ["/tmp"]
+    networks: [default, data]   # default = outbound (SMTP, R2, Cloudflare API, Meta CAPI)
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:9000/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+    deploy:
+      resources:
+        limits: { cpus: "1.5", memory: 768M }
+
+  medusa-worker:
+    image: nkshop-backend:${IMAGE_TAG:-latest}
+    container_name: nkshop-medusa-worker
+    restart: unless-stopped
+    <<: [*hardening, *logging]
+    user: "1000:1000"
+    environment:
+      <<: *medusa-env
+      MEDUSA_WORKER_MODE: worker
+      DISABLE_MEDUSA_ADMIN: "true"
+    volumes:
+      - ../config:/config:ro
+    tmpfs: ["/tmp"]
+    networks: [default, data]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:9000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+    deploy:
+      resources:
+        limits: { cpus: "1.0", memory: 512M }
+
+  storefront:
+    build:
+      context: ../storefront
+      dockerfile: ${STOREFRONT_DOCKERFILE:-../infra/docker/storefront.Dockerfile}
+      additional_contexts:
+        config: ../config
+      # PUBLIC_* values are inlined by Astro/Vite at build time, so they are build args AND runtime env.
+      # PUBLIC_MEDUSA_PUBLISHABLE_KEY only exists after the first seed: build the storefront AFTER seeding.
+      args:
+        PUBLIC_MEDUSA_URL: ${PUBLIC_MEDUSA_URL:?set PUBLIC_MEDUSA_URL}
+        PUBLIC_MEDUSA_PUBLISHABLE_KEY: ${PUBLIC_MEDUSA_PUBLISHABLE_KEY:-}
+        PUBLIC_SITE_URL: ${PUBLIC_SITE_URL:?set PUBLIC_SITE_URL}
+        PUBLIC_GA4_ID: ${PUBLIC_GA4_ID:-}
+        PUBLIC_META_PIXEL_ID: ${PUBLIC_META_PIXEL_ID:-}
+        PUBLIC_TURNSTILE_SITE_KEY: ${PUBLIC_TURNSTILE_SITE_KEY:-}
+    image: nkshop-storefront:${IMAGE_TAG:-latest}
+    container_name: nkshop-storefront
+    restart: unless-stopped
+    <<: [*hardening, *logging]
+    user: "1000:1000"
+    read_only: true
+    tmpfs: ["/tmp"]
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: "4321"
+      TZ: ${TZ:-Africa/Johannesburg}
+      NODE_OPTIONS: ${STOREFRONT_NODE_OPTIONS:---max-old-space-size=256}
+      PUBLIC_MEDUSA_URL: ${PUBLIC_MEDUSA_URL}
+      PUBLIC_MEDUSA_PUBLISHABLE_KEY: ${PUBLIC_MEDUSA_PUBLISHABLE_KEY:-}
+      PUBLIC_SITE_URL: ${PUBLIC_SITE_URL}
+      PUBLIC_GA4_ID: ${PUBLIC_GA4_ID:-}
+      PUBLIC_META_PIXEL_ID: ${PUBLIC_META_PIXEL_ID:-}
+      PUBLIC_TURNSTILE_SITE_KEY: ${PUBLIC_TURNSTILE_SITE_KEY:-}
+      TURNSTILE_SECRET: ${TURNSTILE_SECRET:-}
+      CONTACT_TO: ${CONTACT_TO:-}
+      CONTACT_FROM: ${CONTACT_FROM:-}
+      BREVO_API_KEY: ${BREVO_API_KEY:-}
+      BREVO_LIST_ID: ${BREVO_LIST_ID:-4}
+      # Not in CONTRACTS.md (optional): lets server-side fetches skip the Cloudflare round trip.
+      MEDUSA_INTERNAL_URL: http://medusa-server:9000
+    volumes:
+      - ../config:/config:ro
+    ports:
+      - "${BIND_IP:-192.168.0.120}:${PORT_WEB:-8550}:4321"
+    networks: [default]
+    depends_on:
+      medusa-server: { condition: service_healthy }
+    healthcheck:
+      # TCP-level check: independent of any storefront route, and busybox-safe.
+      test: ["CMD", "node", "-e", "require('net').connect(4321,'127.0.0.1').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    deploy:
+      resources:
+        limits: { cpus: "1.0", memory: 384M }
+
+  # ---------------------------------------------------------------- data (internal network only)
+  postgres:
+    image: ${POSTGRES_IMAGE:-postgres:16-alpine}
+    container_name: nkshop-postgres
+    restart: unless-stopped
+    <<: *logging
+    security_opt: ["no-new-privileges:true"]
+    # The official entrypoint starts as root, chowns PGDATA, then drops to the postgres user.
+    # It needs these four caps for that and nothing else.
+    cap_drop: ["ALL"]
+    cap_add: ["CHOWN", "SETUID", "SETGID", "FOWNER", "DAC_OVERRIDE"]
+    init: true
+    shm_size: 128mb
+    environment:
+      TZ: ${TZ:-Africa/Johannesburg}
+      POSTGRES_USER: ${POSTGRES_USER:-medusa}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-medusa}
+    # Sized for a 512 MB cap on a Pi with SSD
+    command: >
+      postgres
+      -c shared_buffers=128MB -c effective_cache_size=320MB -c work_mem=4MB
+      -c maintenance_work_mem=48MB -c max_connections=50
+      -c wal_compression=on -c checkpoint_timeout=15min -c random_page_cost=1.1
+      -c log_min_duration_statement=1000
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    networks: [data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+    deploy:
+      resources:
+        limits: { cpus: "1.5", memory: 512M }
+
+  # Redis serves ALL of Medusa's Redis modules from one instance: event bus (BullMQ jobs),
+  # workflow engine (in-flight checkout/order workflows), cache and locking.
+  # Decision: noeviction + AOF (everysec). allkeys-lru would be fine for a pure cache but here it could
+  # silently evict queued jobs or workflow state, which loses orders/emails. With noeviction Redis refuses
+  # writes when full (loud failure) instead of dropping data. 160 MB is far above this shop's needs, and
+  # Medusa cache keys carry TTLs. AOF keeps queued jobs/workflows across a Pi reboot. If you would rather
+  # have an evicting cache, split it out into a second Redis; not worth the RAM today.
+  redis:
+    image: ${REDIS_IMAGE:-redis:7-alpine}
+    container_name: nkshop-redis
+    restart: unless-stopped
+    <<: *logging
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: ["ALL"]
+    cap_add: ["CHOWN", "SETUID", "SETGID"]   # entrypoint chowns /data then drops to the redis user
+    init: true
+    environment:
+      TZ: ${TZ:-Africa/Johannesburg}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?set REDIS_PASSWORD}
+      REDISCLI_AUTH: ${REDIS_PASSWORD}
+    # List form (not sh -c) so the official entrypoint sees `redis-server` and drops privileges to the redis user.
+    # Compose interpolates the password (hex, so no quoting issues).
+    command:
+      - redis-server
+      - --requirepass
+      - ${REDIS_PASSWORD}
+      - --appendonly
+      - "yes"
+      - --appendfsync
+      - everysec
+      - --save
+      - ""
+      - --maxmemory
+      - 160mb
+      - --maxmemory-policy
+      - noeviction
+    volumes:
+      - redis_data:/data
+    networks: [data]
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep -q PONG"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 192M }
+
+  # ---------------------------------------------------------------- nightly consistent dump
+  # Writes ./backups/nkshop-YYYYmmdd-HHMM.dump (pg_dump -Fc), keeps the newest 7. The host's central
+  # dockpi-backup tars /home/voogiepi/docker/** nightly to Azure, so these dumps ride along offsite.
+  pgdump:
+    image: ${POSTGRES_IMAGE:-postgres:16-alpine}
+    container_name: nkshop-pgdump
+    restart: unless-stopped
+    <<: [*hardening, *logging]
+    user: "1000:1000"
+    entrypoint: ["/bin/sh", "/scripts/pgdump.sh"]
+    environment:
+      PGHOST: postgres
+      PGUSER: ${POSTGRES_USER:-medusa}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB:-medusa}
+      DUMP_PREFIX: nkshop
+      DUMP_AT: ${PGDUMP_AT:-01:30}        # local time, Africa/Johannesburg
+      DUMP_KEEP: ${PGDUMP_KEEP:-7}
+      TZ_POSIX: SAST-2                     # busybox date needs a POSIX TZ (no tzdata in the alpine image)
+    volumes:
+      - ./pgdump/pgdump.sh:/scripts/pgdump.sh:ro
+      - ${BACKUPS_DIR:-./backups}:/backups
+    networks: [data]
+    depends_on:
+      postgres: { condition: service_healthy }
+    healthcheck:
+      # fails if no successful dump in the last 26 h (the loop also dumps once at start if none is < 24 h old)
+      test: ["CMD-SHELL", "find /backups/.last_success -mmin -1560 | grep -q ."]
+      interval: 15m
+      timeout: 5s
+      retries: 1
+      start_period: 10m
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 32M }
+
+networks:
+  default: {}
+  data:
+    internal: true   # no route out: postgres and redis cannot phone home
+
+volumes:
+  pg_data:
+  redis_data:

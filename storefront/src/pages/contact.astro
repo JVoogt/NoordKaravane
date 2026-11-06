@@ -1,0 +1,46 @@
+---
+import { u } from '~/lib/url';
+import Base from '~/layouts/Base.astro';
+import TurnstileField from '~/components/TurnstileField.astro';
+import { business, whatsappNumber, isPlaceholder } from '~/lib/business';
+import { breadcrumbLd } from '~/lib/seo';
+const b = business;
+const wa = whatsappNumber();
+const sent = Astro.url.searchParams.get('sent') === '1';
+const error = Astro.url.searchParams.get('error');
+if (sent || error) Astro.response.headers.set('Cache-Control', 'no-store');
+---
+<Base title="Contact" description="Questions about a product, an order, fitting or collection? Message Noord Karavane by form, email or WhatsApp. We reply within two working days." path={u('/contact')} jsonld={[breadcrumbLd([{ name: 'Home', path: u('/') }, { name: 'Contact', path: u('/contact') }])]}>
+  <div class="rail" aria-hidden="true"></div>
+  <div class="wrap grid gap-12 pb-16 pt-12 lg:grid-cols-[1fr_1.1fr] lg:gap-20">
+    <div>
+      <h1 class="display text-[clamp(2.8rem,8vw,5rem)]">Talk to <span class="text-wine">us</span></h1>
+      <p class="mt-4 max-w-[42ch] text-[1.1rem] text-muted">Product questions, order updates, fitting, collection or a quote. A real person replies, usually within two working days.</p>
+      <dl class="mt-8 grid gap-5">
+        <div><dt class="label text-muted">Email</dt><dd class="mt-1 text-[1.1rem]"><a href={`mailto:${b.email_general}`}>{b.email_general}</a></dd></div>
+        <div><dt class="label text-muted">About an order</dt><dd class="mt-1 text-[1.1rem]"><a href={`mailto:${b.email_orders}`}>{b.email_orders}</a>. Include your reference (like NK1042).</dd></div>
+        {wa && <div><dt class="label text-muted">WhatsApp</dt><dd class="mt-1 text-[1.1rem]"><a href={`https://wa.me/${wa}`} target="_blank" rel="noopener">Chat with us</a></dd></div>}
+        {!isPlaceholder(b.phone) && <div><dt class="label text-muted">Phone</dt><dd class="mt-1 text-[1.1rem]">{b.phone}</dd></div>}
+      </dl>
+    </div>
+
+    <form method="post" action={u('/api/contact')} data-enhance="contact" class="grid gap-5 border border-ink-3 bg-paper-2 p-6 sm:p-8" novalidate>
+      <h2 class="sr-only">Contact form</h2>
+      {sent && <p class="border border-wine bg-paper p-4 font-bold" role="status">Message sent. We read every one.</p>}
+      {error && <p class="err" role="alert">{error}</p>}
+      <div class="field"><label for="c-name">Your name</label><input id="c-name" name="name" class="input" required autocomplete="name" /></div>
+      <div class="field"><label for="c-email">Email</label><input id="c-email" name="email" type="email" inputmode="email" class="input" required autocomplete="email" /></div>
+      <div class="grid gap-5 sm:grid-cols-2">
+        <div class="field"><label for="c-topic">What is it about?</label>
+          <select id="c-topic" name="topic" class="input"><option value="order">An order</option><option value="product">A product</option><option value="fitting">Fitting at the workshop</option><option value="delivery">Delivery</option><option value="collab">A collab</option><option value="general">Something else</option></select></div>
+        <div class="field"><label for="c-order">Order reference <span class="hint">(optional)</span></label><input id="c-order" name="order" class="input" placeholder="NK1042" /></div>
+      </div>
+      <div class="field"><label for="c-msg">Message</label><textarea id="c-msg" name="message" rows="6" class="input" required></textarea></div>
+      <input type="text" name="website" tabindex="-1" autocomplete="off" class="sr-only" aria-hidden="true" />
+      <TurnstileField />
+      <p class="hint">We use your details only to reply. See the <a href={u('/legal/privacy')}>privacy policy</a>.</p>
+      <div><button class="btn btn--lg" type="submit">Send message</button></div>
+      <p class="min-h-6" role="status" aria-live="polite" data-msg></p>
+    </form>
+  </div>
+</Base>

@@ -67,3 +67,8 @@ ssh -i ~/.ssh/id_voogiepi voogiepi@192.168.0.120 \
   `/home/voogiepi/docker/traefik/config/dynamic/noordkaravane.yml` on DockPi
   (also tracked here as `traefik-noordkaravane.yml` for reference)
 - TLS via Let's Encrypt through Traefik
+
+## Online shop (in progress)
+
+The shop (Astro storefront + Medusa backend) lives alongside the landing page in `storefront/`, `backend/`, `infra/`, `catalogue/`
+and is served at `noordkaravane.co.za/shop`. The landing page above is unchanged and independent. See `CONTRACTS.md` and `infra/RUNBOOK.md`.

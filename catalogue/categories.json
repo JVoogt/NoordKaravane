@@ -1,0 +1,138 @@
+[
+  {
+    "id": 93,
+    "handle": "batteries-power",
+    "name": "Batteries & Power",
+    "parent": "Camping Gear & Equipment",
+    "parent_handle": "camping-gear",
+    "count": 3
+  },
+  {
+    "id": 22,
+    "handle": "boskampkos",
+    "name": "BoskampKos Camping Food",
+    "parent": null,
+    "parent_handle": null,
+    "count": 6
+  },
+  {
+    "id": 23,
+    "handle": "braai-outdoor-cooking",
+    "name": "Braai & Outdoor Cooking",
+    "parent": "Camping Gear & Equipment",
+    "parent_handle": "camping-gear",
+    "count": 4
+  },
+  {
+    "id": 32,
+    "handle": "camping-breakfast",
+    "name": "Breakfast Mixes",
+    "parent": "BoskampKos Camping Food",
+    "parent_handle": "boskampkos",
+    "count": 3
+  },
+  {
+    "id": 18,
+    "handle": "camping-gear",
+    "name": "Camping Gear & Equipment",
+    "parent": null,
+    "parent_handle": null,
+    "count": 26
+  },
+  {
+    "id": 27,
+    "handle": "camping-clothing",
+    "name": "Clothing & Apparel",
+    "parent": "Kampi Merchandise",
+    "parent_handle": "kampi-merchandise",
+    "count": 7
+  },
+  {
+    "id": 26,
+    "handle": "cooling-ice",
+    "name": "Cooling & Ice",
+    "parent": "Camping Gear & Equipment",
+    "parent_handle": "camping-gear",
+    "count": 2
+  },
+  {
+    "id": 28,
+    "handle": "drinkware",
+    "name": "Drinkware",
+    "parent": "Kampi Merchandise",
+    "parent_handle": "kampi-merchandise",
+    "count": 3
+  },
+  {
+    "id": 31,
+    "handle": "host-accessories",
+    "name": "Host Accessories",
+    "parent": "KampiHost Essentials",
+    "parent_handle": "kampihost-essentials",
+    "count": 1
+  },
+  {
+    "id": 30,
+    "handle": "host-starter-packs",
+    "name": "Host Starter Packs",
+    "parent": "KampiHost Essentials",
+    "parent_handle": "kampihost-essentials",
+    "count": 3
+  },
+  {
+    "id": 33,
+    "handle": "camping-hot-drinks",
+    "name": "Hot Beverages",
+    "parent": "BoskampKos Camping Food",
+    "parent_handle": "boskampkos",
+    "count": 2
+  },
+  {
+    "id": 19,
+    "handle": "kampi-merchandise",
+    "name": "Kampi Merchandise",
+    "parent": null,
+    "parent_handle": null,
+    "count": 10
+  },
+  {
+    "id": 20,
+    "handle": "kampihost-essentials",
+    "name": "KampiHost Essentials",
+    "parent": null,
+    "parent_handle": null,
+    "count": 15
+  },
+  {
+    "id": 24,
+    "handle": "camping-lighting",
+    "name": "Lighting & Headlamps",
+    "parent": "Camping Gear & Equipment",
+    "parent_handle": "camping-gear",
+    "count": 7
+  },
+  {
+    "id": 34,
+    "handle": "camping-snacks",
+    "name": "Snacks & Treats",
+    "parent": "BoskampKos Camping Food",
+    "parent_handle": "boskampkos",
+    "count": 1
+  },
+  {
+    "id": 29,
+    "handle": "stickers-decals",
+    "name": "Stickers & Decals",
+    "parent": null,
+    "parent_handle": null,
+    "count": 7
+  },
+  {
+    "id": 25,
+    "handle": "water-pumps",
+    "name": "Water & Transfer Pumps",
+    "parent": "Camping Gear & Equipment",
+    "parent_handle": "camping-gear",
+    "count": 3
+  }
+]

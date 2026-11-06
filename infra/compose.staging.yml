@@ -1,0 +1,54 @@
+# Staging overlay: same Dockerfiles, separate compose project, separate containers, DB, Redis and volumes.
+# Always used together with the base file and its own env file (the Makefile staging-* targets do this):
+#
+#   DOCKER_API_VERSION=1.41 docker compose -p nkshop-staging --env-file .env.staging \
+#       -f docker-compose.yml -f compose.staging.yml up -d
+#
+# Project name nkshop-staging => volumes nkshop-staging_pg_data / _redis_data (never shared with prod),
+# network nkshop-staging_default / _data. Hosts: staging.noordkaravane.co.za (8552),
+# staging-api.noordkaravane.co.za (8553); both behind Cloudflare Access (configure in the Cloudflare dashboard).
+# Single-level hostnames, because Cloudflare's free Universal SSL covers *.noordkaravane.co.za only.
+# Staging images use their own tag (IMAGE_TAG=staging in .env.staging) so a staging build never touches prod's :latest/:prev.
+# Needs Compose >= 2.24 for `!override` (the Pi has v5).
+name: nkshop-staging
+
+services:
+  migrate:
+    container_name: nkshop-staging-migrate
+    image: nkshop-backend:${IMAGE_TAG:-staging}
+    deploy: { resources: { limits: { cpus: "1.0", memory: 640M } } }
+
+  medusa-server:
+    container_name: nkshop-staging-medusa-server
+    image: nkshop-backend:${IMAGE_TAG:-staging}
+    ports: !override
+      - "${BIND_IP:-192.168.0.120}:${PORT_API:-8553}:9000"
+    deploy: { resources: { limits: { cpus: "1.0", memory: 640M } } }
+
+  medusa-worker:
+    container_name: nkshop-staging-medusa-worker
+    image: nkshop-backend:${IMAGE_TAG:-staging}
+    deploy: { resources: { limits: { cpus: "0.75", memory: 448M } } }
+
+  storefront:
+    container_name: nkshop-staging-storefront
+    image: nkshop-storefront:${IMAGE_TAG:-staging}
+    ports: !override
+      - "${BIND_IP:-192.168.0.120}:${PORT_WEB:-8552}:4321"
+    deploy: { resources: { limits: { cpus: "0.75", memory: 256M } } }
+
+  postgres:
+    container_name: nkshop-staging-postgres
+    deploy: { resources: { limits: { cpus: "1.0", memory: 384M } } }
+
+  redis:
+    container_name: nkshop-staging-redis
+    deploy: { resources: { limits: { cpus: "0.3", memory: 128M } } }
+
+  # Staging is disposable: no nightly dump (run `make staging-pgdump-now` before risky tests if wanted).
+  pgdump:
+    container_name: nkshop-staging-pgdump
+    profiles: ["staging-backups"]
+    volumes:
+      - ./pgdump/pgdump.sh:/scripts/pgdump.sh:ro
+      - ${BACKUPS_DIR:-./backups-staging}:/backups

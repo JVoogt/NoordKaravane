@@ -1,0 +1,76 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { env } from './env';
+
+export interface Business {
+  brand: string; domain: string; tagline: string;
+  legal_name: string; legal_status: string; registration_number: string; vat_number: string;
+  physical_address: string; postal_address: string; phone: string; whatsapp: string;
+  email_general: string; email_orders: string; email_privacy: string; information_officer: string;
+  instagram: string; facebook: string; currency: string;
+  production_lead_time_days: string; eft_payment_window_hours: number; eft_reminder_after_hours: number;
+  bank: { account_name: string; bank_name: string; account_number: string; branch_code: string; account_type: string };
+  shipping: { tier_weights_g: Record<string, number>; pudo_max_weight_g: number; pudo_locker_price_zar: number; tcg_bands: { max_weight_g: number | null; price_zar: number }[]; free_shipping_threshold_zar: number; free_shipping_max_weight_g: number; collect_from_workshop: boolean };
+  [k: string]: unknown;
+}
+
+const FALLBACK: Business = {
+  brand: 'Noord Karavane', domain: 'noordkaravane.co.za', tagline: 'Caravan specialists in Pretoria North.',
+  legal_name: '{{LEGAL_NAME}}', legal_status: '{{LEGAL_STATUS}}', registration_number: '{{REGISTRATION_NUMBER}}',
+  vat_number: '{{VAT_NUMBER}}', physical_address: '252 General Beyers Street, Pretoria North, Pretoria, 0182', postal_address: '252 General Beyers Street, Pretoria North, Pretoria, 0182',
+  phone: '083 334 9357', whatsapp: '27833349357', email_general: '{{EMAIL_GENERAL}}',
+  email_orders: '{{EMAIL_ORDERS}}', email_privacy: '{{EMAIL_PRIVACY}}',
+  information_officer: '{{INFORMATION_OFFICER}}', instagram: '', facebook: 'https://facebook.com/NoordKaravane',
+  currency: 'ZAR', production_lead_time_days: '2-5 working days', eft_payment_window_hours: 48, eft_reminder_after_hours: 24,
+  bank: { account_name: '{{BANK_ACCOUNT_NAME}}', bank_name: '{{BANK_NAME}}', account_number: '{{BANK_ACCOUNT_NUMBER}}', branch_code: '{{BRANCH_CODE}}', account_type: '{{ACCOUNT_TYPE}}' },
+  shipping: { tier_weights_g: { small: 500, medium: 3000, bulky: 15000 }, pudo_max_weight_g: 1000, pudo_locker_price_zar: 60, tcg_bands: [{ max_weight_g: 1000, price_zar: 85 }, { max_weight_g: 5000, price_zar: 130 }, { max_weight_g: null, price_zar: 350 }], free_shipping_threshold_zar: 2500, free_shipping_max_weight_g: 5000, collect_from_workshop: true },
+};
+
+let cached: Business | null = null;
+
+/** Order: BUSINESS_CONFIG_PATH, /config/business.json (Docker), ../config/business.json (repo), ./config/business.json. */
+export function loadBusiness(): Business {
+  if (cached) return cached;
+  const candidates = [
+    env('BUSINESS_CONFIG_PATH'),
+    '/config/business.json',
+    path.resolve(process.cwd(), '../config/business.json'),
+    path.resolve(process.cwd(), 'config/business.json'),
+  ].filter(Boolean);
+  for (const p of candidates) {
+    try {
+      if (fs.existsSync(p)) {
+        cached = { ...FALLBACK, ...JSON.parse(fs.readFileSync(p, 'utf8')) } as Business;
+        return cached;
+      }
+    } catch (e) {
+      console.warn('[business] failed to read', p, e);
+    }
+  }
+  console.warn('[business] business.json not found, using built-in placeholders');
+  cached = FALLBACK;
+  return cached;
+}
+
+export const business = new Proxy({} as Business, {
+  get: (_t, k) => (loadBusiness() as unknown as Record<string, unknown>)[k as string],
+});
+
+const lookup = (obj: unknown, dotted: string): unknown =>
+  dotted.split('.').reduce<unknown>((o, k) => (o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined), obj);
+
+/** Replace {{key}} / {{a.b}} with business.json values. Unknown keys and placeholder-valued keys are left visible. */
+export function fill(text: string): string {
+  const b = loadBusiness();
+  return text.replace(/\{\{\s*([a-z_][a-z0-9_.]*)\s*\}\}/gi, (m, key: string) => {
+    const v = lookup(b, key);
+    return typeof v === 'string' || typeof v === 'number' ? String(v) : m;
+  });
+}
+
+export const isPlaceholder = (v: unknown) => typeof v === 'string' && /\{\{.*\}\}/.test(v);
+/** Digits only, or null while the WhatsApp number is still a placeholder. */
+export const whatsappNumber = (): string | null => {
+  const w = String(loadBusiness().whatsapp || '').replace(/\D/g, '');
+  return w.length >= 9 && !isPlaceholder(loadBusiness().whatsapp) ? w : null;
+};

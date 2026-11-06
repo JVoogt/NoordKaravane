@@ -1,0 +1,276 @@
+# Noord Karavane SHOP: Traefik v3 dynamic config (file provider).
+# Install on DockPi as /home/voogiepi/docker/traefik/config/dynamic/nkshop.yml  (`make route`).
+#
+# !! The live landing page is routed by the EXISTING file noordkaravane.yml (router "noordkaravane" ->
+# !! nginx on 192.168.0.120:8260, also tracked in the repo root as traefik-noordkaravane.yml). DO NOT replace it.
+# !! This file is ADDITIVE. Traefik router/service/middleware names are global across files, so everything
+# !! here is prefixed "nkshop-" to avoid colliding with the existing "noordkaravane*" names.
+#
+# Traefik watches the directory and reloads by itself; no restart needed.
+# Same shape as the other routes on the host (e.g. kampi-shop.yml).
+#
+#   noordkaravane.co.za/shop*  -> 192.168.0.120:8550  Astro storefront (built with base "/shop"); priority 100
+#                                 beats the landing-page router, everything else on the apex still goes to nginx
+#   api.noordkaravane.co.za    -> 192.168.0.120:8551  medusa: /store /auth /hooks /feeds /health  (NOT /admin)
+#   admin.noordkaravane.co.za  -> 192.168.0.120:8551  medusa: /app /auth /admin only  (behind Cloudflare Access)
+#
+# Deviation from the brief, on purpose: the admin host also routes /admin. The Medusa admin SPA is built with a
+# same-origin API base (admin host), so its API calls (/admin/*) must reach Medusa through the same Access-protected
+# host. The public api. host therefore does not route /admin at all, which keeps the admin API off the open internet.
+#
+# Certificates: HTTP-01 per hostname, so every hostname below needs a proxied or direct A record resolving to the
+# home IP and ports 80/443 forwarded to the Pi (already true for the other domains on this host).
+
+http:
+  routers:
+    # ---- HTTP -> HTTPS (api + admin hosts only; the apex/www http redirect belongs to the existing route) ----
+    nkshop-http:
+      rule: "Host(`api.noordkaravane.co.za`) || Host(`admin.noordkaravane.co.za`)"
+      entryPoints:
+        - web
+      middlewares:
+        - nkshop-https-redirect
+      service: nkshop-medusa
+
+    # ---- storefront: ONLY /shop on the apex. Priority beats the landing-page router (rule-length priority). ----
+    nkshop-storefront:
+      rule: "Host(`noordkaravane.co.za`) && (PathPrefix(`/shop`))"
+      priority: 100
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+      middlewares:
+        - nkshop-security-headers
+        - nkshop-compress
+      service: nkshop-storefront
+
+    # ---- Medusa store API (public, called by the browser and by the storefront server) ----
+    # /auth is split out so it can carry a rate limit (customer login/register).
+    nkshop-api-auth:
+      rule: "Host(`api.noordkaravane.co.za`) && PathPrefix(`/auth`)"
+      priority: 30
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+      middlewares:
+        - nkshop-ratelimit-auth
+        - nkshop-api-headers
+        - nkshop-compress
+      service: nkshop-medusa
+
+    nkshop-api:
+      rule: "Host(`api.noordkaravane.co.za`) && (PathPrefix(`/store`) || PathPrefix(`/feeds`) || PathPrefix(`/hooks`) || Path(`/health`))"
+      priority: 20
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+      middlewares:
+        - nkshop-ratelimit-api
+        - nkshop-api-headers
+        - nkshop-compress
+      service: nkshop-medusa
+
+    # Anything else on api. (including /admin, /app) is intentionally not routed: Traefik answers 404.
+    # Medusa CORS is handled by Medusa itself (STORE_CORS/AUTH_CORS); do not add CORS headers here.
+
+    # ---- Medusa admin (Cloudflare Access protects this host; Access app configured in the Cloudflare dashboard) ----
+    nkshop-admin-root:
+      rule: "Host(`admin.noordkaravane.co.za`) && Path(`/`)"
+      priority: 40
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+      middlewares:
+        - nkshop-admin-root-redirect
+      service: nkshop-medusa
+
+    nkshop-admin-auth:
+      rule: "Host(`admin.noordkaravane.co.za`) && PathPrefix(`/auth`)"
+      priority: 30
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+      middlewares:
+        - nkshop-ratelimit-auth
+        - nkshop-admin-headers
+      service: nkshop-medusa
+
+    nkshop-admin:
+      rule: "Host(`admin.noordkaravane.co.za`) && (PathPrefix(`/app`) || PathPrefix(`/admin`))"
+      priority: 20
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+      middlewares:
+        - nkshop-admin-headers
+        - nkshop-compress
+      service: nkshop-medusa
+
+    # ================================================================================================
+    # STAGING (uncomment together with the middlewares/services marked STAGING below; ports 8552/8553).
+    # Put both hosts behind Cloudflare Access. staging-api serves the store API AND the admin (/app) so that
+    # staging needs only one API hostname. Single-level names: Universal SSL does not cover a.b.noordkaravane.co.za.
+    # ================================================================================================
+    # nkshop-staging-http:
+    #   rule: "Host(`staging.noordkaravane.co.za`) || Host(`staging-api.noordkaravane.co.za`)"
+    #   entryPoints:
+    #     - web
+    #   middlewares:
+    #     - nkshop-https-redirect
+    #   service: nkshop-staging-storefront
+    #
+    # nkshop-staging:
+    #   rule: "Host(`staging.noordkaravane.co.za`)"
+    #   entryPoints:
+    #     - websecure
+    #   tls:
+    #     certResolver: letsencrypt
+    #   middlewares:
+    #     - nkshop-staging-headers
+    #     - nkshop-compress
+    #   service: nkshop-staging-storefront
+    #
+    # nkshop-staging-api:
+    #   rule: "Host(`staging-api.noordkaravane.co.za`)"
+    #   entryPoints:
+    #     - websecure
+    #   tls:
+    #     certResolver: letsencrypt
+    #   middlewares:
+    #     - nkshop-staging-headers
+    #   service: nkshop-staging-medusa
+
+  services:
+    nkshop-storefront:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "http://192.168.0.120:8550"
+
+    nkshop-medusa:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "http://192.168.0.120:8551"
+
+    # STAGING
+    # nkshop-staging-storefront:
+    #   loadBalancer:
+    #     passHostHeader: true
+    #     servers:
+    #       - url: "http://192.168.0.120:8552"
+    # nkshop-staging-medusa:
+    #   loadBalancer:
+    #     passHostHeader: true
+    #     servers:
+    #       - url: "http://192.168.0.120:8553"
+
+  middlewares:
+    nkshop-https-redirect:
+      redirectScheme:
+        scheme: https
+        permanent: true
+
+    nkshop-admin-root-redirect:
+      redirectRegex:
+        regex: "^https://admin\\.noordkaravane\\.co\\.za/?$"
+        replacement: "https://admin.noordkaravane.co.za/app"
+        permanent: false
+
+    nkshop-compress:
+      compress: {}
+
+    # Client IP behind Cloudflare is in CF-Connecting-IP (the TCP peer is a Cloudflare edge address).
+    nkshop-ratelimit-auth:
+      rateLimit:
+        average: 5
+        period: 10s
+        burst: 15
+        sourceCriterion:
+          requestHeaderName: CF-Connecting-IP
+
+    nkshop-ratelimit-api:
+      rateLimit:
+        average: 20
+        period: 1s
+        burst: 60
+        sourceCriterion:
+          requestHeaderName: CF-Connecting-IP
+
+    # ---- storefront headers. CSP notes:
+    #  - script-src keeps 'unsafe-inline' because gtag/Meta Pixel bootstrap snippets and Astro island hydration are inline.
+    #    Tighten to nonces/hashes later if the storefront emits them.
+    #  - GA4/gtag: googletagmanager.com (script), google-analytics.com + analytics.google.com (collect, img, connect).
+    #  - Meta Pixel: connect.facebook.net (fbevents.js), www.facebook.com (/tr beacon, img + connect).
+    #  - Turnstile: challenges.cloudflare.com (script, frame, connect).
+    #  - api.noordkaravane.co.za: Medusa store API (connect-src). cdn.noordkaravane.co.za: R2 product images (img-src).
+    #  - Fonts are self-hosted; no Google Fonts.
+    #  - form-action allows the Payfast hosted payment page (only used when PAYFAST_ENABLED=true).
+    nkshop-security-headers:
+      headers:
+        stsSeconds: 31536000
+        stsIncludeSubdomains: false
+        stsPreload: false
+        customFrameOptionsValue: "SAMEORIGIN"
+        contentTypeNosniff: true
+        browserXssFilter: true
+        referrerPolicy: "strict-origin-when-cross-origin"
+        customResponseHeaders:
+          X-Powered-By: ""
+          Server: ""
+          Permissions-Policy: "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+          Content-Security-Policy: >-
+            default-src 'self';
+            script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://connect.facebook.net https://challenges.cloudflare.com https://static.cloudflareinsights.com;
+            style-src 'self' 'unsafe-inline';
+            img-src 'self' data: blob: https://cdn.noordkaravane.co.za https://www.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://*.g.doubleclick.net https://www.facebook.com;
+            font-src 'self' data:;
+            connect-src 'self' https://api.noordkaravane.co.za https://www.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://*.g.doubleclick.net https://connect.facebook.net https://www.facebook.com https://challenges.cloudflare.com;
+            frame-src https://challenges.cloudflare.com https://www.googletagmanager.com;
+            form-action 'self' https://www.payfast.co.za https://sandbox.payfast.co.za;
+            object-src 'none';
+            base-uri 'self';
+            frame-ancestors 'self';
+            upgrade-insecure-requests
+
+    # ---- api: JSON only, so the CSP is the strictest possible; CORS is Medusa's job ----
+    nkshop-api-headers:
+      headers:
+        stsSeconds: 31536000
+        customFrameOptionsValue: "DENY"
+        contentTypeNosniff: true
+        referrerPolicy: "no-referrer"
+        customResponseHeaders:
+          X-Powered-By: ""
+          Server: ""
+          Content-Security-Policy: "default-src 'none'; frame-ancestors 'none'"
+
+    # ---- admin: no CSP is imposed on the Medusa admin SPA (its Vite bundle and inline bootstrap would need
+    #      a loosened policy anyway); Cloudflare Access is the real gate. Frame denial + HSTS + noindex only. ----
+    nkshop-admin-headers:
+      headers:
+        stsSeconds: 31536000
+        customFrameOptionsValue: "DENY"
+        contentTypeNosniff: true
+        referrerPolicy: "same-origin"
+        customResponseHeaders:
+          X-Powered-By: ""
+          Server: ""
+          X-Robots-Tag: "noindex, nofollow"
+
+    # STAGING (never indexed, never cached by search engines)
+    # nkshop-staging-headers:
+    #   headers:
+    #     stsSeconds: 300
+    #     customFrameOptionsValue: "SAMEORIGIN"
+    #     contentTypeNosniff: true
+    #     referrerPolicy: "strict-origin-when-cross-origin"
+    #     customResponseHeaders:
+    #       X-Robots-Tag: "noindex, nofollow, noarchive"
+    #       Server: ""

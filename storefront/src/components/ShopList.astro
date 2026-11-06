@@ -1,0 +1,88 @@
+---
+import ProductCard from './ProductCard.astro';
+import type { Product, Category } from '~/lib/products';
+import { categoryFamily, inCategory, topCategories } from '~/lib/products';
+import { u } from '~/lib/url';
+
+interface Props { products: Product[]; categories: Category[]; error?: string; basePath: string; lockedCategory?: string }
+const { products, categories, error, basePath, lockedCategory } = Astro.props;
+const q = Astro.url.searchParams;
+const cat = lockedCategory || q.get('cat') || '';
+const sort = q.get('sort') || 'default';
+const search = (q.get('q') || '').trim().toLowerCase();
+
+const fam = cat ? categoryFamily(categories, cat) : [];
+let list = products.filter((p) => (!cat || inCategory(p, fam)) && (!search || `${p.title} ${p.description} ${p.tags.join(' ')} ${p.variants.map((v) => v.sku).join(' ')}`.toLowerCase().includes(search)));
+if (sort === 'low') list = [...list].sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
+if (sort === 'high') list = [...list].sort((a, b) => (b.price ?? 0) - (a.price ?? 0));
+if (sort === 'az') list = [...list].sort((a, b) => a.title.localeCompare(b.title));
+const chips = lockedCategory ? categories.filter((c) => c.parent === lockedCategory) : topCategories(categories);
+const countOf = (h: string) => products.filter((p) => inCategory(p, categoryFamily(categories, h))).length;
+const active = [!lockedCategory && cat, search].filter(Boolean).length;
+---
+<form method="get" action={basePath} class="mb-10 grid gap-5 border-y border-ink-3 py-5" data-filters aria-label="Filter and sort products">
+  <div class="flex flex-wrap items-end gap-x-8 gap-y-5">
+    {chips.length > 0 && !lockedCategory && (
+      <fieldset class="min-w-0">
+        <legend class="label mb-2 text-muted">Category</legend>
+        <div class="flex flex-wrap gap-2">
+          <label class="chip"><input type="radio" name="cat" value="" checked={!cat} /><span>All</span></label>
+          {chips.map((c) => <label class="chip"><input type="radio" name="cat" value={c.handle} checked={cat === c.handle} /><span>{c.name} <small class="ml-1 text-muted">{countOf(c.handle)}</small></span></label>)}
+        </div>
+      </fieldset>
+    )}
+    {chips.length > 0 && lockedCategory && (
+      <div class="min-w-0">
+        <p class="label mb-2 text-muted">In this category</p>
+        <div class="flex flex-wrap gap-2">{chips.map((c) => <a class="chip-link" href={u(`/category/${c.handle}/`)}>{c.name} <small class="ml-1 text-muted">{countOf(c.handle)}</small></a>)}</div>
+      </div>
+    )}
+    <div class="field min-w-52 flex-1 sm:max-w-xs">
+      <label for="q" class="label text-muted">Search</label>
+      <input id="q" name="q" type="search" value={q.get('q') || ''} class="input !min-h-11 !py-2" placeholder="e.g. battery, camera, braai" autocomplete="off" />
+    </div>
+    <div class="field min-w-44">
+      <label for="sort" class="label text-muted">Sort</label>
+      <select id="sort" name="sort" class="input !min-h-11 !py-2">
+        <option value="default" selected={sort === 'default'}>Featured</option>
+        <option value="low" selected={sort === 'low'}>Price, low to high</option>
+        <option value="high" selected={sort === 'high'}>Price, high to low</option>
+        <option value="az" selected={sort === 'az'}>Name, A to Z</option>
+      </select>
+    </div>
+    <button class="btn !min-h-11" type="submit">Apply</button>
+  </div>
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <p class="text-[0.9rem] text-muted" role="status" aria-live="polite">{list.length} {list.length === 1 ? 'product' : 'products'}{active ? ' match' : ''}</p>
+    {active > 0 && <a class="link text-[0.95rem]" href={basePath}>Clear filters</a>}
+  </div>
+</form>
+
+{error && <p class="err mb-6" role="alert">{error}</p>}
+{list.length ? (
+  <ul class="grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-3 lg:grid-cols-4 lg:gap-x-6 lg:gap-y-14">
+    {list.map((p, i) => <li><ProductCard product={p} priority={i < 4} /></li>)}
+  </ul>
+) : (
+  <div class="mx-auto max-w-xl border border-dashed border-ink-3 px-8 py-14 text-center">
+    <p class="font-display text-4xl">Nothing here.</p>
+    <p class="mt-2 text-muted">{products.length ? 'No products match those filters. Loosen one and try again.' : 'The catalogue is still loading. Check back soon.'}</p>
+    {active > 0 && <a class="btn btn--ghost mt-5" href={basePath}>Clear filters</a>}
+  </div>
+)}
+
+<style is:global>
+  .chip { position: relative; }
+  .chip input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; margin: 0; }
+  .chip span, .chip-link { display: inline-flex; align-items: center; min-height: 2.75rem; padding: 0.4rem 1rem; border: 1.5px solid var(--color-ink-3); border-radius: 999px; font-weight: 500; font-size: 0.95rem; transition: background-color .15s, border-color .15s; background: transparent; text-decoration: none; }
+  .chip:hover span, .chip-link:hover { background: var(--color-paper-3); border-color: var(--color-ink); }
+  .chip input:checked + span { background: var(--color-wine); border-color: var(--color-wine); color: var(--color-paper); }
+  .chip input:checked + span small { color: var(--color-paper); }
+  .chip input:focus-visible + span { outline: 3px solid var(--color-wine-lit); outline-offset: 3px; }
+</style>
+<script>
+  // Filters apply on change when JS is available; the Apply button is the no-JS fallback.
+  document.querySelectorAll<HTMLFormElement>('form[data-filters]').forEach((f) => {
+    f.addEventListener('change', (e) => { if ((e.target as HTMLInputElement).type !== 'search') f.requestSubmit(); });
+  });
+</script>
