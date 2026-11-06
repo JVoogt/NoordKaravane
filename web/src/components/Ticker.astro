@@ -1,0 +1,20 @@
+---
+import { BUSINESS } from '../data/business';
+import { formatHoursCompact } from '../lib/hours';
+
+const items = [
+  `${BUSINESS.address.locality} Workshop`,
+  '500+ caravans serviced',
+  'Insurance-accredited recoveries',
+  `Cross-border: ${BUSINESS.crossBorder.map((c) => c.code).join(' · ')}`,
+  formatHoursCompact(BUSINESS.hours),
+  `WhatsApp ${BUSINESS.phone.display}`,
+];
+---
+
+<div class="topbar">
+  <div class="topbar-track">
+    {items.map((t) => <span>{t}</span>)}
+    {items.map((t) => <span aria-hidden="true">{t}</span>)}
+  </div>
+</div>

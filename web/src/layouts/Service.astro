@@ -1,0 +1,97 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import Base from './Base.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import CtaButton from '../components/CtaButton.astro';
+import Faq from '../components/Faq.astro';
+import Hours from '../components/Hours.astro';
+import ServiceCard from '../components/ServiceCard.astro';
+import { servicePath, type ServiceSlug } from '../data/routes';
+import { serviceMeta } from '../data/services';
+import { buildGraph, breadcrumbNode, faqNode, jsonLd, orgRef, serviceNode } from '../lib/schema';
+import { waUrl } from '../lib/whatsapp';
+
+interface Props {
+  entry: CollectionEntry<'services'>;
+}
+const { entry } = Astro.props;
+const d = entry.data;
+const slug = entry.id as ServiceSlug;
+const path = servicePath(slug);
+
+const crumbs = [
+  { name: 'Home', path: '/' },
+  { name: serviceMeta(slug).name, path },
+];
+
+const graph = buildGraph([
+  orgRef(),
+  breadcrumbNode(crumbs),
+  serviceNode({ name: d.schemaName, description: d.description, path, price: d.priceFrom }),
+  faqNode(d.faq),
+]);
+---
+
+<Base title={d.title} description={d.description} path={path} waText={d.whatsappText} jsonLd={jsonLd(graph)}>
+  <header class="hero">
+    <div class="container hero-grid hero-grid--single">
+      <div class="hero-main">
+        <Breadcrumbs items={crumbs} />
+        <p class="hero-eyebrow">{d.eyebrow}</p>
+        <slot name="tag" />
+        <h1 class="hero-title hero-title--service">{d.h1}</h1>
+        <div class="svc-body"><slot /></div>
+        {d.facts && d.facts.length > 0 && (
+          <dl class="facts">
+            {d.facts.map((f) => (
+              <div class="fact"><dt>{f.k}</dt><dd>{f.v}</dd></div>
+            ))}
+          </dl>
+        )}
+        <slot name="hero-extra" />
+        <div class="hero-actions hero-actions--spaced">
+          <CtaButton href={waUrl(d.whatsappText)} variant="primary" external arrow>{d.ctaLabel}</CtaButton>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <slot name="extras" />
+
+  <section id="faq" class="block">
+    <div class="container">
+      <div class="sec-head">
+        <div class="sec-num">&#9830; FAQ</div>
+        <h2 class="sec-title">The <em>questions</em> that come up most.</h2>
+        <p class="sec-sub">Short answers. Message us for the full story.</p>
+      </div>
+      <Faq items={d.faq} />
+    </div>
+  </section>
+
+  {d.related.length > 0 && (
+    <section class="block">
+      <div class="container">
+        <div class="sec-head">
+          <div class="sec-num">&#9830; Also</div>
+          <h2 class="sec-title">Related <em>services.</em></h2>
+        </div>
+        <div class="related-grid">
+          {d.related.map((slug) => <ServiceCard slug={slug} />)}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <section class="block">
+    <div class="container">
+      <div class="loc-card">
+        <div class="loc-item">
+          <div class="loc-k">Hours</div>
+          <Hours />
+        </div>
+        <CtaButton href="/find-us/" variant="ghost">Find us</CtaButton>
+      </div>
+    </div>
+  </section>
+</Base>

@@ -1,0 +1,22 @@
+---
+import type { ServiceSlug } from '../data/routes';
+import { servicePath } from '../data/routes';
+import { serviceMeta } from '../data/services';
+
+interface Props {
+  slug: ServiceSlug;
+}
+const { slug } = Astro.props;
+const meta = serviceMeta(slug);
+---
+
+<a class="svc" href={servicePath(slug)}>
+  <h3>{meta.name}</h3>
+  <p>{meta.blurb}</p>
+  <div class="svc-foot">
+    <span>{meta.tag}</span>
+    <span class="arrow" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </span>
+  </div>
+</a>

@@ -1,0 +1,30 @@
+---
+import { BUSINESS } from '../data/business';
+import { REVIEWS } from '../data/reviews';
+
+const approved = REVIEWS.filter((r) => r.approved);
+const rating = BUSINESS.google.rating.toFixed(1);
+---
+
+<div class="reviews" id="reviews-list">
+  {approved.length > 0
+    ? approved.map((r) => (
+        <article class="review">
+          <div class="review-stars" aria-hidden="true">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <blockquote class="review-body">{r.text}</blockquote>
+          <div class="review-meta">
+            <div class="review-author">{r.name}</div>
+            <a class="review-date" href={r.url} target="_blank" rel="noopener">{r.date}</a>
+          </div>
+        </article>
+      ))
+    : (
+        <article class="review review-card">
+          <p class="review-big">Rated <span class="accent">{rating}</span> on Google from {BUSINESS.google.reviewCount} reviews</p>
+          <div class="profile-links">
+            <a class="profile-link" href={BUSINESS.links.googleProfile} target="_blank" rel="noopener">Read Google profile</a>
+            <a class="profile-link" href={BUSINESS.links.facebook} target="_blank" rel="noopener">Visit Facebook page</a>
+          </div>
+        </article>
+      )}
+</div>

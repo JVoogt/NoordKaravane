@@ -1,0 +1,11 @@
+---
+import { BUSINESS } from '../data/business';
+import { formatHoursLines } from '../lib/hours';
+
+const lines = formatHoursLines(BUSINESS.hours);
+---
+
+<div class="loc-v">
+  {lines.map((line, i) => (<Fragment>{i > 0 && <br />}{line}</Fragment>))}
+  <small>{BUSINESS.recoveriesNote}</small>
+</div>

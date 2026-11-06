@@ -1,0 +1,25 @@
+---
+import { getCollection, render } from 'astro:content';
+import Service from '../../layouts/Service.astro';
+import { BUSINESS } from '../../data/business';
+
+export async function getStaticPaths() {
+  const entries = await getCollection('services');
+  return entries.map((entry) => ({ params: { slug: entry.id }, props: { entry } }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+---
+
+<Service entry={entry}>
+  <Content />
+  {entry.id === 'recoveries' && (
+    <p slot="tag" class="svc-num"><span class="tag">{BUSINESS.recoveriesNote}</span></p>
+  )}
+  {entry.id === 'recoveries' && (
+    <ul slot="hero-extra" class="chip-list" aria-label="Cross-border recoveries">
+      {BUSINESS.crossBorder.map((c) => <li>{c.name}</li>)}
+    </ul>
+  )}
+</Service>
