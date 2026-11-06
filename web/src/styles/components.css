@@ -134,8 +134,15 @@
   border-top: 1px solid var(--line);
   padding: 6px var(--gutter) 8px;
   gap: 8px;
+  /* Right-edge fade says "this row scrolls"; QuickNav.astro drops it once scrolled to the end.
+     scroll-padding keeps a Tab-focused chip clear of the fade. */
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+  scroll-padding-inline: var(--gutter) 40px;
 }
+.mobile-quicknav[data-end] { -webkit-mask-image: none; mask-image: none; }
 .mobile-quicknav a {
+  min-width: 44px;
   min-height: 44px;
   flex: 1 0 auto;
   display: grid;
@@ -821,7 +828,8 @@ section.block {
   .nav-phone { display: none; }
   .nav-cta { padding: 0 16px; font-size: 13px; }
   .nav-cta svg { display: none; }
-  .mobile-quicknav a { padding: 0 12px; }
+  .mobile-quicknav { gap: 4px; }
+  .mobile-quicknav a { padding: 0 9px; }
   .hero-title { font-size: clamp(48px, 13vw, 68px); }
   .hero-title--service { font-size: clamp(40px, 11vw, 60px); }
   .sec-head { grid-template-columns: 1fr; }

@@ -11,3 +11,23 @@ const { links } = Astro.props;
   <a href={`tel:${BUSINESS.phone.e164}`}>Call</a>
   {links.map((l) => <a href={l.href} aria-current={l.current ? 'page' : undefined}>{l.label}</a>)}
 </div>
+
+<script>
+  // Enhancement only: the right-edge fade is on by default (no JS needed to see that the row scrolls)
+  // and is switched off once the row is scrolled to its end.
+  const row = document.querySelector<HTMLElement>('.mobile-quicknav');
+  if (row) {
+    const sync = () => {
+      const gutter = parseFloat(getComputedStyle(row).paddingRight) || 0;
+      const remaining = row.scrollWidth - row.clientWidth - row.scrollLeft;
+      row.toggleAttribute('data-end', remaining <= gutter + 1);
+    };
+    row.addEventListener('scroll', sync, { passive: true });
+    // Chrome does not scroll a half-visible chip fully into view on focus; do it so Tab never lands under the fade.
+    row.addEventListener('focusin', (e) => {
+      (e.target as HTMLElement).scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    });
+    window.addEventListener('resize', sync);
+    sync();
+  }
+</script>

@@ -33,6 +33,69 @@ function record(page, width, check, ok, detail = '') {
   rows.push({ page, width, check, result: ok ? 'PASS' : 'FAIL', detail });
 }
 
+
+// Quick-link row: single scrolling row on phones. Every chip must be fully visible, or the row must
+// signal that it scrolls (overflow + fade mask + a chip clipped mid-way at the right edge).
+const PARTIAL_PX = 8;
+async function quicknavState(page) {
+  return page.evaluate(async () => {
+    const q = document.querySelector('.mobile-quicknav');
+    if (!q) return null;
+    const cs = getComputedStyle(q);
+    if (cs.display === 'none') return { hidden: true };
+    q.scrollLeft = 0; // measure the resting state, not wherever an earlier Tab walk left the row
+    await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res))); // let the scroll handler run
+    const qr = q.getBoundingClientRect();
+    const chips = [...q.children].map((a) => {
+      const r = a.getBoundingClientRect();
+      return { label: a.textContent.trim(), left: r.left, right: r.right };
+    });
+    return {
+      hidden: false,
+      sw: q.scrollWidth,
+      cw: q.clientWidth,
+      edge: qr.right,
+      maskImage: cs.maskImage || cs.webkitMaskImage || 'none',
+      chips,
+    };
+  });
+}
+function judgeQuicknav(st) {
+  const clipped = st.chips.filter((c) => c.right > st.edge + 0.5);
+  if (clipped.length === 0) return { ok: true, detail: `all ${st.chips.length} chips fully visible` };
+  const overflow = st.sw > st.cw;
+  const fade = st.maskImage !== 'none';
+  const partial = st.chips.find((c) => c.left < st.edge - PARTIAL_PX && c.right > st.edge + PARTIAL_PX);
+  const ok = overflow && fade && !!partial;
+  return {
+    ok,
+    detail: `${clipped.length} clipped; overflow=${overflow} fade=${fade} partial=${partial ? `${partial.label} ${Math.round(partial.left)}..${Math.round(partial.right)} edge ${Math.round(st.edge)}` : 'none'}`,
+  };
+}
+// Press Tab from the top of the page; every chip must receive focus and be fully inside the row's visible box.
+async function quicknavTabReach(page, chipCount) {
+  await page.evaluate(() => {
+    document.activeElement?.blur();
+    window.scrollTo(0, 0);
+    document.querySelector('.mobile-quicknav').scrollLeft = 0;
+  });
+  const seen = new Map();
+  for (let i = 0; i < 14 && seen.size < chipCount; i++) {
+    await page.keyboard.press('Tab');
+    const info = await page.evaluate(() => {
+      const el = document.activeElement;
+      const q = document.querySelector('.mobile-quicknav');
+      if (!el || !q || el.parentElement !== q) return null;
+      const r = el.getBoundingClientRect();
+      const qr = q.getBoundingClientRect();
+      return { label: el.textContent.trim(), inView: r.left >= qr.left - 0.5 && r.right <= qr.right + 0.5 };
+    });
+    if (info) seen.set(info.label, info.inView);
+  }
+  const hidden = [...seen].filter(([, v]) => !v).map(([k]) => k);
+  return { reached: seen.size, hidden };
+}
+
 const browser = await chromium.launch({ executablePath: EXECUTABLE });
 
 for (const path of PAGES) {
@@ -121,18 +184,39 @@ for (const path of PAGES) {
     const limit = width <= 320 ? 140 : width <= 390 ? 130 : width <= 768 ? 140 : null;
     if (limit !== null) record(path, width, `sticky header <= ${limit}px`, headerH > 0 && headerH <= limit, `${Math.round(headerH)}px`);
 
+    // Quick-link row affordance and keyboard reach.
+    const qn = await quicknavState(page);
+    if (qn?.hidden) {
+      record(path, width, 'quicknav hidden above 1360px', width > 1360, 'display:none');
+    } else if (qn) {
+      const j = judgeQuicknav(qn);
+      record(path, width, 'quicknav fits or visibly scrolls', j.ok, j.detail);
+      const reach = await quicknavTabReach(page, qn.chips.length);
+      record(path, width, 'quicknav chips reachable by Tab, in view', reach.reached === qn.chips.length && reach.hidden.length === 0, `${reach.reached}/${qn.chips.length} reached; out of view: ${reach.hidden.join(',') || 'none'}`);
+    } else {
+      record(path, width, 'quicknav present', false, 'missing .mobile-quicknav');
+    }
+
     // Bebas Neue ships weight 400 only: any heavier computed weight is a synthesised bold.
     const bebas = await page.evaluate(() => {
       const bad = [];
+      let matched = 0;
       for (const el of document.querySelectorAll('body *')) {
         const cs = getComputedStyle(el);
-        if (/bebas/i.test(cs.fontFamily.split(',')[0]) && cs.fontWeight !== '400' && el.textContent.trim()) {
-          bad.push(`${el.tagName.toLowerCase()}.${String(el.className).split(' ')[0]}=${cs.fontWeight}`);
+        if (/bebas/i.test(cs.fontFamily.split(',')[0]) && el.textContent.trim()) {
+          matched++;
+          if (cs.fontWeight !== '400') bad.push(`${el.tagName.toLowerCase()}.${String(el.className).split(' ')[0]}=${cs.fontWeight}`);
         }
       }
-      return [...new Set(bad)];
+      return { bad: [...new Set(bad)], matched, headings: document.querySelectorAll('h1, h2').length };
     });
-    record(path, width, 'Bebas elements are weight 400', bebas.length === 0, bebas.slice(0, 4).join(' '));
+    record(
+      path,
+      width,
+      'Bebas elements are weight 400',
+      bebas.bad.length === 0 && (bebas.headings === 0 || bebas.matched > 0),
+      bebas.bad.length ? bebas.bad.slice(0, 4).join(' ') : `${bebas.matched} Bebas elements checked`,
+    );
 
     // Trust strip: no orphan tile (a lone last-row tile narrower than the strip).
     const orphan = await page.evaluate(() => {
@@ -218,12 +302,53 @@ for (const path of PAGES) {
     const after = await d.evaluate((el) => el.open);
     if (before !== after) toggled++;
   }
-  record(path, 'nojs', 'every <details> toggles', toggled === details.length, `${toggled}/${details.length}`);
+  const expectDetails = path.startsWith('/services/');
+  if (details.length === 0 && !expectDetails) {
+    record(path, 'nojs', 'every <details> toggles (n/a)', true, 'n/a: none on this page');
+  } else {
+    record(path, 'nojs', 'every <details> toggles', details.length > 0 && toggled === details.length, `${toggled}/${details.length}`);
+  }
 
   const fallback = await page.$('[data-estimator-fallback]');
   if (fallback) {
     record(path, 'nojs', 'estimator fallback visible', await fallback.isVisible());
   }
+  await context.close();
+}
+
+// Quick-link sweep at common phone widths (Home only: the row is the same component everywhere).
+for (const width of [360, 375, 412]) {
+  const context = await browser.newContext({ viewport: { width, height: 900 } });
+  const page = await context.newPage();
+  await page.goto(BASE + '/', { waitUntil: 'networkidle' });
+  const qn = await quicknavState(page);
+  const j = qn && !qn.hidden ? judgeQuicknav(qn) : { ok: false, detail: 'quicknav missing or hidden' };
+  record('/', width, 'quicknav fits or visibly scrolls', j.ok, j.detail);
+  await context.close();
+}
+
+// The 404 page ships with the build: overflow, header and CTA hold there too.
+for (const width of WIDTHS) {
+  const context = await browser.newContext({ viewport: { width, height: 900 } });
+  const page = await context.newPage();
+  const res = await page.goto(BASE + '/404.html', { waitUntil: 'networkidle' });
+  record('/404.html', width, 'status 200 or 404', [200, 404].includes(res?.status() ?? 0), String(res?.status()));
+  const m = await page.evaluate(() => {
+    const cta = document.querySelector('.nav-cta');
+    const r = cta?.getBoundingClientRect();
+    return {
+      sw: document.documentElement.scrollWidth,
+      iw: window.innerWidth,
+      nav: document.querySelector('.nav')?.getBoundingClientRect().height ?? -1,
+      cta: r ? { h: r.height, inside: r.left >= 0 && r.right <= window.innerWidth } : null,
+      h1: !!document.querySelector('h1'),
+    };
+  });
+  record('/404.html', width, 'no horizontal overflow', m.sw <= m.iw, `${m.sw} <= ${m.iw}`);
+  const limit = width <= 320 ? 140 : width <= 390 ? 130 : width <= 768 ? 140 : null;
+  if (limit !== null) record('/404.html', width, `sticky header <= ${limit}px`, m.nav > 0 && m.nav <= limit, `${Math.round(m.nav)}px`);
+  record('/404.html', width, 'header CTA visible, inside viewport, >= 44px', !!m.cta && m.cta.inside && m.cta.h >= 44, m.cta ? `h=${m.cta.h}` : 'missing .nav-cta');
+  record('/404.html', width, 'has an h1', m.h1);
   await context.close();
 }
 
