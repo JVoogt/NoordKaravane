@@ -32,8 +32,10 @@
     <meta name="twitter:description" content="Expert caravan service, repairs & recoveries. Insurance accredited. 500+ caravans serviced.">
     <meta name="twitter:image" content="https://noordkaravane.co.za/assets/images/og-image.png">
 
-    <link rel="icon" type="image/png" href="assets/images/logo.png">
-    <link rel="apple-touch-icon" href="assets/images/logo.png">
+    <link rel="icon" href="/favicon.ico" sizes="48x48">
+    <link rel="icon" type="image/png" href="/favicon-96.png" sizes="96x96">
+    <link rel="icon" type="image/png" href="/favicon-192.png" sizes="192x192">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -166,7 +168,8 @@ ul { list-style: none; }
   justify-content: center;
 }
 .nav-links a {
-  padding: 8px 14px;
+  white-space: nowrap;
+  padding: 8px 10px;
   font-size: 13px;
   font-weight: 500;
   letter-spacing: 0.02em;
@@ -175,7 +178,7 @@ ul { list-style: none; }
   transition: color .2s, background .2s;
 }
 .nav-links a:hover { color: var(--paper); background: var(--line); }
-.nav-cta-group { display: flex; gap: 10px; align-items: center; }
+.nav-cta-group { display: flex; gap: 10px; align-items: center; grid-column: 3; justify-self: end; }
 .nav-phone {
   font-family: var(--f-mono);
   font-size: 13px;
@@ -189,16 +192,18 @@ ul { list-style: none; }
   box-shadow: 0 0 0 4px rgba(95, 210, 122, 0.15);
 }
 .nav-cta {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 10px 18px;
-  background: var(--paper);
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 44px;
+  padding: 0 20px;
+  background: var(--orange);
   color: var(--ink);
-  font-weight: 600;
-  font-size: 13px;
+  font-weight: 700;
+  font-size: 14px;
+  white-space: nowrap;
   border-radius: 999px;
   transition: background .2s, transform .2s;
 }
-.nav-cta:hover { background: #fff; transform: translateY(-1px); }
+.nav-cta:hover { background: var(--orange-2); transform: translateY(-1px); }
 .nav-cta svg { width: 14px; height: 14px; }
 .mobile-quicknav {
   display: none;
@@ -206,22 +211,27 @@ ul { list-style: none; }
   padding: 10px var(--gutter) 12px;
   gap: 8px;
 }
+.mobile-quicknav {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-top: 6px;
+  padding-bottom: 8px;
+}
+.mobile-quicknav::-webkit-scrollbar { display: none; }
 .mobile-quicknav a {
-  min-height: 42px;
-  flex: 1 1 30%;
+  min-height: 44px;
+  flex: 1 0 auto;
   display: grid;
   place-items: center;
+  padding: 0 14px;
   border-radius: 999px;
   border: 1px solid var(--line-2);
   color: var(--paper);
   font-size: 13px;
   font-weight: 700;
+  white-space: nowrap;
   background: rgba(235, 230, 221, 0.035);
-}
-.mobile-quicknav a:first-child {
-  background: var(--orange);
-  border-color: var(--orange);
-  color: var(--ink);
 }
 
 /* mobile menu toggle */
@@ -1579,6 +1589,9 @@ section.block {
 .price:focus-visible,
 .faq-q:focus-visible,
 .nav-links a:focus-visible,
+.nav-cta:focus-visible,
+.nav-phone:focus-visible,
+.wa-float:focus-visible,
 .profile-link:focus-visible,
 .hero-stat a:focus-visible,
 .foot-col a:focus-visible,
@@ -1612,12 +1625,19 @@ section.block {
   .loc-grid { grid-template-columns: 1fr; }
   .foot-main { grid-template-columns: 1fr 1fr; }
 }
-@media (max-width: 700px) {
+/* Below 1360px the ten nav links no longer fit beside the CTA (measured: overflow up to ~1330px):
+   swap to the one-row quicknav, but the Book on WhatsApp button stays in the bar at every width. */
+@media (max-width: 1360px) {
   .nav-links { display: none; }
   .nav-phone { display: none; }
-  .nav-cta-group { display: none; }
+  .mobile-quicknav { display: flex; }
+}
+@media (max-width: 700px) {
+  .nav-inner { gap: 10px; padding: 12px 0; }
+  .brand { font-size: 20px; gap: 10px; }
+  .nav-cta { padding: 0 16px; font-size: 13px; }
+  .nav-cta svg { display: none; }
   .hamburger { display: none; }
-  .mobile-quicknav { display: flex; flex-wrap: wrap; }
   .hero-title { font-size: clamp(48px, 13vw, 68px); }
   .sec-head { grid-template-columns: 1fr; }
   .sec-sub { text-align: left; justify-self: start; }
@@ -1681,15 +1701,14 @@ section.block {
       <a href="/shop/">Shop</a>
     </div>
     <div class="nav-cta-group">
-      <span class="nav-phone">083 334 9357</span>
-      <a href="https://wa.me/27833349357?text=Hi%2C%20I'd%20like%20to%20enquire%20about%20your%20caravan%20services." class="nav-cta" target="_blank" rel="noopener">
-        Book
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      <a href="tel:+27833349357" class="nav-phone" aria-label="Call 083 334 9357">083 334 9357</a>
+      <a href="https://wa.me/27833349357?text=Hi%2C%20I'd%20like%20to%20book%20a%20service%20slot." class="nav-cta" target="_blank" rel="noopener">
+        Book on WhatsApp
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </a>
     </div>
   </div>
   <div class="mobile-quicknav" aria-label="Quick links">
-    <a href="https://wa.me/27833349357?text=Hi%2C%20I'd%20like%20to%20book%20a%20service%20slot." target="_blank" rel="noopener">Book</a>
     <a href="#services">Services</a>
     <a href="#pricing">Packages</a>
     <a href="#location">Location</a>
@@ -1713,7 +1732,7 @@ section.block {
 
       <div class="hero-actions">
         <a href="https://wa.me/27833349357?text=Hi%2C%20I'd%20like%20to%20book%20a%20service%20slot." class="btn btn-primary" target="_blank" rel="noopener">
-          Book via WhatsApp
+          Book on WhatsApp
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         </a>
         <a href="#pricing" class="btn btn-ghost">
