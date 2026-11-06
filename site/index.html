@@ -1,25 +1,21 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-ZA">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Noord Karavane | Caravan Service, Repairs & Recoveries in Pretoria North</title>
     <meta name="description" content="Pretoria North's trusted caravan workshop. Expert caravan service, repairs, trailer recoveries, solar installations, safety checks, wheel bearings, water systems & lift kits. Insurance accredited. Cross-border recoveries. 500+ caravans serviced. WhatsApp 083 334 9357.">
-    <meta name="keywords" content="caravan service Pretoria, caravan repairs Pretoria North, caravan workshop Pretoria, trailer recovery South Africa, caravan recovery insurance, cross border caravan recovery, solar installation caravan, caravan safety check, wheel bearing service caravan, caravan lift kit, trailer service Pretoria, caravan mechanic Pretoria, caravan electrical repairs, caravan water system repair, caravan service near me, trailer repairs Pretoria North, caravan modifications, Noord Karavane">
     <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
     <meta name="author" content="Noord Karavane">
-    <meta name="geo.region" content="ZA-GT">
-    <meta name="geo.placename" content="Pretoria North">
-    <meta name="geo.position" content="-25.7075;28.1875">
-    <meta name="ICBM" content="-25.7075, 28.1875">
-    <link rel="canonical" href="https://noordkaravane.co.za">
+    <link rel="canonical" href="https://noordkaravane.co.za/">
 
     <!-- Open Graph -->
     <meta property="og:title" content="Noord Karavane | Caravan Service, Repairs & Recoveries - Pretoria North">
     <meta property="og:description" content="Pretoria's trusted caravan specialists. Service, repairs, recoveries & modifications. Insurance accredited. 500+ caravans serviced. WhatsApp us today.">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://noordkaravane.co.za">
-    <meta property="og:image" content="https://noordkaravane.co.za/assets/images/og-image.png">
+    <meta property="og:url" content="https://noordkaravane.co.za/">
+    <meta property="og:image" content="https://noordkaravane.co.za/assets/images/og-image-1200.jpg">
+    <meta property="og:image:type" content="image/jpeg">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:image:alt" content="Noord Karavane - Caravan Specialists in Pretoria North">
@@ -30,7 +26,7 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Noord Karavane | Caravan Specialists - Pretoria North">
     <meta name="twitter:description" content="Expert caravan service, repairs & recoveries. Insurance accredited. 500+ caravans serviced.">
-    <meta name="twitter:image" content="https://noordkaravane.co.za/assets/images/og-image.png">
+    <meta name="twitter:image" content="https://noordkaravane.co.za/assets/images/og-image-1200.jpg">
 
     <link rel="icon" href="/favicon.ico" sizes="48x48">
     <link rel="icon" type="image/png" href="/favicon-96.png" sizes="96x96">
@@ -443,6 +439,8 @@ ul { list-style: none; }
   border: 1px solid var(--line-2);
   background: var(--ink-2);
 }
+.hero-media picture,
+.promo-media picture { display: block; width: 100%; height: 100%; }
 .hero-media img {
   width: 100%; height: 100%; object-fit: cover;
   filter: contrast(1.05) saturate(0.95);
@@ -1772,7 +1770,10 @@ section.block {
 
     <aside class="hero-media">
       <span class="hero-media-tag">Workshop · Pretoria North</span>
-      <img src="assets/images/lift-kit.jpg" alt="Caravan in the Noord Karavane workshop">
+      <picture>
+        <source type="image/webp" srcset="assets/images/lift-kit-640.webp 640w, assets/images/lift-kit-1200.webp 1200w" sizes="(max-width: 1100px) 480px, 600px">
+        <img src="assets/images/lift-kit-1200.jpg" width="1200" height="1201" fetchpriority="high" decoding="async" alt="Caravan in the Noord Karavane workshop">
+      </picture>
       <div class="hero-media-stamp">Road<br>Ready</div>
     </aside>
   </div>
@@ -2018,7 +2019,10 @@ section.block {
 
     <div class="promo">
       <div class="promo-media">
-        <img src="assets/images/lift-kit.jpg" alt="Jurgens Penta with 50mm lift kit installed at Noord Karavane" loading="lazy">
+        <picture>
+          <source type="image/webp" srcset="assets/images/lift-kit-640.webp 640w, assets/images/lift-kit-1200.webp 1200w" sizes="(max-width: 1100px) 92vw, 560px">
+          <img src="assets/images/lift-kit-1200.jpg" width="1200" height="1201" alt="Jurgens Penta with 50mm lift kit installed at Noord Karavane" loading="lazy" decoding="async">
+        </picture>
         <span class="promo-ticket">Fitted at our workshop</span>
         <span class="promo-label">Lift kit fitment</span>
       </div>
@@ -2421,9 +2425,9 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
     "name": "Noord Karavane",
     "alternateName": "Noord Karavane Caravan Specialists",
     "description": "Pretoria North's trusted caravan workshop. Expert caravan service, repairs, recoveries & modifications. Insurance accredited caravan and trailer recoveries including cross-border. Electrical, solar, safety checks, wheel bearings, water systems, lift kits.",
-    "url": "https://noordkaravane.co.za",
+    "url": "https://noordkaravane.co.za/",
     "telephone": "+27833349357",
-    "image": "https://noordkaravane.co.za/assets/images/og-image.png",
+    "image": "https://noordkaravane.co.za/assets/images/og-image-1200.jpg",
     "logo": "https://noordkaravane.co.za/assets/images/logo.png",
     "address": {
         "@type": "PostalAddress",
@@ -2468,16 +2472,10 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
             "closes": "17:00"
         }
     ],
-    "aggregateRating": {
-        "@type": "AggregateRating",
-        "ratingValue": "5",
-        "bestRating": "5",
-        "ratingCount": "500"
-    },
     "priceRange": "R949 - R2299",
     "paymentAccepted": "Cash, Credit Card, EFT",
     "currenciesAccepted": "ZAR",
-    "sameAs": []
+    "sameAs": ["https://www.facebook.com/NoordKaravane"]
 }
 </script>
 

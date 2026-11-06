@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://noordkaravane.co.za/</loc>
-    <lastmod>2026-05-25</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>1.0</priority>
-  </url>
-</urlset>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <sitemap>
+    <loc>https://noordkaravane.co.za/sitemap-main.xml</loc>
+    <lastmod>2026-11-06</lastmod>
+  </sitemap>
+  <sitemap>
+    <loc>https://noordkaravane.co.za/shop/sitemap.xml</loc>
+    <lastmod>2026-11-06</lastmod>
+  </sitemap>
+</sitemapindex>
