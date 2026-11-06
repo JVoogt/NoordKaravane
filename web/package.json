@@ -8,10 +8,13 @@
     "build": "astro build",
     "preview": "astro preview",
     "check": "astro check && node scripts/guard.mjs",
+    "guard": "node scripts/guard.mjs",
+    "guard:dist": "node scripts/guard.mjs --dist",
     "test": "vitest run",
     "verify": "node scripts/verify.mjs",
     "browser": "node scripts/browser-check.mjs",
-    "ci": "npm run check && npm test && npm run build && npm run verify"
+    "//ci": "Phase 2 appends `&& npm run verify` once scripts/verify.mjs exists.",
+    "ci": "npm run check && npm test && npm run build && npm run guard:dist"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",

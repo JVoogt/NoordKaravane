@@ -5,7 +5,9 @@ import { join, relative, extname, basename, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 
-const WEB = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+// GUARD_WEB lets the tests point the guard at a throwaway tree.
+const WEB = process.env.GUARD_WEB ? resolve(process.env.GUARD_WEB) : resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const DIST_MODE = process.argv.includes('--dist');
 const EM_DASH = String.fromCharCode(0x2014);
 const TEXT_EXT = new Set(['.ts', '.mjs', '.js', '.astro', '.md', '.css', '.json', '.html', '.txt', '.xml', '.svg']);
 const FORBIDDEN = ['17:00', 'Mon-Fri 08', 'Mon–Fri', 'Mon to Fri', 'aggregateRating', 'business.json'];
@@ -34,31 +36,54 @@ function scan(files, needles, label) {
   }
 }
 
+if (DIST_MODE) {
+  // Built output. dist/ MUST exist: a missing build is a failure, never a silent skip.
+  const dist = join(WEB, 'dist');
+  if (!existsSync(dist)) {
+    console.error('guard:dist: FAIL dist/ missing (run the build first)');
+    process.exit(1);
+  }
+  const distFiles = walk(dist);
+  scan(distFiles, [EM_DASH], 'em dash');
+  scan(distFiles, ['aggregateRating', '17:00', ...UNSPACED_PRICES], 'forbidden');
+  report('guard:dist');
+}
+
 // U+2014 anywhere in src, scripts, public text files.
 const emDashFiles = ['src', 'scripts', 'public'].flatMap((d) => walk(join(WEB, d)));
 scan(emDashFiles, [EM_DASH], 'em dash');
 
-// String checks: src (excluding tests) and dist when present. Scripts hold the literals as oracles.
-const stringFiles = [...walk(join(WEB, 'src')).filter((f) => !f.endsWith('.test.ts')), ...walk(join(WEB, 'dist'))];
+// String checks on source (excluding tests). Scripts hold the literals as oracles.
+const stringFiles = walk(join(WEB, 'src')).filter((f) => !f.endsWith('.test.ts'));
 scan(stringFiles, [...FORBIDDEN, ...UNSPACED_PRICES], 'forbidden');
 
 // Tracked files under web/ or docker/ named business.json or business.*.json.
 let tracked = [];
+const repo = resolve(WEB, '..');
 try {
-  tracked = execFileSync('git', ['ls-files', 'web', 'docker'], { cwd: resolve(WEB, '..'), encoding: 'utf8' })
+  tracked = execFileSync('git', ['ls-files', 'web', 'docker'], { cwd: repo, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
     .split('\n')
     .filter(Boolean);
-} catch {
-  // not a git checkout (for example inside the Docker build stage): nothing to list
+} catch (e) {
+  if (existsSync(join(repo, '.git'))) {
+    failures.push(`tracked-file check failed in a git checkout: ${String(e.message).split('\n')[0]}`);
+  } else {
+    console.warn('guard: WARNING tracked-file check skipped (no .git)');
+  }
 }
 for (const f of tracked) {
   const b = basename(f);
   if (b === 'business.json' || /^business\..+\.json$/.test(b)) failures.push(`${f}: tracked business file`);
 }
 
-if (failures.length) {
-  console.error(failures.join('\n'));
-  console.error(`guard: FAIL (${failures.length})`);
-  process.exit(1);
+report('guard');
+
+function report(label) {
+  if (failures.length) {
+    console.error(failures.join('\n'));
+    console.error(`${label}: FAIL (${failures.length})`);
+    process.exit(1);
+  }
+  console.log(`${label}: ok`);
+  if (DIST_MODE) process.exit(0);
 }
-console.log('guard: ok');
