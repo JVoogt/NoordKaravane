@@ -1,10 +1,12 @@
 services:
   noordkaravane:
-    image: nginx:alpine
+    build:
+      context: ./web
+    image: noordkaravane-web:latest
     container_name: noordkaravane
     restart: unless-stopped
     ports:
       - "8260:80"
     volumes:
-      - ./site:/usr/share/nginx/html:ro
       - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./docker/security-headers.conf:/etc/nginx/snippets/security-headers.conf:ro
