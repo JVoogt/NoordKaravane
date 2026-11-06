@@ -2,13 +2,16 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 
 const GUARD = resolve(__dirname, '..', 'scripts', 'guard.mjs');
 
 function run(args: string[], env: Record<string, string> = {}) {
+  // Stop git's repo discovery at the fixture root's parent, so a TMPDIR inside a work tree
+  // does not make "no .git at all" resolve to the enclosing repository.
+  const ceiling = env.GUARD_WEB ? { GIT_CEILING_DIRECTORIES: dirname(dirname(env.GUARD_WEB)) } : {};
   const r = spawnSync('node', [GUARD, ...args], {
-    env: { ...process.env, ...env },
+    env: { ...process.env, ...ceiling, ...env },
     encoding: 'utf8',
   });
   return { code: r.status, out: `${r.stdout}${r.stderr}` };
@@ -21,6 +24,7 @@ beforeEach(() => {
   root = mkdtempSync(join(tmpdir(), 'guard-'));
   web = join(root, 'web');
   mkdirSync(join(web, 'src'), { recursive: true });
+  writeFileSync(join(web, 'src', 'a.ts'), 'export const a = 1;\n'); // a scanned file: an empty tree is a failure
 });
 afterEach(() => rmSync(root, { recursive: true, force: true }));
 
@@ -61,6 +65,35 @@ describe('guard --dist', () => {
     const r = run(['--dist'], { GUARD_WEB: web });
     expect(r.code).toBe(0);
     expect(r.out).toMatch(/guard:dist: ok/);
+  });
+});
+
+describe('guard scans something', () => {
+  it('source mode fails when no files were scanned, and prints the count otherwise', () => {
+    rmSync(join(web, 'src', 'a.ts'));
+    const empty = run([], { GUARD_WEB: web });
+    expect(empty.code).not.toBe(0);
+    expect(empty.out).toMatch(/0 files scanned/);
+    expect(empty.out).not.toMatch(/guard: ok/);
+    writeFileSync(join(web, 'src', 'a.ts'), 'export const a = 1;\n');
+    const ok = run([], { GUARD_WEB: web });
+    expect(ok.out).toMatch(/guard: ok \(\d+ files scanned\)/);
+  });
+
+  it('--dist fails on an empty dist/', () => {
+    mkdirSync(join(web, 'dist'));
+    const r = run(['--dist'], { GUARD_WEB: web });
+    expect(r.code).not.toBe(0);
+    expect(r.out).toMatch(/0 files scanned/);
+    expect(r.out).not.toMatch(/guard:dist: ok/);
+  });
+
+  it('--dist fails when dist/ has files but no index.html', () => {
+    mkdirSync(join(web, 'dist'));
+    writeFileSync(join(web, 'dist', 'robots.txt'), 'User-agent: *\n');
+    const r = run(['--dist'], { GUARD_WEB: web });
+    expect(r.code).not.toBe(0);
+    expect(r.out).toMatch(/index\.html/);
   });
 });
 

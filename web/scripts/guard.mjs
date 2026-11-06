@@ -25,6 +25,7 @@ function walk(dir, out = []) {
 }
 
 const failures = [];
+let scanned = 0; // files read by the scan in this mode; zero means the guard looked at nothing
 function scan(files, needles, label) {
   for (const f of files) {
     const lines = readFileSync(f, 'utf8').split('\n');
@@ -44,13 +45,18 @@ if (DIST_MODE) {
     process.exit(1);
   }
   const distFiles = walk(dist);
+  scanned = distFiles.length;
+  // An empty or partial dist is a broken build, not a clean one.
+  if (!distFiles.some((f) => f === join(dist, 'index.html'))) failures.push('dist/index.html not found among the scanned files');
   scan(distFiles, [EM_DASH], 'em dash');
   scan(distFiles, ['aggregateRating', '17:00', ...UNSPACED_PRICES], 'forbidden');
   report('guard:dist');
 }
 
 // U+2014 anywhere in src, scripts, public text files.
-const emDashFiles = ['src', 'scripts', 'public'].flatMap((d) => walk(join(WEB, d)));
+const srcFiles = walk(join(WEB, 'src'));
+const emDashFiles = [...srcFiles, ...['scripts', 'public'].flatMap((d) => walk(join(WEB, d)))];
+scanned = srcFiles.length;
 scan(emDashFiles, [EM_DASH], 'em dash');
 
 // String checks on source (excluding tests). Scripts hold the literals as oracles.
@@ -79,11 +85,12 @@ for (const f of tracked) {
 report('guard');
 
 function report(label) {
+  if (scanned === 0) failures.push(`${label}: 0 files scanned (missing or empty tree)`);
   if (failures.length) {
     console.error(failures.join('\n'));
     console.error(`${label}: FAIL (${failures.length})`);
     process.exit(1);
   }
-  console.log(`${label}: ok`);
+  console.log(`${label}: ok (${scanned} files scanned)`);
   if (DIST_MODE) process.exit(0);
 }
