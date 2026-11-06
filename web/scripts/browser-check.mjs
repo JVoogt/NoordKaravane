@@ -20,7 +20,10 @@ const SHOTS_DIR = process.env.SHOTS_DIR ?? '/tmp/nk-shots';
 const EXECUTABLE =
   process.env.PW_CHROMIUM ??
   '/home/jpvoogt/.cache/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-linux64/chrome-headless-shell';
-const WIDTHS = [320, 390, 768, 1440];
+const STANDARD_WIDTHS = [320, 390, 768, 1440];
+// Phone widths around the point where the quick-link row stops fitting once the web font has swapped in.
+const SWEEP_WIDTHS = [360, 375, 390, 412, 430, 440, 460, 480];
+const WIDTHS = STANDARD_WIDTHS;
 const WEIGHT_LIMIT = 250 * 1024;
 const WA_PREFIX = 'https://wa.me/27833349357';
 const TAB_STOPS = 40;
@@ -62,7 +65,11 @@ async function quicknavState(page) {
 }
 function judgeQuicknav(st) {
   const clipped = st.chips.filter((c) => c.right > st.edge + 0.5);
-  if (clipped.length === 0) return { ok: true, detail: `all ${st.chips.length} chips fully visible` };
+  if (clipped.length === 0) {
+    // Nothing is clipped, so the right-edge fade must be OFF (a fade over a fully visible last chip dims it).
+    const fadeOff = st.maskImage === 'none';
+    return { ok: fadeOff, detail: `all ${st.chips.length} chips fully visible; sw=${st.sw} cw=${st.cw} mask=${fadeOff ? 'none' : 'ON'}` };
+  }
   const overflow = st.sw > st.cw;
   const fade = st.maskImage !== 'none';
   const partial = st.chips.find((c) => c.left < st.edge - PARTIAL_PX && c.right > st.edge + PARTIAL_PX);
@@ -316,15 +323,17 @@ for (const path of PAGES) {
   await context.close();
 }
 
-// Quick-link sweep at common phone widths (Home only: the row is the same component everywhere).
-for (const width of [360, 375, 412]) {
-  const context = await browser.newContext({ viewport: { width, height: 900 } });
-  const page = await context.newPage();
-  await page.goto(BASE + '/', { waitUntil: 'networkidle' });
-  const qn = await quicknavState(page);
-  const j = qn && !qn.hidden ? judgeQuicknav(qn) : { ok: false, detail: 'quicknav missing or hidden' };
-  record('/', width, 'quicknav fits or visibly scrolls', j.ok, j.detail);
-  await context.close();
+// Quick-link sweep at common phone widths, on every checked page.
+for (const path of PAGES) {
+  for (const width of SWEEP_WIDTHS) {
+    const context = await browser.newContext({ viewport: { width, height: 900 } });
+    const page = await context.newPage();
+    await page.goto(BASE + path, { waitUntil: 'networkidle' });
+    const qn = await quicknavState(page);
+    const j = qn && !qn.hidden ? judgeQuicknav(qn) : { ok: false, detail: 'quicknav missing or hidden' };
+    record(path, width, 'quicknav fits or visibly scrolls', j.ok, j.detail);
+    await context.close();
+  }
 }
 
 // The 404 page ships with the build: overflow, header and CTA hold there too.

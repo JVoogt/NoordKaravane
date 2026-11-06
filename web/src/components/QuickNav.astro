@@ -14,7 +14,7 @@ const { links } = Astro.props;
 
 <script>
   // Enhancement only: the right-edge fade is on by default (no JS needed to see that the row scrolls)
-  // and is switched off once the row is scrolled to its end.
+  // and is switched off once the row is scrolled to its end (or when nothing is left to scroll to).
   const row = document.querySelector<HTMLElement>('.mobile-quicknav');
   if (row) {
     const sync = () => {
@@ -28,6 +28,14 @@ const { links } = Astro.props;
       (e.target as HTMLElement).scrollIntoView({ block: 'nearest', inline: 'nearest' });
     });
     window.addEventListener('resize', sync);
+    // The web font changes chip widths after the first sync: measure again once fonts are in, and whenever the
+    // row or a chip changes size, so the fade is never left on over a fully visible last chip.
+    document.fonts?.ready.then(sync);
+    if (typeof ResizeObserver !== 'undefined') {
+      const ro = new ResizeObserver(sync);
+      ro.observe(row);
+      [...row.children].forEach((chip) => ro.observe(chip));
+    }
     sync();
   }
 </script>
