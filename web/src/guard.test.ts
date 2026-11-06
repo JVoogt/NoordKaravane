@@ -61,10 +61,10 @@ describe('guard --dist', () => {
 
   it('passes on a clean dist', () => {
     mkdirSync(join(web, 'dist'));
-    writeFileSync(join(web, 'dist', 'index.html'), '<h1>ok</h1>');
+    writeFileSync(join(web, 'dist', 'index.html'), '<h1>ok</h1><script type="application/ld+json">{}</script>');
     const r = run(['--dist'], { GUARD_WEB: web });
     expect(r.code).toBe(0);
-    expect(r.out).toMatch(/guard:dist: ok/);
+    expect(r.out).toMatch(/guard:dist: ok \(\d+ files scanned, 1 ld\+json blocks\)/);
   });
 });
 
@@ -103,7 +103,7 @@ describe('guard --dist JSON-LD references', () => {
   const ORG = 'https://example.test/#org';
   const withPage = (graph: unknown[]) => {
     mkdirSync(join(web, 'dist', 'services'), { recursive: true });
-    writeFileSync(join(web, 'dist', 'index.html'), '<h1>ok</h1>');
+    writeFileSync(join(web, 'dist', 'index.html'), '<h1>ok</h1><script type="application/ld+json">{}</script>');
     writeFileSync(join(web, 'dist', 'services', 'p.html'), page(graph));
     return run(['--dist'], { GUARD_WEB: web });
   };
@@ -126,8 +126,18 @@ describe('guard --dist JSON-LD references', () => {
   });
 
   it('passes when the referenced @id is a typed node in the graph', () => {
-    const r = withPage([{ '@id': ORG, '@type': ['Organization', 'AutoRepair'] }, { '@type': 'Service', provider: { '@id': ORG } }]);
+    const r = withPage([{ '@id': ORG, '@type': ['Organization', 'AutoRepair'], name: 'Org' }, { '@type': 'Service', provider: { '@id': ORG } }]);
     expect(r.code).toBe(0);
+  });
+
+  it('a {@type, @id}-only node without a name is a reference, not a definition', () => {
+    const bare = withPage([{ '@id': ORG, '@type': 'Organization' }, { '@type': 'Service', provider: { '@id': ORG } }]);
+    expect(bare.code).not.toBe(0);
+    expect(bare.out).toMatch(/provider.*not defined/);
+    rmSync(join(web, 'dist'), { recursive: true, force: true });
+    const inline = withPage([{ '@type': 'Service', provider: { '@id': ORG, '@type': 'Organization' } }]);
+    expect(inline.code).not.toBe(0);
+    expect(inline.out).toMatch(/provider.*not defined/);
   });
 
   it('fails on unparseable JSON-LD', () => {
@@ -136,6 +146,60 @@ describe('guard --dist JSON-LD references', () => {
     const r = run(['--dist'], { GUARD_WEB: web });
     expect(r.code).not.toBe(0);
     expect(r.out).toMatch(/JSON-LD/);
+  });
+});
+
+describe('guard --dist requires JSON-LD', () => {
+  const LD = '<script type="application/ld+json">{}</script>';
+  const tree = (index: string, services: Record<string, string> = {}) => {
+    mkdirSync(join(web, 'dist'), { recursive: true });
+    writeFileSync(join(web, 'dist', 'index.html'), index);
+    for (const [slug, html] of Object.entries(services)) {
+      mkdirSync(join(web, 'dist', 'services', slug), { recursive: true });
+      writeFileSync(join(web, 'dist', 'services', slug, 'index.html'), html);
+    }
+    return run(['--dist'], { GUARD_WEB: web });
+  };
+
+  it('fails when dist/index.html has no JSON-LD block', () => {
+    const r = tree('<h1>ok</h1>');
+    expect(r.code).not.toBe(0);
+    expect(r.out).toMatch(/index\.html.*no JSON-LD/);
+  });
+
+  it('fails when one service page has none, and names that page', () => {
+    const r = tree(LD, { good: LD, bare: '<h1>x</h1>' });
+    expect(r.code).not.toBe(0);
+    expect(r.out).toMatch(/services\/bare\/index\.html.*no JSON-LD/);
+    expect(r.out).not.toMatch(/services\/good\/index\.html.*no JSON-LD/);
+  });
+
+  it.each([
+    ['single quotes', `<script type='application/ld+json'>{}</script>`],
+    ['unquoted', `<script type=application/ld+json>{}</script>`],
+    ['upper case', `<script TYPE="Application/LD+JSON">{}</script>`],
+    ['extra attributes', `<script id="a" type="application/ld+json" data-x="1">{}</script>`],
+  ])('counts a block written with %s', (_name, block) => {
+    const r = tree(block);
+    expect(r.code).toBe(0);
+    expect(r.out).toMatch(/1 ld\+json blocks/);
+  });
+
+  it.each([
+    ['single quotes', `<script type='application/ld+json'>`],
+    ['unquoted', `<script type=application/ld+json>`],
+    ['upper case', `<script TYPE="APPLICATION/LD+JSON">`],
+  ])('still checks references in a block written with %s', (_name, open) => {
+    const doc = JSON.stringify({ '@graph': [{ '@type': 'Service', provider: { '@id': 'https://example.test/#org' } }] });
+    const r = tree(`${open}${doc}</script>`);
+    expect(r.code).not.toBe(0);
+    expect(r.out).toMatch(/provider.*not defined/);
+  });
+
+  it('counts blocks across files in the summary', () => {
+    const r = tree(LD, { a: LD + LD, b: LD });
+    expect(r.code).toBe(0);
+    expect(r.out).toMatch(/guard:dist: ok \(\d+ files scanned, 4 ld\+json blocks\)/);
   });
 });
 

@@ -26,6 +26,7 @@ function walk(dir, out = []) {
 
 const failures = [];
 let scanned = 0; // files read by the scan in this mode; zero means the guard looked at nothing
+let ldBlocks = 0; // JSON-LD blocks found in built pages (dist mode)
 function scan(files, needles, label) {
   for (const f of files) {
     const lines = readFileSync(f, 'utf8').split('\n');
@@ -37,12 +38,17 @@ function scan(files, needles, label) {
   }
 }
 
-// Every provider/seller/publisher @id a page's JSON-LD points at must be DEFINED (a typed node with that @id)
-// in the same graph; a bare reference to an undefined node tells search engines nothing.
+// Every provider/seller/publisher @id a page's JSON-LD points at must be DEFINED in the same graph; a bare
+// reference to an undefined node tells search engines nothing. A definition carries at least @id, @type and
+// name: a {@type, @id}-only node used as a provider/seller/publisher is still just a reference.
 const REF_KEYS = new Set(['provider', 'seller', 'publisher']);
-function checkJsonLdRefs(file) {
+// The type attribute may be upper case and may be double-quoted, single-quoted or unquoted.
+const LD_BLOCK = /<script\b[^>]*?\btype\s*=\s*(?:"application\/ld\+json"|'application\/ld\+json'|application\/ld\+json(?=[\s>]))[^>]*>([\s\S]*?)<\/script>/gi;
+function checkJsonLdRefs(file, required) {
   const html = readFileSync(file, 'utf8');
-  const blocks = [...html.matchAll(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g)];
+  const blocks = [...html.matchAll(LD_BLOCK)];
+  ldBlocks += blocks.length;
+  if (required && blocks.length === 0) failures.push(`${relative(WEB, file)}: no JSON-LD block (every page must ship one)`);
   blocks.forEach((m, n) => {
     let doc;
     try {
@@ -56,13 +62,13 @@ function checkJsonLdRefs(file) {
     const visit = (v, key) => {
       if (Array.isArray(v)) return v.forEach((x) => visit(x, key));
       if (!v || typeof v !== 'object') return;
-      if (v['@id'] && v['@type']) defined.add(v['@id']);
+      if (v['@id'] && v['@type'] && v.name) defined.add(v['@id']);
       else if (v['@id'] && REF_KEYS.has(key)) refs.push({ key, id: v['@id'] });
       for (const [k, x] of Object.entries(v)) visit(x, k);
     };
     visit(doc);
     for (const r of refs) {
-      if (!defined.has(r.id)) failures.push(`${relative(WEB, file)}: ${r.key} ${r.id} is not defined as a typed node in the same JSON-LD graph`);
+      if (!defined.has(r.id)) failures.push(`${relative(WEB, file)}: ${r.key} ${r.id} is not defined (needs @id, @type and name) in the same JSON-LD graph`);
     }
   });
 }
@@ -78,7 +84,9 @@ if (DIST_MODE) {
   scanned = distFiles.length;
   // An empty or partial dist is a broken build, not a clean one.
   if (!distFiles.some((f) => f === join(dist, 'index.html'))) failures.push('dist/index.html not found among the scanned files');
-  distFiles.filter((f) => f.endsWith('.html')).forEach(checkJsonLdRefs);
+  // The home page and every service page must carry JSON-LD; other pages are checked when they have it.
+  const requiresLd = (f) => f === join(dist, 'index.html') || /^services\/[^/]+\/index\.html$/.test(relative(dist, f).split('\\').join('/'));
+  distFiles.filter((f) => f.endsWith('.html')).forEach((f) => checkJsonLdRefs(f, requiresLd(f)));
   scan(distFiles, [EM_DASH], 'em dash');
   scan(distFiles, ['aggregateRating', '17:00', ...UNSPACED_PRICES], 'forbidden');
   report('guard:dist');
@@ -122,6 +130,6 @@ function report(label) {
     console.error(`${label}: FAIL (${failures.length})`);
     process.exit(1);
   }
-  console.log(`${label}: ok (${scanned} files scanned)`);
+  console.log(`${label}: ok (${scanned} files scanned${DIST_MODE ? `, ${ldBlocks} ld+json blocks` : ''})`);
   if (DIST_MODE) process.exit(0);
 }
