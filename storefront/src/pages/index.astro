@@ -1,0 +1,65 @@
+---
+import Base from '~/layouts/Base.astro';
+import ShopList from '~/components/ShopList.astro';
+import { getCatalogue, topCategories, inCategory, categoryFamily } from '~/lib/products';
+import { breadcrumbLd } from '~/lib/seo';
+import { business } from '~/lib/business';
+import { u, LANDING } from '~/lib/url';
+import { zar } from '~/lib/format';
+
+const { products, categories, error } = await getCatalogue();
+if (error) Astro.response.headers.set('Cache-Control', 'no-store');
+const filtered = [...Astro.url.searchParams.keys()].some((k) => ['cat', 'sort', 'q'].includes(k));
+const tops = topCategories(categories).map((c) => ({ ...c, n: products.filter((p) => inCategory(p, categoryFamily(categories, c.handle))).length })).filter((c) => c.n > 0);
+const imgFor = (h: string) => products.find((p) => inCategory(p, categoryFamily(categories, h)) && p.images[0])?.images[0];
+---
+<Base
+  title="Caravan & camping gear shop"
+  description="Lithium batteries, lighting, water pumps, towing cameras, braai gear and first aid kits for caravans and campers. Picked and fitted by a caravan workshop in Pretoria North. Pay by EFT."
+  path={u('/')}
+  noindex={filtered}
+  jsonld={[breadcrumbLd([{ name: 'Home', path: '/' }, { name: 'Shop', path: u('/') }])]}
+>
+  <section class="border-b border-ink-3">
+    <div class="wrap grid gap-8 pb-12 pt-14 lg:grid-cols-[1.4fr_1fr] lg:items-end lg:pb-16 lg:pt-20">
+      <div>
+        <p class="label text-wine">Noord Karavane shop</p>
+        <h1 class="display mt-3 text-[clamp(3.2rem,10vw,7rem)]">Gear for the road,<br /><span class="text-wine">from caravan people.</span></h1>
+        <p class="mt-5 max-w-[56ch] text-[1.15rem] text-muted">Batteries, lighting, water, cooking, safety and camp kit. Chosen and fitted by the workshop that services your caravan. Pay by EFT, deliver countrywide, or collect from us in Pretoria North.</p>
+        <div class="mt-8 flex flex-wrap gap-3">
+          <a class="btn btn--lg" href="#products">Browse the shop</a>
+          <a class="btn btn--ghost btn--lg" href={LANDING}>Workshop &amp; servicing</a>
+        </div>
+      </div>
+      <ul class="grid gap-3 text-[0.98rem] text-muted">
+        <li class="border-l-2 border-wine pl-4"><strong class="text-ink">Free delivery over {zar(business.shipping.free_shipping_threshold_zar)}</strong> on parcels up to {business.shipping.free_shipping_max_weight_g / 1000} kg</li>
+        <li class="border-l-2 border-wine pl-4"><strong class="text-ink">Collect free</strong> from 252 General Beyers Street, weekdays 08:00 to 17:00</li>
+        <li class="border-l-2 border-wine pl-4"><strong class="text-ink">Fitting available</strong> at the workshop for batteries, cameras and electrics</li>
+      </ul>
+    </div>
+  </section>
+
+  {tops.length > 0 && !filtered && (
+    <section class="wrap py-12" aria-labelledby="cats-title">
+      <h2 id="cats-title" class="display text-[clamp(2rem,5vw,3rem)]">Shop by category</h2>
+      <ul class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {tops.map((c) => {
+          const im = imgFor(c.handle);
+          return (
+            <li>
+              <a href={u(`/category/${c.handle}/`)} class="group grid grid-cols-[5.5rem_1fr] items-center gap-4 border border-ink-3 bg-paper-2 p-3 no-underline transition-colors hover:border-wine">
+                <span class="block aspect-square overflow-hidden bg-paper-3">{im && <img src={im.src} alt="" width="176" height="176" loading="lazy" class="h-full w-full object-contain" />}</span>
+                <span><span class="block font-display text-[1.6rem] leading-none tracking-[0.03em] group-hover:text-wine-lit">{c.name}</span><span class="mt-1 block text-[0.9rem] text-muted">{c.n} {c.n === 1 ? 'product' : 'products'}</span></span>
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  )}
+
+  <section id="products" class="wrap pb-10 pt-6" aria-labelledby="all-title">
+    <h2 id="all-title" class="display mb-6 text-[clamp(2rem,5vw,3rem)]">All products</h2>
+    <ShopList products={products} categories={categories} error={error} basePath={u('/')} />
+  </section>
+</Base>

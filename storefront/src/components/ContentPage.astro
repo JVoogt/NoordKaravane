@@ -1,0 +1,49 @@
+---
+import { u } from '~/lib/url';
+import Base from '~/layouts/Base.astro';
+import { getEntry } from '~/lib/content';
+import { breadcrumbLd } from '~/lib/seo';
+
+interface Props { collection: 'legal' | 'pages'; id: string; path: string; fallbackTitle: string; parent?: { name: string; path: string }; toc?: boolean }
+const { collection, id, path, fallbackTitle, parent, toc = collection === 'legal' } = Astro.props;
+const entry = await getEntry(collection, id);
+if (!entry) Astro.response.headers.set('Cache-Control', 'no-store');
+const crumbs = [{ name: 'Home', path: '/' }, { name: 'Shop', path: u('/') }, ...(parent ? [parent] : []), { name: entry?.title ?? fallbackTitle, path }];
+const fmt = (d: Date) => d.toLocaleDateString('en-ZA', { year: 'numeric', month: 'long', day: 'numeric' });
+const headings = (entry?.headings ?? []).filter((h) => h.depth === 2);
+// The page title comes from frontmatter; drop a duplicate leading <h1> from the body.
+const body = entry ? entry.html.replace(/^\s*<h1[^>]*>.*?<\/h1>\s*/s, '') : '';
+---
+<Base title={entry?.title ?? fallbackTitle} description={entry?.description ?? ''} path={path} noindex={!entry} jsonld={[breadcrumbLd(crumbs)]}>
+  <div class="rail rail--paper" aria-hidden="true"></div>
+  <div class="wrap pb-6 pt-10">
+    <nav aria-label="Breadcrumb" class="text-[0.92rem]"><a href={u('/')}>Shop</a> / {parent && <><a href={parent.path}>{parent.name}</a> / </>}<span class="text-muted">{entry?.title ?? fallbackTitle}</span></nav>
+  </div>
+  <div class="wrap pb-12">
+    <div class:list={['grid gap-10', toc && headings.length > 3 && 'lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-16']}>
+      {toc && headings.length > 3 && (
+        <nav aria-label="On this page" class="hidden lg:block">
+          <div class="sticky top-28">
+            <p class="label text-muted">On this page</p>
+            <ul class="mt-3 border-l-2 border-ink">
+              {headings.map((h) => <li><a href={`#${h.id}`} class="block py-1.5 pl-4 text-[0.92rem] no-underline hover:text-wine">{h.text}</a></li>)}
+            </ul>
+          </div>
+        </nav>
+      )}
+      <div>
+        <h1 class="display text-[clamp(2.4rem,7vw,4.6rem)] max-w-[18ch]">{entry?.title ?? fallbackTitle}</h1>
+        {entry && <p class="typed mt-3 text-[0.82rem] text-muted">Updated {fmt(entry.updated)}</p>}
+        {entry ? (
+          <div class="prose-nk mt-8"><Fragment set:html={body} /></div>
+        ) : (
+          <div class="mt-8 max-w-[52ch]">
+            <p class="soft text-3xl">This page is still being written.</p>
+            <p class="mt-3 text-muted">Questions in the meantime? <a href={u('/contact')}>Get in touch</a> and we will help.</p>
+          </div>
+        )}
+        <slot />
+      </div>
+    </div>
+  </div>
+</Base>

@@ -1,0 +1,24 @@
+---
+import Base from '~/layouts/Base.astro';
+import ShopList from '~/components/ShopList.astro';
+import { getCatalogue } from '~/lib/products';
+import { breadcrumbLd } from '~/lib/seo';
+import { u } from '~/lib/url';
+
+const { handle } = Astro.params;
+const { products, categories, error } = await getCatalogue();
+const cat = categories.find((c) => c.handle === handle);
+if (!cat) { Astro.response.headers.set('Cache-Control', 'no-store'); return Astro.rewrite(u('/404')); }
+if (error) Astro.response.headers.set('Cache-Control', 'no-store');
+const parent = cat.parent ? categories.find((c) => c.handle === cat.parent) : null;
+const filtered = [...Astro.url.searchParams.keys()].some((k) => ['sort', 'q'].includes(k));
+const crumbs = [{ name: 'Home', path: '/' }, { name: 'Shop', path: u('/') }, ...(parent ? [{ name: parent.name, path: u(`/category/${parent.handle}/`) }] : []), { name: cat.name, path: u(`/category/${cat.handle}/`) }];
+---
+<Base title={`${cat.name} for caravans & camping`} description={`Shop ${cat.name.toLowerCase()} from Noord Karavane, a caravan workshop in Pretoria North. Pay by EFT, delivered countrywide or collect from us.`} path={u(`/category/${cat.handle}/`)} noindex={filtered} jsonld={[breadcrumbLd(crumbs)]}>
+  <div class="rail" aria-hidden="true"></div>
+  <div class="wrap pb-6 pt-10">
+    <nav aria-label="Breadcrumb" class="mb-5 text-[0.92rem]"><ol class="flex flex-wrap gap-x-2">{crumbs.slice(1).map((c, i, a) => <li>{i < a.length - 1 ? <><a href={c.path}>{c.name}</a> <span aria-hidden="true">/</span></> : <span aria-current="page" class="text-muted">{c.name}</span>}</li>)}</ol></nav>
+    <h1 class="display text-[clamp(2.8rem,9vw,6rem)]">{cat.name}</h1>
+  </div>
+  <div class="wrap pb-10 pt-4"><ShopList products={products} categories={categories} error={error} basePath={u(`/category/${cat.handle}/`)} lockedCategory={cat.handle} /></div>
+</Base>

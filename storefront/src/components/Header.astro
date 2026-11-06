@@ -1,0 +1,45 @@
+---
+import { MAIN_NAV } from '~/lib/nav';
+import { business } from '~/lib/business';
+import { zar } from '~/lib/format';
+import { u, LANDING } from '~/lib/url';
+const path = Astro.url.pathname;
+const cur = (href: string) => (href === u('/') ? (path === u('/').replace(/\/$/, '') || path === u('/') || path.startsWith(u('/category/')) ? 'page' : undefined) : path === href || path.startsWith(href + '/') ? 'page' : undefined);
+---
+<div class="bg-wine text-center text-paper">
+  <p class="px-4 py-2 text-[0.78rem] font-medium uppercase tracking-[0.08em]"><span class="max-sm:hidden">Authorised Kampi agent &middot; Collect free from our Pretoria North workshop &middot; </span>Free delivery over {zar(business.shipping.free_shipping_threshold_zar)} &middot; Pay by EFT</p>
+</div>
+<header class="sticky top-0 z-50 border-b border-ink-3 bg-paper/90 backdrop-blur">
+  <div class="wrap flex h-[4.25rem] items-center justify-between gap-4">
+    <a href={u('/')} class="group flex min-h-11 items-center gap-3 no-underline" aria-label="Noord Karavane shop, home">
+      <span class="grid size-10 place-items-center overflow-hidden rounded-full bg-ink"><img src={u('/logo-transparent.png')} alt="" width="34" height="34" class="size-[34px] object-contain" /></span>
+      <span class="font-display text-[1.5rem] leading-none tracking-[0.08em]">Noord Karavane<small class="mt-1 block font-sans text-[0.62rem] font-medium normal-case tracking-[0.18em] text-muted">Shop</small></span>
+    </a>
+
+    <nav class="hidden items-center gap-1 lg:flex" aria-label="Main">
+      {MAIN_NAV.map((l) => (
+        <a href={l.href} aria-current={cur(l.href)} class="relative inline-flex min-h-11 items-center px-3 text-[0.9rem] font-medium text-muted no-underline hover:text-ink aria-[current=page]:text-ink after:absolute after:inset-x-3 after:bottom-1.5 after:h-[2px] after:origin-left after:scale-x-0 after:bg-wine after:transition-transform hover:after:scale-x-100 aria-[current=page]:after:scale-x-100 motion-reduce:after:transition-none">{l.label}</a>
+      ))}
+      <a href={LANDING} class="inline-flex min-h-11 items-center px-3 text-[0.9rem] font-medium text-muted no-underline hover:text-ink">Workshop &amp; servicing &#8599;</a>
+    </nav>
+
+    <div class="flex items-center gap-1">
+      <a href={u('/cart')} class="relative inline-flex min-h-11 min-w-11 items-center justify-center gap-2 px-2 text-[0.9rem] font-medium no-underline" aria-label="Cart">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1.2 11.2a1.5 1.5 0 0 1-1.5 1.3H7.7a1.5 1.5 0 0 1-1.5-1.3L5 8Z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg>
+        <span class="hidden sm:inline">Cart</span>
+        <span data-cart-count class="typed grid min-w-5 place-items-center rounded-[2px] bg-wine px-1 text-[0.75rem] font-bold leading-5 text-paper" hidden>0</span>
+      </a>
+      <details class="relative lg:hidden" data-menu>
+        <summary class="inline-flex min-h-11 min-w-11 cursor-pointer list-none items-center justify-center" aria-label="Menu">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+        </summary>
+        <nav class="fixed inset-x-0 top-[calc(4.25rem+2.25rem)] z-50 max-h-[calc(100svh-6.5rem)] overflow-y-auto border-b border-ink-3 bg-paper-2 px-[var(--gutter)] pb-6 pt-2" aria-label="Mobile">
+          <ul>
+            {MAIN_NAV.map((l) => <li><a href={l.href} class="flex min-h-12 items-center border-b border-ink-3 font-display text-[1.6rem] tracking-[0.04em] no-underline">{l.label}</a></li>)}
+            <li><a href={LANDING} class="flex min-h-12 items-center font-display text-[1.6rem] tracking-[0.04em] no-underline">Workshop &amp; servicing &#8599;</a></li>
+          </ul>
+        </nav>
+      </details>
+    </div>
+  </div>
+</header>

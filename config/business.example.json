@@ -1,0 +1,64 @@
+{
+  "_note": "Single source of truth for business details. Replace every {{PLACEHOLDER}} before launch. Consumed by storefront (footer, legal pages, schema) and backend (emails, EFT details). Copy kept at backend/src/config/business.json (keep in sync).",
+  "brand": "Noord Karavane",
+  "domain": "noordkaravane.co.za",
+  "tagline": "Caravan specialists in Pretoria North.",
+  "legal_name": "REPLACE_ME",
+  "legal_status": "Private company (Pty) Ltd",
+  "registration_number": "REPLACE_ME",
+  "vat_number": "REPLACE_ME",
+  "physical_address": "252 General Beyers Street, Pretoria North, Pretoria, 0182",
+  "postal_address": "252 General Beyers Street, Pretoria North, Pretoria, 0182",
+  "phone": "REPLACE_ME",
+  "whatsapp": "REPLACE_ME",
+  "email_general": "REPLACE_ME",
+  "email_orders": "REPLACE_ME",
+  "email_privacy": "REPLACE_ME",
+  "information_officer": "REPLACE_ME",
+  "instagram": "",
+  "facebook": "https://facebook.com/NoordKaravane",
+  "currency": "ZAR",
+  "production_lead_time_days": "2-5 working days",
+  "eft_payment_window_hours": 48,
+  "eft_reminder_after_hours": 24,
+  "bank": {
+    "account_name": "REPLACE_ME",
+    "bank_name": "REPLACE_ME",
+    "account_number": "REPLACE_ME",
+    "branch_code": "REPLACE_ME",
+    "account_type": "REPLACE_ME"
+  },
+  "shipping": {
+    "_note": "Placeholder prices, CONFIRM. Priced by total parcel weight (grams). Until real weights are known, each product carries a representative weight from tier_weights_g (see catalogue/products.json ship_tier).",
+    "tier_weights_g": {
+      "small": 500,
+      "medium": 3000,
+      "bulky": 15000
+    },
+    "pudo_max_weight_g": 1000,
+    "pudo_locker_price_zar": 99,
+    "tcg_bands": [
+      {
+        "max_weight_g": 1000,
+        "price_zar": 85
+      },
+      {
+        "max_weight_g": 5000,
+        "price_zar": 130
+      },
+      {
+        "max_weight_g": null,
+        "price_zar": 350
+      }
+    ],
+    "free_shipping_threshold_zar": 2500,
+    "free_shipping_max_weight_g": 5000,
+    "collect_from_workshop": true
+  },
+  "dropship_suppliers": {
+    "TFR-": {
+      "name": "REPLACE_ME",
+      "email": "REPLACE_ME"
+    }
+  }
+}

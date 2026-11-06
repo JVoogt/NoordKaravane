@@ -25,3 +25,20 @@ Thumbs.db
 *.bak
 *.orig
 *.tmp
+
+# shop stack (phase 2+)
+node_modules/
+.medusa/
+.astro/
+dist/
+infra/.env
+infra/.env.*
+!infra/.env.example
+!infra/.env.staging.example
+infra/backups/
+infra/backups-staging/
+infra/.last_tag
+infra/build-*.log
+
+# real business details (bank, VAT, reg no). Public repo: never commit.
+config/business.json

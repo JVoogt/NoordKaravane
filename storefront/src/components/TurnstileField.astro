@@ -1,0 +1,5 @@
+---
+import { env } from '~/lib/env';
+const key = env('PUBLIC_TURNSTILE_SITE_KEY');
+---
+{key && <div class="cf-turnstile-slot min-h-[65px]" data-sitekey={key} data-theme="auto"></div>}

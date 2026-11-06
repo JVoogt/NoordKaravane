@@ -1,0 +1,36 @@
+---
+import { u } from '~/lib/url';
+import Base from '~/layouts/Base.astro';
+import { getEntry } from '~/lib/content';
+import { parseFaq, faqLd, breadcrumbLd } from '~/lib/seo';
+
+const entry = await getEntry('pages', 'faq');
+if (!entry) Astro.response.headers.set('Cache-Control', 'no-store');
+const qa = entry ? parseFaq(entry.html) : [];
+// Anything before the first heading is an intro paragraph.
+const intro = entry ? entry.html.split(/<h[23]/)[0].replace(/<h1[^>]*>.*?<\/h1>/s, '') : '';
+---
+<Base title={entry?.title ?? 'FAQ'} description={entry?.description ?? 'Answers about sizing, EFT payment, delivery and returns.'} path={u('/faq')} noindex={!entry}
+  jsonld={[breadcrumbLd([{ name: 'Home', path: u('/') }, { name: 'FAQ', path: u('/faq') }]), ...(qa.length ? [faqLd(qa)] : [])]}>
+  <div class="rail rail--paper" aria-hidden="true"></div>
+  <div class="wrap wrap-narrow pb-16 pt-12">
+    <h1 class="display text-[clamp(2.6rem,8vw,5rem)]">Questions, <span class="soft normal-case tracking-normal text-wine">answered</span></h1>
+    {intro.trim() && <div class="prose-nk mt-6" set:html={intro} />}
+    {qa.length ? (
+      <div class="mt-10 border-t-2 border-ink">
+        {qa.map((x, i) => (
+          <details class="group border-b border-ink/40" open={i === 0}>
+            <summary class="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 py-3 font-display text-[1.2rem] font-extrabold uppercase leading-tight">
+              <span>{x.q}</span>
+              <svg class="shrink-0 transition-transform group-open:rotate-45 motion-reduce:transition-none" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 4v16M4 12h16" /></svg>
+            </summary>
+            <div class="prose-nk pb-5" set:html={x.aHtml} />
+          </details>
+        ))}
+      </div>
+    ) : (
+      <p class="soft mt-8 text-3xl">The FAQ is being written. <a href={u('/contact')}>Ask us directly</a>.</p>
+    )}
+    <p class="mt-10 text-[1.05rem]">Still stuck? <a href={u('/contact')}>Talk to a human</a>.</p>
+  </div>
+</Base>
