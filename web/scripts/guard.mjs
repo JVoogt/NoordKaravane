@@ -37,6 +37,36 @@ function scan(files, needles, label) {
   }
 }
 
+// Every provider/seller/publisher @id a page's JSON-LD points at must be DEFINED (a typed node with that @id)
+// in the same graph; a bare reference to an undefined node tells search engines nothing.
+const REF_KEYS = new Set(['provider', 'seller', 'publisher']);
+function checkJsonLdRefs(file) {
+  const html = readFileSync(file, 'utf8');
+  const blocks = [...html.matchAll(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g)];
+  blocks.forEach((m, n) => {
+    let doc;
+    try {
+      doc = JSON.parse(m[1]);
+    } catch (e) {
+      failures.push(`${relative(WEB, file)}: unparseable JSON-LD block ${n + 1}: ${e.message}`);
+      return;
+    }
+    const defined = new Set();
+    const refs = [];
+    const visit = (v, key) => {
+      if (Array.isArray(v)) return v.forEach((x) => visit(x, key));
+      if (!v || typeof v !== 'object') return;
+      if (v['@id'] && v['@type']) defined.add(v['@id']);
+      else if (v['@id'] && REF_KEYS.has(key)) refs.push({ key, id: v['@id'] });
+      for (const [k, x] of Object.entries(v)) visit(x, k);
+    };
+    visit(doc);
+    for (const r of refs) {
+      if (!defined.has(r.id)) failures.push(`${relative(WEB, file)}: ${r.key} ${r.id} is not defined as a typed node in the same JSON-LD graph`);
+    }
+  });
+}
+
 if (DIST_MODE) {
   // Built output. dist/ MUST exist: a missing build is a failure, never a silent skip.
   const dist = join(WEB, 'dist');
@@ -48,6 +78,7 @@ if (DIST_MODE) {
   scanned = distFiles.length;
   // An empty or partial dist is a broken build, not a clean one.
   if (!distFiles.some((f) => f === join(dist, 'index.html'))) failures.push('dist/index.html not found among the scanned files');
+  distFiles.filter((f) => f.endsWith('.html')).forEach(checkJsonLdRefs);
   scan(distFiles, [EM_DASH], 'em dash');
   scan(distFiles, ['aggregateRating', '17:00', ...UNSPACED_PRICES], 'forbidden');
   report('guard:dist');

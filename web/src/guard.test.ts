@@ -97,6 +97,48 @@ describe('guard scans something', () => {
   });
 });
 
+describe('guard --dist JSON-LD references', () => {
+  const page = (graph: unknown[]) =>
+    `<h1>x</h1><script type="application/ld+json">${JSON.stringify({ '@context': 'https://schema.org', '@graph': graph })}</script>`;
+  const ORG = 'https://example.test/#org';
+  const withPage = (graph: unknown[]) => {
+    mkdirSync(join(web, 'dist', 'services'), { recursive: true });
+    writeFileSync(join(web, 'dist', 'index.html'), '<h1>ok</h1>');
+    writeFileSync(join(web, 'dist', 'services', 'p.html'), page(graph));
+    return run(['--dist'], { GUARD_WEB: web });
+  };
+
+  it('fails when a provider @id has no typed node in the same graph', () => {
+    const r = withPage([{ '@type': 'Service', provider: { '@id': ORG } }]);
+    expect(r.code).not.toBe(0);
+    expect(r.out).toMatch(/services\/p\.html.*provider.*https:\/\/example\.test\/#org.*not defined/);
+  });
+
+  it('fails for seller and publisher references too, and for a node defined with no @type', () => {
+    const r = withPage([
+      { '@id': ORG, name: 'untyped' },
+      { '@type': 'Offer', seller: { '@id': ORG } },
+      { '@type': 'WebSite', publisher: { '@id': ORG } },
+    ]);
+    expect(r.code).not.toBe(0);
+    expect(r.out).toMatch(/seller/);
+    expect(r.out).toMatch(/publisher/);
+  });
+
+  it('passes when the referenced @id is a typed node in the graph', () => {
+    const r = withPage([{ '@id': ORG, '@type': ['Organization', 'AutoRepair'] }, { '@type': 'Service', provider: { '@id': ORG } }]);
+    expect(r.code).toBe(0);
+  });
+
+  it('fails on unparseable JSON-LD', () => {
+    mkdirSync(join(web, 'dist'));
+    writeFileSync(join(web, 'dist', 'index.html'), '<script type="application/ld+json">{not json</script>');
+    const r = run(['--dist'], { GUARD_WEB: web });
+    expect(r.code).not.toBe(0);
+    expect(r.out).toMatch(/JSON-LD/);
+  });
+});
+
 describe('guard (source) does not depend on dist', () => {
   it('ignores a dirty dist/ in source mode', () => {
     mkdirSync(join(web, 'dist'));

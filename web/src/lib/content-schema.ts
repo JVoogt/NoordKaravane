@@ -4,7 +4,7 @@ import { expandTokens } from './faq';
 
 // Every string field passes through expandTokens, so {hours} and {price:<id>} are resolved at build time
 // and an unknown token fails the build.
-export const text = z.string().min(1).transform(expandTokens);
+export const text = z.string().trim().min(1).transform(expandTokens);
 
 export const serviceSchema = z.object({
   title: text,
@@ -16,7 +16,7 @@ export const serviceSchema = z.object({
   ctaLabel: text,
   schemaName: text,
   facts: z.array(z.object({ k: text, v: text })).optional(),
-  heroImage: z.object({ src: z.string(), alt: z.string().min(5) }).optional(),
+  heroImage: z.object({ src: z.string().min(1), alt: z.string().min(5) }).optional(),
   faq: z
     .array(
       z.object({

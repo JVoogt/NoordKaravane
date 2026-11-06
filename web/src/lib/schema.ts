@@ -18,7 +18,7 @@ export function priceRange(): string {
   return fmtR(Math.min(...prices)) + ' - ' + fmtR(Math.max(...prices));
 }
 
-/** The full AutoRepair entity (Home and Find us). Other pages reference it with orgRef(). */
+/** The full AutoRepair entity (Home and Find us). Service pages define the smaller orgStubNode() with the same @id; guard:dist checks that every provider/seller/publisher reference resolves to a typed node in its own graph. */
 export function orgNode(): Node {
   return {
     '@type': BUSINESS.schemaType,

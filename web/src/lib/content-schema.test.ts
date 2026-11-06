@@ -6,6 +6,10 @@ describe('content text field', () => {
     expect(text.safeParse('').success).toBe(false);
   });
 
+  it.each(['   ', '\t\n', '\u00a0'])('rejects whitespace-only %j', (v) => {
+    expect(text.safeParse(v).success).toBe(false);
+  });
+
   it('expands tokens in a non-empty string', () => {
     const r = text.safeParse('Open {hours}');
     expect(r.success).toBe(true);
@@ -22,6 +26,12 @@ describe('service frontmatter schema', () => {
 
   it('accepts a complete entry', () => {
     expect(serviceSchema.safeParse(base).success).toBe(true);
+  });
+
+  it('rejects a whitespace-only title and an empty heroImage.src', () => {
+    expect(serviceSchema.safeParse({ ...base, title: '   ' }).success).toBe(false);
+    expect(serviceSchema.safeParse({ ...base, heroImage: { src: '', alt: 'A caravan on a lift' } }).success).toBe(false);
+    expect(serviceSchema.safeParse({ ...base, heroImage: { src: '/a.jpg', alt: 'A caravan on a lift' } }).success).toBe(true);
   });
 
   it.each(['whatsappText', 'title'])('rejects an empty %s', (k) => {
