@@ -23,7 +23,7 @@ const FALLBACK: Business = {
   information_officer: '{{INFORMATION_OFFICER}}', instagram: '', facebook: 'https://facebook.com/NoordKaravane',
   currency: 'ZAR', production_lead_time_days: '2-5 working days', eft_payment_window_hours: 48, eft_reminder_after_hours: 24,
   bank: { account_name: '{{BANK_ACCOUNT_NAME}}', bank_name: '{{BANK_NAME}}', account_number: '{{BANK_ACCOUNT_NUMBER}}', branch_code: '{{BRANCH_CODE}}', account_type: '{{ACCOUNT_TYPE}}' },
-  shipping: { tier_weights_g: { small: 500, medium: 3000, bulky: 15000 }, pudo_max_weight_g: 1000, pudo_locker_price_zar: 60, tcg_bands: [{ max_weight_g: 1000, price_zar: 85 }, { max_weight_g: 5000, price_zar: 130 }, { max_weight_g: null, price_zar: 350 }], free_shipping_threshold_zar: 2500, free_shipping_max_weight_g: 5000, collect_from_workshop: true },
+  shipping: { tier_weights_g: { small: 500, medium: 3000, bulky: 15000 }, pudo_max_weight_g: 1000, pudo_locker_price_zar: 99, tcg_bands: [{ max_weight_g: 1000, price_zar: 85 }, { max_weight_g: 5000, price_zar: 130 }, { max_weight_g: null, price_zar: 350 }], free_shipping_threshold_zar: 2500, free_shipping_max_weight_g: 5000, collect_from_workshop: true },
 };
 
 let cached: Business | null = null;
