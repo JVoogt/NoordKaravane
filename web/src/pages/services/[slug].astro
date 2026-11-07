@@ -1,7 +1,13 @@
 ---
 import { getCollection, render } from 'astro:content';
 import Service from '../../layouts/Service.astro';
+import Estimator from '../../components/Estimator.astro';
+import InspectionReport from '../../components/InspectionReport.astro';
+import LiftKitSpecs from '../../components/LiftKitSpecs.astro';
+import ProcessSteps from '../../components/ProcessSteps.astro';
 import { BUSINESS } from '../../data/business';
+import { AXLE_OPTIONS, fmtR, type AxleId } from '../../data/pricing';
+import { DEFAULT_AXLE } from '../../lib/estimator';
 
 export async function getStaticPaths() {
   const entries = await getCollection('services');
@@ -10,6 +16,14 @@ export async function getStaticPaths() {
 
 const { entry } = Astro.props;
 const { Content } = await render(entry);
+
+// Static package cards for the caravan page (old page wording). Amounts come from pricing.ts.
+const packages: Array<{ id: AxleId; mark: string; name: string; meta: string }> = [
+  { id: 'unbraked-1', mark: 'A', name: 'Single axle, unbraked', meta: 'Safety · Brakes · Bearings' },
+  { id: 'braked-1', mark: 'B', name: 'Single axle, braked', meta: 'Most popular: full service' },
+  { id: 'braked-2', mark: 'C', name: 'Double axle, braked', meta: 'For bigger rigs & tourers' },
+];
+const amountOf = (id: AxleId): string => fmtR(AXLE_OPTIONS.find((o) => o.id === id)!.price);
 ---
 
 <Service entry={entry}>
@@ -22,4 +36,37 @@ const { Content } = await render(entry);
       {BUSINESS.crossBorder.map((c) => <li>{c.name}</li>)}
     </ul>
   )}
+
+  {entry.id === 'caravan-service' && (
+    <Fragment slot="extras">
+      <ProcessSteps />
+      <InspectionReport />
+      <section id="pricing" class="block">
+        <div class="container">
+          <div class="sec-head">
+            <div class="sec-num" aria-hidden="true">&sect; 03 / 03</div>
+            <h2 class="sec-title">Straightforward <span class="accent">packages.</span></h2>
+            <p class="sec-sub">Pick a package or build a custom estimate. Parts quoted separately; nothing sneaks on.</p>
+          </div>
+          <div class="pricing-wrap">
+            <div class="price-cards">
+              {packages.map((p) => (
+                <div class:list={['price', { active: p.id === DEFAULT_AXLE }]} data-package={p.id}>
+                  <div class="price-mark" aria-hidden="true">{p.mark}</div>
+                  <div>
+                    <h3>{p.name}</h3>
+                    <div class="meta">{p.meta}</div>
+                  </div>
+                  <div class="amt">{amountOf(p.id)}<sub>from</sub></div>
+                </div>
+              ))}
+            </div>
+            <Estimator />
+          </div>
+        </div>
+      </section>
+    </Fragment>
+  )}
+
+  {entry.id === 'lift-kits' && <LiftKitSpecs slot="extras" />}
 </Service>

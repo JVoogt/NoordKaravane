@@ -1,0 +1,49 @@
+// Client enhancement for Estimator.astro. All pricing and message logic lives in lib/estimator; this only reads the
+// pressed buttons, asks estimate() for the result and writes the total and the CTA href back into the page.
+import { ADDONS, AXLE_OPTIONS, type AddonId, type AxleId } from '../data/pricing';
+import { DEFAULT_AXLE, estimate } from '../lib/estimator';
+
+const axleIds = new Set<string>(AXLE_OPTIONS.map((o) => o.id));
+const addonIds = new Set<string>(ADDONS.map((a) => a.id));
+const isAxleId = (s: string | undefined): s is AxleId => s !== undefined && axleIds.has(s);
+const isAddonId = (s: string | undefined): s is AddonId => s !== undefined && addonIds.has(s);
+
+function init(root: HTMLElement): void {
+  const axleButtons = [...root.querySelectorAll<HTMLButtonElement>('[data-axle]')];
+  const addonButtons = [...root.querySelectorAll<HTMLButtonElement>('[data-addon]')];
+  const total = root.querySelector<HTMLElement>('[data-est-total]');
+  const cta = root.querySelector<HTMLAnchorElement>('[data-est-cta]');
+  // The static package cards sit outside the estimator; the one matching the chosen axle gets the active highlight.
+  const cards = [...document.querySelectorAll<HTMLElement>('[data-package]')];
+
+  let axle: AxleId = DEFAULT_AXLE;
+  const picked = new Set<AddonId>();
+
+  const render = (): void => {
+    const result = estimate(axle, [...picked]);
+    if (total) total.textContent = result.totalLabel;
+    if (cta) cta.href = result.url;
+    axleButtons.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.axle === axle)));
+    addonButtons.forEach((b) => b.setAttribute('aria-pressed', String(isAddonId(b.dataset.addon) && picked.has(b.dataset.addon))));
+    cards.forEach((c) => c.classList.toggle('active', c.dataset.package === axle));
+  };
+
+  axleButtons.forEach((b) =>
+    b.addEventListener('click', () => {
+      if (isAxleId(b.dataset.axle)) axle = b.dataset.axle;
+      render();
+    }),
+  );
+  addonButtons.forEach((b) =>
+    b.addEventListener('click', () => {
+      const id = b.dataset.addon;
+      if (!isAddonId(id)) return;
+      if (picked.has(id)) picked.delete(id);
+      else picked.add(id);
+      render();
+    }),
+  );
+  render();
+}
+
+document.querySelectorAll<HTMLElement>('[data-estimator]').forEach(init);
