@@ -82,6 +82,12 @@ function judgeQuicknav(st) {
 // Press Tab from the top of the page; every chip must receive focus and be fully inside the row's visible box.
 async function quicknavTabReach(page, chipCount) {
   await page.evaluate(() => {
+    // blur() alone leaves Chrome's sequential-focus start point wherever the earlier Tab walk ended (on a long
+    // page that is the footer), so the first Tabs wrap around and the 14-press budget runs out before the chips.
+    // Focusing then blurring the skip link at the top of the page moves the start point back there.
+    const skip = document.querySelector('a.sr-only');
+    skip?.focus();
+    skip?.blur();
     document.activeElement?.blur();
     window.scrollTo(0, 0);
     document.querySelector('.mobile-quicknav').scrollLeft = 0;
