@@ -9,6 +9,7 @@ import ServiceCard from '../components/ServiceCard.astro';
 import { BUSINESS } from '../data/business';
 import { servicePath, type ServiceSlug } from '../data/routes';
 import { serviceMeta } from '../data/services';
+import { assertRelatedOk } from '../lib/content-schema';
 import { buildGraph, breadcrumbNode, faqNode, jsonLd, orgStubNode, serviceNode } from '../lib/schema';
 import { waUrl } from '../lib/whatsapp';
 
@@ -18,6 +19,7 @@ interface Props {
 const { entry } = Astro.props;
 const d = entry.data;
 const slug = entry.id as ServiceSlug;
+assertRelatedOk(slug, d.related);
 const path = servicePath(slug);
 
 const crumbs = [
