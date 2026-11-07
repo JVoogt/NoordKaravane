@@ -7,7 +7,7 @@ services:
       context: ./web
       additional_contexts:
         nkdocker: ./docker
-    image: noordkaravane-web:latest
+    image: noordkaravane-web:${NK_IMAGE_TAG:-latest}
     container_name: noordkaravane
     restart: unless-stopped
     ports:
