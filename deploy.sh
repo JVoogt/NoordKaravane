@@ -147,16 +147,16 @@ fi
 
 # Record the running web image id before anything is built: a build moves tags, and some Docker image
 # stores then drop the old image.
-cid="$(docker compose ps -q "$SERVICE")" || { echo "DEPLOY ABORTED before the build: docker compose ps failed, so what is running is unknown"; exit 1; }
+cid="$(docker compose ps -aq "$SERVICE")" || { echo "DEPLOY ABORTED before the build: docker compose ps failed, so what is running is unknown"; exit 1; }
 RUNNING_ID=""
 if [ -z "$cid" ]; then
-  echo "nothing running for ${SERVICE}"
+  echo "no existing container for ${SERVICE}"
 elif [ "$(docker inspect --format '{{.Config.Image}}' "$cid")" = "$LIVE_REF" ]; then
   RUNNING_ID="$(docker inspect --format '{{.Image}}' "$cid")"
-  echo "running web image ${RUNNING_ID}"
+  echo "existing web image ${RUNNING_ID}"
 else
   LEGACY=1
-  echo "running container is the legacy stack ($(docker inspect --format '{{.Config.Image}}' "$cid"))"
+  echo "existing container is the legacy stack ($(docker inspect --format '{{.Config.Image}}' "$cid"))"
 fi
 
 # No timeout around the build: a cold Node build on the Pi can legitimately take many minutes and a
