@@ -1,45 +1,54 @@
 ---
 title: "Caravan Service in Pretoria North | Noord Karavane"
-description: "Full caravan and trailer servicing in Pretoria North. Brakes, bearings, lights and electrics checked and signed off, with packages from {price:unbraked-1}. Parts quoted separately."
+description: "Caravan and trailer service in Pretoria North from {price:unbraked-1}: bearings repacked, brakes set, lights and 12 V tested, and a written report. Extra parts quoted first."
 h1: "Caravan and trailer service in Pretoria North"
-eyebrow: "Service and safety"
+lede: "A full safety and roadworthy service for caravans and trailers, from {price:unbraked-1}. We repack the bearings, strip and set the brakes, test the coupler, lights and 12 V electrics, and give you a written report."
 order: 1
 whatsappText: "Hi, I'd like to book a caravan service or repair."
 ctaLabel: "Book a service slot"
 schemaName: "Caravan and trailer service"
+priceFrom:
+  id: "unbraked-1"
+  from: true
 facts:
   - k: "Packages"
     v: "From {price:unbraked-1}"
   - k: "Parts"
-    v: "Quoted separately"
+    v: "Quoted before fitting"
   - k: "Turnaround"
     v: "Most services same or next day"
+faqTitle: "Caravan service questions"
 faq:
   - q: "What caravan services do you offer in Pretoria North?"
-    a: "We offer comprehensive caravan and trailer services including mechanical servicing, electrical and solar installations, safety inspections, wheel bearing service, brake repairs, water system overhauls, lift kit installations, woodrot repairs, and insurance accredited caravan and trailer recoveries including cross-border recovery."
+    a: "Mostly servicing: a full safety and roadworthy service on caravans, campers and trailers. We also do repairs (bearings, brakes, chassis, plumbing and woodrot), electrical and solar work, 50 mm lift kits, and caravan and trailer recoveries."
   - q: "What's included in a basic caravan service?"
-    a: "A basic service is a full safety and roadworthy check, not a quick once-over. On every one we:"
-    list:
-      - "Remove, clean, inspect, grease and refit the wheel bearings (replacements quoted separately)"
-      - "Strip and clean the brakes and wheel hubs"
-      - "Adjust and set up the brakes"
-      - "Test and grease the coupler and front shock absorber"
-      - "Test the front and rear lights"
-      - "Clean and grease the steadies and jacks"
-      - "Test all plugs, switches, lights, 12V electrics and the battery"
-      - "Run a full inspection and hand you a written report"
-      - "Wash the caravan inside and out (canvas excluded, available on request)"
-    note: "We show you the cost of any extra parts before we fit them. No surprises on the bill."
+    a: "Every package works through the same checklist, listed beside the prices on this page: bearings, brakes and hubs, the coupler and front shock, lights, plugs and 12 V electrics, steadies and jacks, a written report, and a wash inside and out."
+    note: "If a part needs replacing, you see the price before we fit it."
   - q: "How much does a caravan service cost?"
-    a: "Our service packages start at {price:unbraked-1} for a single unbraked axle, {price:braked-1} for a single braked axle (most popular), and {price:braked-2} for a double braked axle. All packages include safety and electrical checks, brake inspection, and bearing service. Parts are quoted separately with no hidden costs."
+    a: "{price:unbraked-1} for a single axle without brakes, {price:braked-1} for a single axle with brakes, and {price:braked-2} for a double axle with brakes. That covers the whole checklist. Parts are extra."
+  - q: "Which package does my caravan need?"
+    a: "It depends on how many axles it has and whether they have brakes. If you're not sure, pick Not sure in the estimate: it starts from {price:other}, and we'll confirm the package when we see the caravan."
   - q: "How long does a caravan service take?"
-    a: "Most caravan services and repairs are completed same or next day. Larger jobs like full electrical rewiring, solar installations or structural woodrot repairs may take 2–3 days. We'll give you an accurate timeline when you book."
+    a: "Most services are done the same day or the next. Bigger jobs, such as a full electrical rewire, a solar install or structural woodrot repairs, can take 2 to 3 days. You get a timeline when you book."
+  - q: "Do you service trailers and campers too?"
+    a: "Yes, trailers and campers as well as caravans. Send us the make and axle setup and we'll tell you which package applies."
 related:
   - repairs
   - solar-electrical
   - lift-kits
+closing:
+  heading: "Book a service slot"
+  text: "Send the make, year and axle setup, and when you need it back. Leaving on a trip? Give us the date."
 ---
 
-Full caravan and trailer servicing. Mechanical, structural and cosmetic repairs, executed by technicians who work on caravans every day, not as a side line.
+### Every service includes
 
-Pre-trip checks: brakes, tyres, lights, signals, gas seals. We sign it off or we don't.
+- Wheel bearings removed, cleaned, inspected, greased and refitted (replacements quoted separately)
+- Brakes and wheel hubs stripped and cleaned
+- Brakes adjusted and set up
+- Coupler and front shock absorber tested and greased
+- Front and rear lights tested
+- Steadies and jacks cleaned and greased
+- Plugs, switches, 12 V electrics and the battery tested
+- A full inspection and a written report
+- A wash inside and out (canvas excluded, available on request)

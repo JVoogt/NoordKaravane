@@ -233,3 +233,18 @@ describe('guard source em dash entities', () => {
     expect(run([], { GUARD_WEB: web }).out).not.toContain('em dash entity');
   });
 });
+
+describe('guard control characters', () => {
+  it('fails on a C1 control character hidden in a CSS escape, and names file and code point', () => {
+    writeFileSync(join(web, 'src', 'q.css'), ".q::before { content: '\u0081C'; }\n");
+    const r = run([], { GUARD_WEB: web });
+    expect(r.code).not.toBe(0);
+    expect(r.out).toMatch(/q\.css:1: control character U\+0081/);
+  });
+
+  it('allows tabs and normal text', () => {
+    writeFileSync(join(web, 'src', 'ok.css'), ".q::before {\tcontent: '\\201C'; }\n");
+    const r = run([], { GUARD_WEB: web });
+    expect(r.out).not.toMatch(/control character/);
+  });
+});

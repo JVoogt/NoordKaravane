@@ -1,8 +1,9 @@
 ---
-// Lift kit promo block (Content Map: Lift kit promo). The price comes from pricing.ts; the page's one primary CTA lives in Service.astro.
+// Lift kit price block. The price comes from pricing.ts; the block ends in the page's one primary CTA.
 import { Picture } from 'astro:assets';
 import liftKit from '../assets/lift-kit.jpg';
 import { ADDONS, fmtR } from '../data/pricing';
+import { servicePath } from '../data/routes';
 import CtaButton from './CtaButton.astro';
 
 interface Props {
@@ -15,7 +16,7 @@ const { href, label } = Astro.props;
 const price = ADDONS.find((a) => a.id === 'lift-kit')!.price;
 const specs = [
   { k: 'Lift height', v: '50 mm' },
-  { k: 'Fit time', v: '~ 1 day' },
+  { k: 'Fit time', v: 'About 1 day' },
   { k: 'Warranty', v: '12 months' },
   { k: 'Fitment', v: 'Most models' },
 ];
@@ -23,12 +24,6 @@ const specs = [
 
 <section id="lift-kit" class="block">
   <div class="container">
-    <div class="sec-head">
-      <div class="sec-num" aria-hidden="true">&sect; Mods</div>
-      <h2 class="sec-title">The <em>simplest</em> upgrade you'll make.</h2>
-      <p class="sec-sub">A fitted 50 mm lift kit. The modification that pays for itself on the first proper trip.</p>
-    </div>
-
     <div class="promo">
       <div class="promo-media">
         <Picture
@@ -38,21 +33,19 @@ const specs = [
           widths={[480, 640, 900]}
           sizes="(max-width: 1100px) 92vw, 560px"
           quality={70}
-          alt="Jurgens Penta with 50mm lift kit installed at Noord Karavane"
+          alt="Jurgens Penta with a 50 mm lift kit fitted at Noord Karavane"
           loading="lazy"
           decoding="async"
         />
         <span class="promo-ticket">Fitted at our workshop</span>
-        <span class="promo-label">Lift kit fitment</span>
       </div>
       <div class="promo-detail">
-        <div class="promo-eyebrow">Featured modification</div>
-        <h3 class="promo-title">Caravan lift kit, <em>installation included.</em></h3>
+        <h2 class="promo-title">50 mm lift kit: price, fit time and warranty</h2>
         <div class="promo-price">
           <span class="amt">{fmtR(price)}</span>
-          <span class="unit">Fitted &middot; taxes incl.</span>
+          <span class="unit">Fitted, taxes included</span>
         </div>
-        <p class="promo-sub">50 mm of clearance. Easier, more level towing. No more scraping on SA back roads, and your stabilisers will thank you.</p>
+        <p class="promo-sub">Booking a <a href={servicePath('caravan-service') + '#pricing'}>caravan service</a> anyway? Tick the lift kit as an add-on in the estimate and we fit both in one visit.</p>
         <dl class="promo-specs">
           {specs.map((s) => <div class="promo-spec"><dt class="k">{s.k}</dt><dd class="v">{s.v}</dd></div>)}
         </dl>

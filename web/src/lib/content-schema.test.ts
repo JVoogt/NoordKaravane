@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { text, serviceSchema, assertRelatedOk } from './content-schema';
+import { ADDONS, AXLE_OPTIONS } from '../data/pricing';
+import { text, serviceSchema, assertRelatedOk, priceAmount } from './content-schema';
 
 describe('content text field', () => {
   it('rejects the empty string (blank whatsapp chat, empty <title>)', () => {
@@ -19,9 +20,9 @@ describe('content text field', () => {
 
 describe('service frontmatter schema', () => {
   const base = {
-    title: 't', description: 'd', h1: 'h', eyebrow: 'e', order: 1,
+    title: 't', description: 'd', h1: 'h', lede: 'l', order: 1,
     whatsappText: 'Hi there', ctaLabel: 'c', schemaName: 's',
-    faq: [{ q: 'q', a: 'a' }], related: [],
+    faqTitle: 'f', faq: [{ q: 'q', a: 'a' }], related: [],
   };
 
   it('accepts a complete entry', () => {
@@ -42,7 +43,28 @@ describe('service frontmatter schema', () => {
     expect(serviceSchema.safeParse({ ...base, heroImage: { src: '/a.jpg', alt: 'A caravan on a lift' } }).success).toBe(false);
   });
 
-  it.each(['whatsappText', 'title'])('rejects an empty %s', (k) => {
+  it('rejects the retired eyebrow key and requires lede and faqTitle', () => {
+    expect(serviceSchema.safeParse({ ...base, eyebrow: 'e' }).success).toBe(false);
+    const { lede: _l, ...noLede } = base;
+    const { faqTitle: _f, ...noFaqTitle } = base;
+    expect(serviceSchema.safeParse(noLede).success).toBe(false);
+    expect(serviceSchema.safeParse(noFaqTitle).success).toBe(false);
+  });
+
+  it('priceFrom names a pricing.ts id, never a typed amount', () => {
+    expect(serviceSchema.safeParse({ ...base, priceFrom: { id: 'unbraked-1', from: true } }).success).toBe(true);
+    expect(serviceSchema.safeParse({ ...base, priceFrom: { id: 'lift-kit', from: false } }).success).toBe(true);
+    expect(serviceSchema.safeParse({ ...base, priceFrom: { id: 'nope', from: true } }).success).toBe(false);
+    expect(serviceSchema.safeParse({ ...base, priceFrom: { amount: 949, from: true } }).success).toBe(false);
+  });
+
+  it('priceAmount resolves the id from pricing.ts and throws on an unknown one', () => {
+    expect(priceAmount('unbraked-1')).toBe(AXLE_OPTIONS.find((o) => o.id === 'unbraked-1')!.price);
+    expect(priceAmount('lift-kit')).toBe(ADDONS.find((o) => o.id === 'lift-kit')!.price);
+    expect(() => priceAmount('nope')).toThrow(/nope/);
+  });
+
+  it.each(['whatsappText', 'title', 'lede', 'faqTitle'])('rejects an empty %s', (k) => {
     expect(serviceSchema.safeParse({ ...base, [k]: '' }).success).toBe(false);
   });
 });

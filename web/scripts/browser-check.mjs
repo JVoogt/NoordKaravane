@@ -303,12 +303,13 @@ async function roundThreeChecks(page, path, width) {
     });
     record(path, width, 'process markers share one style' + (width <= 700 ? ' and stack in one column' : ''), proc.n === 5 && proc.styles === 1 && (width > 700 || proc.cols === 1), `n=${proc.n} styles=${proc.styles} cols=${proc.cols}`);
     if (width <= 700) {
+      // The principle tiles were replaced by two short paragraphs; the summary block itself must stay compact on a phone.
+      // A missing block fails (height 0 is not "compact").
       const pts = await page.evaluate(() => {
         const e = document.querySelector('.inspection-summary')?.getBoundingClientRect();
-        const p = document.querySelector('.inspection-points')?.getBoundingClientRect();
-        return { points: p?.height ?? 0, summary: e?.height ?? 0 };
+        return { summary: e?.height ?? 0 };
       });
-      record(path, width, 'inspection principle cards are tightened on phones (under 330px tall)', width >= 390 ? pts.points < 330 : true, `points=${Math.round(pts.points)}px summary=${Math.round(pts.summary)}px`);
+      record(path, width, 'inspection summary is compact on phones (present, under 480px tall)', pts.summary > 0 && (width >= 390 ? pts.summary < 480 : true), `summary=${Math.round(pts.summary)}px`);
     }
   }
   if (isFind) {
@@ -558,11 +559,12 @@ for (const path of PAGES) {
     });
     record(path, width, 'orange text contrast (4.5 small, 3 large)', contrast.bad.length === 0, contrast.bad.length ? contrast.bad.slice(0, 4).join('; ') : `${contrast.checked} orange text elements checked`);
 
-    // Decorative section numbers are hidden from screen readers.
-    const secNums = await page.evaluate(() =>
-      [...document.querySelectorAll('.sec-num')].filter((e) => e.textContent.trim().startsWith('\u00a7') && e.getAttribute('aria-hidden') !== 'true').length,
-    );
-    record(path, width, 'section numbers aria-hidden', secNums === 0, `${secNums} exposed`);
+    // Decorative section numbers were removed: no "§" marker may come back, hidden or not, and any .sec-num left must be aria-hidden.
+    const secNums = await page.evaluate(() => ({
+      exposed: [...document.querySelectorAll('.sec-num')].filter((e) => e.getAttribute('aria-hidden') !== 'true').length,
+      marks: (document.querySelector('main')?.textContent ?? '').includes('\u00a7'),
+    }));
+    record(path, width, 'no decorative section numbers', secNums.exposed === 0 && !secNums.marks, `${secNums.exposed} exposed .sec-num, section mark in main: ${secNums.marks}`);
 
     // Service pages: a visible 44px+ call button next to the WhatsApp hero button.
     if (path.startsWith('/services/')) {

@@ -2,6 +2,8 @@
 import Base from '../layouts/Base.astro';
 import CtaButton from '../components/CtaButton.astro';
 import { BUSINESS } from '../data/business';
+import { servicePath } from '../data/routes';
+import { SERVICE_LIST } from '../data/services';
 import { buildGraph, jsonLd } from '../lib/schema';
 import { WA_TEXT, waUrl } from '../lib/whatsapp';
 ---
@@ -16,10 +18,14 @@ import { WA_TEXT, waUrl } from '../lib/whatsapp';
   <section class="notfound">
     <div class="container">
       <h1 class="hero-title">Page <span class="accent">not found.</span></h1>
-      <p class="hero-lede">The page you were looking for is not here. Head back home, or message the workshop directly.</p>
+      <p class="hero-lede">That page isn't here. Pick a service below, go back home, or message the workshop.</p>
+      <ul class="notfound-links">
+        {SERVICE_LIST.map((s) => <li><a href={servicePath(s.slug)}>{s.name}</a></li>)}
+        <li><a href="/find-us/">Find us</a></li>
+      </ul>
       <div class="hero-actions">
-        <CtaButton href="/" variant="primary">Back to home</CtaButton>
-        <CtaButton href={waUrl(WA_TEXT.enquire)} variant="whatsapp" external arrow>Book on WhatsApp</CtaButton>
+        <CtaButton href="/" variant="ghost">Back to home</CtaButton>
+        <CtaButton href={waUrl(WA_TEXT.enquire)} variant="primary" external arrow>Ask on WhatsApp</CtaButton>
         <CtaButton href={`tel:${BUSINESS.phone.e164}`} variant="ghost">Call {BUSINESS.phone.display}</CtaButton>
       </div>
     </div>

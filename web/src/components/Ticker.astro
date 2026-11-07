@@ -4,8 +4,8 @@ import { formatHoursCompact } from '../lib/hours';
 
 // Phones show the ticker static with only the hours (the `keep` item); larger screens scroll it and pause on hover.
 const items = [
-  { text: `${BUSINESS.address.locality} Workshop`, keep: false },
-  { text: '500+ caravans serviced', keep: false },
+  { text: `Caravan workshop, ${BUSINESS.address.street}, ${BUSINESS.address.locality}`, keep: false },
+  { text: `${BUSINESS.google.rating.toFixed(1)} on Google from ${BUSINESS.google.reviewCount} reviews`, keep: false },
   { text: 'Insurance-accredited recoveries', keep: false },
   { text: `Cross-border: ${BUSINESS.crossBorder.map((c) => c.code).join(' · ')}`, keep: false },
   { text: formatHoursCompact(BUSINESS.hours), keep: true },

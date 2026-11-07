@@ -4,19 +4,28 @@ import liftKit from '../assets/lift-kit.jpg';
 import Base from '../layouts/Base.astro';
 import ContactBand from '../components/ContactBand.astro';
 import CtaButton from '../components/CtaButton.astro';
-import Hours from '../components/Hours.astro';
-import KampiCard from '../components/KampiCard.astro';
 import Reviews from '../components/Reviews.astro';
 import ServiceCard from '../components/ServiceCard.astro';
 import TrustStrip from '../components/TrustStrip.astro';
 import { BUSINESS } from '../data/business';
+import { ADDONS, AXLE_OPTIONS, fmtR } from '../data/pricing';
 import { servicePath } from '../data/routes';
 import { SERVICE_LIST } from '../data/services';
 import { buildGraph, jsonLd, orgNode } from '../lib/schema';
 import { WA_TEXT, waUrl } from '../lib/whatsapp';
 
+const a = BUSINESS.address;
+const from = fmtR(Math.min(...AXLE_OPTIONS.map((o) => o.price)));
+const axle = (id: string): string => fmtR(AXLE_OPTIONS.find((o) => o.id === id)!.price);
+const liftKitPrice = fmtR(ADDONS.find((o) => o.id === 'lift-kit')!.price);
 const graph = buildGraph([orgNode()]);
-const description = `Pretoria North's trusted caravan workshop. Expert caravan service, repairs, trailer recoveries, solar installations, safety checks, wheel bearings, water systems & lift kits. Insurance accredited. Cross-border recoveries. 500+ caravans serviced. WhatsApp ${BUSINESS.phone.display}.`;
+const description = `Caravan workshop at ${a.street}, ${a.locality}: services from ${from}, repairs, electrical and solar, 50 mm lift kits and insurance-accredited recoveries.`;
+
+const steps = [
+  { h: "Tell us what's going on", p: "Send a WhatsApp with the make and year, what it's doing, and a photo if you have one." },
+  { h: 'We inspect and report', p: 'On the ramp we check the running gear, electrics and structure, and write it up with photos.' },
+  { h: 'You approve the quote', p: 'Safety work is listed apart from the nice-to-haves. Nothing extra happens until you say yes.' },
+];
 ---
 
 <Base
@@ -25,141 +34,96 @@ const description = `Pretoria North's trusted caravan workshop. Expert caravan s
   path="/"
   jsonLd={jsonLd(graph)}
 >
-  <header class="hero">
+  <header class="hero hero--home">
     <div class="container hero-grid">
       <div class="hero-main">
         <h1 class="hero-title">
-          Keep her <span class="accent">road-ready.</span><br />
-          No surprise repairs.
+          <span class="hero-title-place">Caravan workshop in {a.locality}<span class="sr-only">. </span></span>
+          Keep her <span class="accent">road-ready.</span>
         </h1>
         <p class="hero-lede">
-          Book a friendly workshop inspection in Pretoria North. We check your caravan or camper properly, show you the findings, quote before work starts, and help you decide what is urgent and what can wait.
+          Caravan servicing, repairs, electrical and solar, 50 mm lift kits and recoveries, from {a.street}. Services and repairs start with an inspection: you see what we found, and what it'll cost, before we pick up a spanner.
         </p>
         <div class="hero-actions">
           <CtaButton href={waUrl(WA_TEXT.book)} variant="primary" external arrow>Book on WhatsApp</CtaButton>
-          <CtaButton href={servicePath('caravan-service') + '#pricing'} variant="ghost">See packages from R949</CtaButton>
+          <CtaButton href={servicePath('caravan-service') + '#pricing'} variant="ghost">Service packages from {from}</CtaButton>
         </div>
         <TrustStrip />
       </div>
 
-      <aside class="hero-media">
-        <span class="hero-media-tag">Workshop &middot; {BUSINESS.address.locality}</span>
+      <div class="hero-media">
         <Picture
           src={liftKit}
           formats={['avif', 'webp']}
           fallbackFormat="jpg"
           widths={[480, 640, 900]}
-          sizes="(max-width: 1100px) 480px, 600px"
+          sizes="(max-width: 1100px) 480px, 560px"
           quality={70}
-          alt="Caravan in the Noord Karavane workshop"
+          alt="Caravan with a lift kit in the Noord Karavane workshop"
           loading="eager"
           fetchpriority="high"
           decoding="async"
         />
-        <div class="hero-media-stamp">Road<br />Ready</div>
-      </aside>
+        <div class="hero-media-stamp" aria-hidden="true">Road<br />Ready</div>
+      </div>
     </div>
   </header>
 
   <section id="services" class="block">
     <div class="container">
       <div class="sec-head">
-        <div class="sec-num" aria-hidden="true">&sect; 01 / 04</div>
-        <h2 class="sec-title">Everything your caravan needs, <em>under one roof.</em></h2>
-        <p class="sec-sub">From a pre-trip safety check to a full off-grid solar build.</p>
+        <h2 class="sec-title">What does your caravan need?</h2>
+        <p class="sec-sub">Start with the problem. Each page covers what we check, what it costs and how to book.</p>
       </div>
       <div class="svc-grid">
         {SERVICE_LIST.map((s) => <ServiceCard slug={s.slug} />)}
       </div>
+      <p class="svc-prices">
+        A service costs {axle('unbraked-1')} for a single axle without brakes, up to {axle('braked-2')} for a double axle with brakes. A 50 mm lift kit is {liftKitPrice} fitted. Repairs and solar work are quoted before we start, and the solar quote is free.
+      </p>
+      <p class="svc-help">
+        Not sure what it's called? <a href={waUrl(WA_TEXT.describe)} target="_blank" rel="noopener">Send a photo on WhatsApp</a> and tell us what it's doing.
+      </p>
     </div>
   </section>
 
   <section id="why-us" class="block">
-    <div class="container">
-      <div class="sec-head">
-        <div class="sec-num" aria-hidden="true">&sect; 02 / 04</div>
-        <h2 class="sec-title">Why Pretoria's caravanners <em>keep coming back.</em></h2>
-        <p class="sec-sub">Four things the regulars say, every time.</p>
+    <div class="container how-grid">
+      <div class="how-main">
+        <div class="sec-head">
+          <h2 class="sec-title">How a job runs here</h2>
+          <p class="sec-sub">Caravans are what we do, every day.</p>
+        </div>
+        <ol class="how-steps">
+          {steps.map((s, i) => (
+            <li>
+              <span class="how-n" aria-hidden="true">{i + 1}</span>
+              <div>
+                <h3>{s.h}</h3>
+                <p>{s.p}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+        <a class="text-link" href={servicePath('caravan-service') + '#process'}>See the full service process and an example report</a>
       </div>
-      <div class="why-grid">
-        <div class="why">
-          <div class="why-n">I.</div>
-          <h3>Specialists, not generalists</h3>
-          <p>Caravans are what we do, every day. Factory-trained on the major SA brands: Jurgens, Sprite, Gypsey, Conqueror, and the rest.</p>
-        </div>
-        <div class="why">
-          <div class="why-n">II.</div>
-          <h3>Quote before spanners</h3>
-          <p>You see the scope and the number before we open a single panel. Approve or walk.</p>
-        </div>
-        <div class="why">
-          <div class="why-n">III.</div>
-          <h3>Quick turnaround</h3>
-          <p>Most services done same or next day. We know a caravan sitting in the workshop is a holiday sitting still.</p>
-        </div>
-        <div class="why">
-          <div class="why-n">IV.</div>
-          <h3>Photographed &amp; logged</h3>
-          <p>Every inspection comes with photos and a written report straight in your logbook. No "trust us, it's fine."</p>
-        </div>
-      </div>
+      <aside id="reviews" class="how-proof" aria-label="Google reviews">
+        <Reviews />
+      </aside>
     </div>
   </section>
 
-  <section id="reviews" class="block">
-    <div class="container">
-      <div class="sec-head">
-        <div class="sec-num" aria-hidden="true">&sect; 03 / 04</div>
-        <h2 class="sec-title">Public profiles and <span class="accent">workshop feedback.</span></h2>
-        <p class="sec-sub">Check the live profiles, then message the workshop directly.</p>
-      </div>
-      <Reviews />
-    </div>
-  </section>
-
-  <section id="location" class="block">
-    <div class="container">
-      <div class="sec-head">
-        <div class="sec-num" aria-hidden="true">&sect; 04 / 04</div>
-        <h2 class="sec-title">Drop in. <em>Kettle's always on.</em></h2>
-        <p class="sec-sub">{BUSINESS.address.street}, {BUSINESS.address.locality}. Easy to find, easier to park a caravan at.</p>
-      </div>
-      <div class="loc-grid">
-        <div class="loc-card">
-          <div class="loc-card-grid">
-            <div class="loc-item">
-              <div class="loc-k">Address</div>
-              <div class="loc-v">{BUSINESS.address.street}<br /><small>{BUSINESS.address.locality}, {BUSINESS.address.city}, {BUSINESS.address.postalCode}</small></div>
-            </div>
-            <div class="loc-item">
-              <div class="loc-k">Call</div>
-              <div class="loc-v"><a href={`tel:${BUSINESS.phone.e164}`}>{BUSINESS.phone.display}</a><small>WhatsApp preferred (faster replies)</small></div>
-            </div>
-            <div class="loc-item">
-              <div class="loc-k">Hours</div>
-              <Hours />
-            </div>
-            <div class="loc-item">
-              <div class="loc-k">Recoveries</div>
-              <div class="loc-v">Nationwide + cross-border<br /><small>{BUSINESS.crossBorder.map((c) => c.code).join(' · ')}</small></div>
-            </div>
-          </div>
-          <div class="hero-actions">
-            <CtaButton href={waUrl(WA_TEXT.findUs)} variant="primary" external arrow>Book a slot</CtaButton>
-            <CtaButton href="/find-us/" variant="ghost">Map and directions</CtaButton>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="block">
-    <div class="container">
-      <KampiCard />
-    </div>
-  </section>
-
-  <ContactBand />
+  <ContactBand
+    id="location"
+    heading="Find the workshop"
+    text={`${a.street}, ${a.locality}. WhatsApp us before you tow in, so we can book you a slot.`}
+    waText={WA_TEXT.findUs}
+    placeLabel="Map and directions"
+  >
+    <p id="rentals" class="contact-aside">
+      Don't own a caravan yet? <a href={BUSINESS.links.kampi} target="_blank" rel="noopener">Rent one through Kampi</a>, our partner rental marketplace.
+    </p>
+  </ContactBand>
 
   <script>
     import '../scripts/legacy-hash';

@@ -5,23 +5,24 @@ import Breadcrumbs from '../components/Breadcrumbs.astro';
 import ContactBand from '../components/ContactBand.astro';
 import CtaButton from '../components/CtaButton.astro';
 import Faq from '../components/Faq.astro';
-import Hours from '../components/Hours.astro';
 import ServiceCard from '../components/ServiceCard.astro';
 import { BUSINESS } from '../data/business';
 import { servicePath, type ServiceSlug } from '../data/routes';
 import { serviceMeta } from '../data/services';
-import { assertRelatedOk } from '../lib/content-schema';
+import { assertRelatedOk, priceAmount } from '../lib/content-schema';
 import { buildGraph, breadcrumbNode, faqNode, jsonLd, orgStubNode, serviceNode } from '../lib/schema';
 import { waUrl } from '../lib/whatsapp';
 
 interface Props {
   entry: CollectionEntry<'services'>;
-  /** Markdown body goes in a block under the hero instead of inside it (Repairs: three sub-headed paragraphs). */
-  bodyBelow?: boolean;
+  /** Markdown body as three side-by-side columns under the hero (Repairs: one column per kind of repair). */
+  bodyColumns?: boolean;
   /** Emergency page: the Call button is filled and first, with the same weight as WhatsApp. */
   emergency?: boolean;
+  /** Render the default slot (the markdown body) in its own section under the hero. */
+  body?: boolean;
 }
-const { entry, bodyBelow = false, emergency = false } = Astro.props;
+const { entry, bodyColumns = false, emergency = false, body = false } = Astro.props;
 const d = entry.data;
 const slug = entry.id as ServiceSlug;
 assertRelatedOk(slug, d.related);
@@ -35,21 +36,27 @@ const crumbs = [
 const graph = buildGraph([
   orgStubNode(),
   breadcrumbNode(crumbs),
-  serviceNode({ name: d.schemaName, description: d.description, path, price: d.priceFrom }),
+  serviceNode({
+    name: d.schemaName,
+    description: d.description,
+    path,
+    price: d.priceFrom ? { amount: priceAmount(d.priceFrom.id), from: d.priceFrom.from } : undefined,
+    areaServed: emergency ? 'recoveries' : undefined,
+  }),
   faqNode(d.faq),
 ]);
+const g = BUSINESS.google;
 ---
 
 <Base title={d.title} description={d.description} path={path} waText={d.whatsappText} jsonLd={jsonLd(graph)}>
-  <header class="hero">
+  <header class="hero hero--service">
     <div class="container hero-grid hero-grid--panel">
       <div class="hero-main">
         <Breadcrumbs items={crumbs} />
-        <p class="hero-eyebrow">{d.eyebrow}</p>
         <slot name="tag" />
         <h1 class="hero-title hero-title--service">{d.h1}</h1>
-        {!bodyBelow && <div class="svc-body"><slot /></div>}
-        <div class="hero-actions hero-actions--spaced">
+        <p class="hero-lede">{d.lede}</p>
+        <div class="hero-actions">
           {emergency ? (
             <Fragment>
               <CtaButton href={`tel:${BUSINESS.phone.e164}`} variant="primary">Call {BUSINESS.phone.display}</CtaButton>
@@ -62,6 +69,9 @@ const graph = buildGraph([
             </Fragment>
           )}
         </div>
+        <p class="hero-proof">
+          <a href={BUSINESS.links.googleProfile} target="_blank" rel="noopener">{g.rating.toFixed(1)} on Google from {g.reviewCount} reviews</a>
+        </p>
       </div>
       <div class="hero-panel">
         {d.facts && d.facts.length > 0 && (
@@ -72,24 +82,14 @@ const graph = buildGraph([
           </dl>
         )}
         <slot name="hero-extra" />
-        <div class="loc-card hero-contact">
-          <div class="loc-item">
-            <div class="loc-k">Call</div>
-            <div class="loc-v"><a href={`tel:${BUSINESS.phone.e164}`}>{BUSINESS.phone.display}</a><small>WhatsApp preferred (faster replies)</small></div>
-          </div>
-          <div class="loc-item">
-            <div class="loc-k">Hours</div>
-            <Hours />
-          </div>
-        </div>
       </div>
     </div>
   </header>
 
-  {bodyBelow && (
-    <section class="block block--tight">
+  {body && (
+    <section class="block block--tight" id="details">
       <div class="container">
-        <div class="svc-body svc-cols"><slot /></div>
+        <div class:list={['svc-body', bodyColumns ? 'svc-cols' : 'svc-split']}><slot /></div>
       </div>
     </section>
   )}
@@ -97,41 +97,27 @@ const graph = buildGraph([
   <slot name="extras" />
 
   <section id="faq" class="block">
-    <div class="container">
+    <div class="container faq-layout">
       <div class="sec-head">
-        <div class="sec-num">&#9830; FAQ</div>
-        <h2 class="sec-title">The <em>questions</em> that come up most.</h2>
-        <p class="sec-sub">Short answers. Message us for the full story.</p>
+        <h2 class="sec-title">{d.faqTitle}</h2>
+        <p class="sec-sub">Not covered here? <a href={waUrl(d.whatsappText)} target="_blank" rel="noopener">Ask us on WhatsApp</a>.</p>
       </div>
       <Faq items={d.faq} />
     </div>
   </section>
 
   {d.related.length > 0 && (
-    <section class="block">
+    <section class="block block--tight" id="related">
       <div class="container">
         <div class="sec-head">
-          <div class="sec-num">&#9830; Also</div>
-          <h2 class="sec-title">Related <em>services.</em></h2>
+          <h2 class="sec-title">Related services</h2>
         </div>
         <div class="related-grid">
-          {d.related.map((rel) => <ServiceCard slug={rel} />)}
+          {d.related.map((rel) => <ServiceCard slug={rel} compact />)}
         </div>
       </div>
     </section>
   )}
 
-  <section class="block">
-    <div class="container">
-      <div class="loc-card">
-        <div class="loc-item">
-          <div class="loc-k">Hours</div>
-          <Hours />
-        </div>
-        <CtaButton href="/find-us/" variant="ghost">Find us</CtaButton>
-      </div>
-    </div>
-  </section>
-
-  <ContactBand waText={d.whatsappText} />
+  <ContactBand waText={d.whatsappText} heading={d.closing?.heading} text={d.closing?.text} recoveries={emergency} callFirst={emergency} />
 </Base>

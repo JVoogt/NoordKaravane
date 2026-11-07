@@ -26,7 +26,7 @@ export function orgNode(): Node {
     name: BUSINESS.name,
     alternateName: 'Noord Karavane Caravan Specialists',
     description:
-      "Pretoria North's trusted caravan workshop. Expert caravan service, repairs, recoveries & modifications. Insurance accredited caravan and trailer recoveries including cross-border. Electrical, solar, safety checks, wheel bearings, water systems, lift kits.",
+      `Caravan and trailer workshop at ${BUSINESS.address.street}, ${BUSINESS.address.locality}: services, repairs, electrical and solar work, 50 mm lift kits, and insurance-accredited caravan and trailer recoveries, nationwide and cross-border.`,
     url: abs('/'),
     telephone: BUSINESS.phone.e164,
     image: abs('/assets/images/og-image-1200.jpg'),
@@ -54,7 +54,7 @@ export function orgNode(): Node {
     },
     openingHoursSpecification: hoursToSchema(BUSINESS.hours),
     priceRange: priceRange(),
-    paymentAccepted: 'Cash, Credit Card, EFT',
+    // paymentAccepted is left out until the owner confirms the methods and the site shows them.
     currenciesAccepted: 'ZAR',
     sameAs: [BUSINESS.links.facebook],
   };
@@ -97,6 +97,8 @@ export function serviceNode(s: {
   description: string;
   path: string;
   price?: { amount: number; from: boolean };
+  /** 'recoveries': South Africa plus the cross-border countries, the same list the Recoveries page shows. */
+  areaServed?: 'recoveries';
 }): Node {
   const node: Node = {
     '@type': 'Service',
@@ -105,6 +107,9 @@ export function serviceNode(s: {
     url: abs(s.path),
     provider: orgRef(),
   };
+  if (s.areaServed === 'recoveries') {
+    node.areaServed = [{ '@type': 'Country', name: 'South Africa' }, ...BUSINESS.crossBorder.map((c) => ({ '@type': 'Country', name: c.name }))];
+  }
   if (s.price) {
     node.offers = s.price.from
       ? {

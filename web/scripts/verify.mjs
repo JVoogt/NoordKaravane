@@ -393,6 +393,8 @@ for (const route of have) {
     const want = CTA_TEXT[route];
     report(hero !== undefined && textParam(hero) === want, '12 cta text', `${route} hero CTA`, `want ${JSON.stringify(want)}, got ${JSON.stringify(hero === undefined ? 'no hero wa.me link' : textParam(hero))}`);
     report(nav !== undefined && textParam(nav) === want, '12 cta text', `${route} header CTA`, `want ${JSON.stringify(want)}, got ${JSON.stringify(nav === undefined ? 'no .nav-cta' : textParam(nav))}`);
+    const float = root.querySelector('a.wa-float')?.getAttribute('href');
+    report(float !== undefined && textParam(float) === want, '12 cta text', `${route} floating WhatsApp button`, `want ${JSON.stringify(want)}, got ${JSON.stringify(float === undefined ? 'no .wa-float' : textParam(float))}`);
   }
 }
 

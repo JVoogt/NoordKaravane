@@ -51,11 +51,11 @@ Never type hours, prices or contact details into a page. Change them once, at th
 
 Each service page is a markdown file in `web/src/content/services/`, validated by `web/src/lib/content-schema.ts` (strict: an unknown frontmatter key fails the build).
 
-- Required frontmatter: `title`, `description`, `h1`, `eyebrow`, `order`, `whatsappText`, `ctaLabel`, `schemaName`, `faq` (at least one item), `related`.
-- Optional: `facts` (list of `k`/`v`), `priceFrom` (`amount`, `from`).
+- Required frontmatter: `title`, `description`, `h1`, `lede` (the hero paragraph), `order`, `whatsappText`, `ctaLabel`, `schemaName`, `faqTitle` (the page's own FAQ heading), `faq` (at least one item), `related`.
+- Optional: `facts` (list of `k`/`v`), `priceFrom` (`id`, a `pricing.ts` axle or add-on id, and `from`; adds the Offer to the Service JSON-LD with the amount resolved from `pricing.ts`), `closing` (`heading`, `text` for the closing contact band).
 - `related`: at most three slugs, from the slug list only, no duplicates, never the page itself.
 - FAQ items are `q`, `a`, optional `list` and `note`. Every string field supports two tokens, expanded at build time: `{hours}` (from `business.ts`) and `{price:<id>}` (an axle or add-on id from `pricing.ts`). An unknown token or id fails the build.
-- The markdown body is prose only: no prices and no hours.
+- The markdown body is prose only: no prices and no hours. It renders under the hero (Repairs: three columns, one `##` heading plus two paragraphs each; other pages: two columns, each `##` starts one). Caravan service shows its body (the service checklist) inside the pricing section instead.
 - One page per FAQ: each of the seven original questions appears on exactly one page, and no FAQ sentence (20+ characters) repeats across or within pages. `verify.mjs` check 4b enforces it. Visible FAQ text must also equal the FAQPage JSON-LD (check 4).
 
 ### Add or edit a service page
@@ -161,10 +161,13 @@ Shipped as written, non-blocking, the owner may veto:
 - "Recoveries 24/7" (owner claim carried over from the old page).
 - "500+ caravans serviced".
 - "Factory-trained on Jurgens, Sprite, Gypsey, Conqueror".
-- Which two or three genuine Google reviews to quote (reviewer first name, date, profile link). Until then the reviews slot shows a Google profile link card.
+- Google review excerpts: the owner approved three on 2026-11-07 (Vernon d. P., Zenelda S., Johan & Magda A.), quoted in the reviewers' own words from the public profile. Two more candidates sit in `web/src/data/reviews.ts` with `approved: false`. Re-check the excerpts against Google if a reviewer edits or removes a review.
+- The OG share image (`web/public/assets/images/og-image-1200.jpg`) still says "500+ caravans serviced" and "100% parts warranty". The page copy no longer makes either claim; the image needs re-exporting or confirming.
+- Removed from the copy until confirmed (restore in one line if true): "500+ caravans serviced", "Factory-trained on Jurgens, Sprite, Gypsey, Conqueror", "Parts sourced with warranties attached".
 - Turnaround and warranty claims: "most services done same or next day", "2-3 days for larger jobs", lift kit "~1 day" fit and "12 months" warranty on fitments.
-- Google 5.0 from 24 reviews (stored with `asOf: 2026-11-06`).
-- On-site service "for a call-out fee", and `paymentAccepted: Cash, Credit Card, EFT` in the JSON-LD.
+- Google 5.0 from 24 reviews: re-checked on the live profile on 2026-11-07 (all 24 five-star, hours match), stored with `asOf: 2026-11-07`. Update the count and date in `business.ts` when it changes.
+- On-site service "for a call-out fee" (Find us FAQ). `paymentAccepted` was removed from the JSON-LD on 2026-11-07: add it back only once the owner confirms the methods and the site shows them.
+- Also carried as written from the previous copy: "usually within the week" (booking), "Most models" (lift kit fitment) and the VAT-inclusive estimator note. Trailers and campers being serviced like caravans comes from the old "caravan and trailer servicing" wording; their package pricing is not stated.
 - Pending work, not part of this change: Pi (arm64) build proof, the production deploy itself, and deleting `site/` after parity.
 
 ## Editing notes

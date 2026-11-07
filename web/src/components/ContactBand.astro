@@ -1,28 +1,73 @@
 ---
-// Closing "Bring her in" band: the last section of Home, every service page and Find us.
-// waText lets a page carry its own message; Home and Find us use the shared texts.
+// Closing contact band: the last section of every page. One compact block that carries the WhatsApp and Call
+// actions, the address and the hours, so pages no longer end with a separate hours card and a tall slogan panel.
+// waText keeps each page's own WhatsApp message; heading and text let a page say what to send.
 import CtaButton from './CtaButton.astro';
+import Hours from './Hours.astro';
 import { BUSINESS } from '../data/business';
 import { WA_TEXT, waUrl } from '../lib/whatsapp';
 
 interface Props {
+  id?: string;
+  heading?: string;
+  text?: string;
   waText?: string;
+  /** Where the location column's button goes: the Find us page, or none (Find us itself already shows it all). */
+  place?: 'find-us' | 'none';
+  /** Label for the Find us button. */
+  placeLabel?: string;
+  /** Add the recoveries line under the workshop hours (Recoveries page). */
+  recoveries?: boolean;
+  /** Emergency page: Call first and filled, WhatsApp beside it with the same weight (matches the hero). */
+  callFirst?: boolean;
 }
-const { waText = WA_TEXT.enquire } = Astro.props;
+const {
+  id = 'contact',
+  heading = 'Book a slot or ask a question',
+  text = "Send the make, year and what's going on. If you don't know what the part is called, a photo does the job.",
+  waText = WA_TEXT.enquire,
+  place = 'find-us',
+  placeLabel = 'Find us',
+  recoveries = false,
+  callFirst = false,
+} = Astro.props;
+const a = BUSINESS.address;
 ---
 
-<section class="block" id="contact">
+<section class="block block--band" id={id}>
   <div class="container">
-    <div class="contact">
-      <div class="contact-inner">
-        <div class="contact-eyebrow">Ready when you are</div>
-        <h2>Bring her in. We'll make her <span class="accent">road-ready.</span></h2>
-        <p>WhatsApp lands in the workshop directly. No call-centre, no gatekeepers. You talk to the people doing the work.</p>
+    <div class:list={['contact', { 'contact--solo': place === 'none' }]}>
+      <div class="contact-main">
+        <h2>{heading}</h2>
+        <p>{text}</p>
         <div class="contact-actions">
-          <CtaButton href={waUrl(waText)} variant="whatsapp" external>WhatsApp {BUSINESS.phone.display}</CtaButton>
-          <CtaButton href={`tel:${BUSINESS.phone.e164}`} variant="ghost">Or call instead</CtaButton>
+          {callFirst ? (
+            <Fragment>
+              <CtaButton href={`tel:${BUSINESS.phone.e164}`} variant="primary">Call {BUSINESS.phone.display}</CtaButton>
+              <CtaButton href={waUrl(waText)} variant="primary" external>WhatsApp {BUSINESS.phone.display}</CtaButton>
+            </Fragment>
+          ) : (
+            <Fragment>
+              <CtaButton href={waUrl(waText)} variant="primary" external>WhatsApp {BUSINESS.phone.display}</CtaButton>
+              <CtaButton href={`tel:${BUSINESS.phone.e164}`} variant="ghost">Call {BUSINESS.phone.display}</CtaButton>
+            </Fragment>
+          )}
         </div>
       </div>
+      {place !== 'none' && (
+        <div class="loc-card contact-loc">
+          <div class="loc-item">
+            <div class="loc-k">Workshop</div>
+            <div class="loc-v">{a.street}<small>{a.locality}, {a.city}, {a.postalCode}</small></div>
+          </div>
+          <div class="loc-item">
+            <div class="loc-k">Hours</div>
+            <Hours recoveries={recoveries} />
+          </div>
+          <CtaButton href="/find-us/" variant="ghost">{placeLabel}</CtaButton>
+        </div>
+      )}
     </div>
+    <slot />
   </div>
 </section>
