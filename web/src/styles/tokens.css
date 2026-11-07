@@ -11,6 +11,8 @@
   --orange:     #e95e1d;
   --orange-2:   #ff7a3b;
   --orange-low: rgba(233, 94, 29, 0.12);
+  /* Brand orange fails on paper (2.78:1). For orange text and marks on paper surfaces only: 4.6:1 on the darkest paper tint. */
+  --orange-on-paper: #a63d0f;
   --whatsapp:   #25D366;
 
   --f-display:  'Bebas Neue', 'Barlow', system-ui, sans-serif;

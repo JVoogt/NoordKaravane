@@ -16,6 +16,10 @@ const DEFAULT_PAGES = [
   '/find-us/',
 ];
 const PAGES = (process.env.PAGES ? process.env.PAGES.split(',') : DEFAULT_PAGES).map((p) => p.trim()).filter(Boolean);
+if (PAGES.length === 0) {
+  console.error('browser-check: FAIL no pages to check (PAGES is empty)');
+  process.exit(1);
+}
 const SHOTS_DIR = process.env.SHOTS_DIR ?? '/tmp/nk-shots';
 const EXECUTABLE =
   process.env.PW_CHROMIUM ??
@@ -26,6 +30,9 @@ const SWEEP_WIDTHS = [360, 375, 390, 412, 430, 440, 460, 480];
 const WIDTHS = STANDARD_WIDTHS;
 const WEIGHT_LIMIT = 250 * 1024;
 const WA_PREFIX = 'https://wa.me/27833349357';
+// Oracles for the estimator checks (hard-coded: plain JS never imports src).
+const NEUTRAL_PAGE = '/services/caravan-service/';
+const NEUTRAL_ESTIMATE_HREF = `${WA_PREFIX}?text=Hi%2C%20I'd%20like%20an%20estimate%20for%20a%20caravan%20service.`;
 const TAB_STOPS = 40;
 
 mkdirSync(SHOTS_DIR, { recursive: true });
@@ -187,6 +194,9 @@ for (const path of PAGES) {
       });
       if (info.body) break;
       stops++;
+      // A cross-origin iframe (the Maps embed) never matches :focus-visible in the parent document, so its own
+      // outline cannot be asserted here. It stays in the Tab order (checked below); only the ring test skips it.
+      if (info.tag === 'iframe') continue;
       if (info.style === 'none' || !(info.w > 0)) {
         walkOk = false;
         walkDetail = `no outline on <${info.tag} class="${info.cls}"> at stop ${stops}`;
@@ -197,6 +207,8 @@ for (const path of PAGES) {
       walkOk = false;
       walkDetail = 'tab walk reached 0 focusable stops';
     }
+    const trapped = await page.evaluate(() => [...document.querySelectorAll('iframe[tabindex="-1"]')].length);
+    record(path, width, 'iframes stay keyboard reachable (no tabindex -1)', trapped === 0, `${trapped} iframe(s) removed from the Tab order`);
     record(path, width, 'tab walk shows focus ring', walkOk, walkOk ? `${stops} stops` : walkDetail);
 
     // Sticky header height: the quick-link row must not wrap to a second row on phones.
@@ -273,6 +285,55 @@ for (const path of PAGES) {
     });
     record(path, width, 'text >= 12px', tiny.length === 0, tiny.slice(0, 5).join(' '));
 
+    // Orange text must keep its contrast on whatever it sits on (brand orange on paper was 2.78:1).
+    // The background is the stack of background-colors up the ancestor chain composited onto white. Gradients and
+    // images are not modelled (their element's own background-color is used), so this is exact on flat and
+    // translucent surfaces, such as the paper section, and approximate on the dark gradient hero.
+    const contrast = await page.evaluate(() => {
+      const parse = (s) => {
+        const m = s.match(/rgba?\(([^)]+)\)/);
+        if (!m) return null;
+        const p = m[1].split(/[ ,/]+/).filter(Boolean).map(Number);
+        return { r: p[0], g: p[1], b: p[2], a: p.length > 3 ? p[3] : 1 };
+      };
+      const lum = ({ r, g, b }) => {
+        const f = (c) => ((c /= 255) <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+        return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+      };
+      const over = (top, bottom) => ({
+        r: top.r * top.a + bottom.r * (1 - top.a),
+        g: top.g * top.a + bottom.g * (1 - top.a),
+        b: top.b * top.a + bottom.b * (1 - top.a),
+        a: 1,
+      });
+      const backdrop = (el) => {
+        const layers = [];
+        for (let n = el; n; n = n.parentElement) {
+          const c = parse(getComputedStyle(n).backgroundColor);
+          if (c && c.a > 0) layers.push(c);
+        }
+        return layers.reduceRight((acc, c) => over(c, acc), { r: 255, g: 255, b: 255, a: 1 });
+      };
+      const isOrange = (c) => c && c.a === 1 && c.r > 150 && c.r - c.b > 100 && c.r > c.g && c.g > c.b;
+      let checked = 0;
+      const bad = [];
+      for (const el of document.querySelectorAll('body *')) {
+        if (!el.checkVisibility || !el.checkVisibility()) continue;
+        if (![...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim())) continue;
+        const cs = getComputedStyle(el);
+        const fg = parse(cs.color);
+        if (!isOrange(fg)) continue;
+        checked++;
+        const bg = backdrop(el);
+        const ratio = (Math.max(lum(fg), lum(bg)) + 0.05) / (Math.min(lum(fg), lum(bg)) + 0.05);
+        const px = parseFloat(cs.fontSize);
+        const large = px >= 24 || (px >= 18.66 && Number(cs.fontWeight) >= 700);
+        if (ratio < (large ? 3 : 4.5)) bad.push(`${el.tagName.toLowerCase()}.${String(el.className).split(' ')[0]} ${ratio.toFixed(2)}:1 ${px}px`);
+      }
+      return { checked, bad: [...new Set(bad)] };
+    });
+    record(path, width, 'orange text contrast (4.5 small, 3 large)', contrast.bad.length === 0, contrast.bad.length ? contrast.bad.slice(0, 4).join('; ') : `${contrast.checked} orange text elements checked`);
+
     // Decorative section numbers are hidden from screen readers.
     const secNums = await page.evaluate(() =>
       [...document.querySelectorAll('.sec-num')].filter((e) => e.textContent.trim().startsWith('\u00a7') && e.getAttribute('aria-hidden') !== 'true').length,
@@ -322,18 +383,71 @@ for (const path of PAGES) {
     const after = await d.evaluate((el) => el.open);
     if (before !== after) toggled++;
   }
-  const expectDetails = path.startsWith('/services/');
+  const expectDetails = path.startsWith('/services/') || path === '/find-us/'; // every page with a FAQ
   if (details.length === 0 && !expectDetails) {
     record(path, 'nojs', 'every <details> toggles (n/a)', true, 'n/a: none on this page');
   } else {
     record(path, 'nojs', 'every <details> toggles', details.length > 0 && toggled === details.length, `${toggled}/${details.length}`);
   }
 
-  const fallback = await page.$('[data-estimator-fallback]');
-  if (fallback) {
-    record(path, 'nojs', 'estimator fallback visible', await fallback.isVisible());
+  if (path === NEUTRAL_PAGE) {
+    // JS off: the static estimator shows, the live controls stay hidden, the CTA is the neutral enquiry.
+    const stat = await page.$('.est-static');
+    const live = await page.$('.est-live');
+    const cta = await page.$('[data-est-cta]');
+    record(path, 'nojs', 'estimator .est-static visible', !!stat && (await stat.isVisible()), stat ? '' : 'selector .est-static matches nothing');
+    record(path, 'nojs', 'estimator .est-live hidden', !!live && !(await live.isVisible()), live ? '' : 'selector .est-live matches nothing');
+    const href = cta ? await cta.getAttribute('href') : null;
+    record(path, 'nojs', 'estimator CTA is the neutral wa.me enquiry', href === NEUTRAL_ESTIMATE_HREF, href ?? 'selector [data-est-cta] matches nothing');
   }
   await context.close();
+}
+
+// JS on: the live estimator updates the total, the pressed states and the CTA href. Missing hooks FAIL.
+if (PAGES.includes(NEUTRAL_PAGE)) {
+  for (const width of [390, 1440]) {
+    const context = await browser.newContext({ viewport: { width, height: 900 } });
+    const page = await context.newPage();
+    await page.goto(BASE + NEUTRAL_PAGE, { waitUntil: 'networkidle' });
+    const q = async (sel) => (await page.$(sel));
+    const stat = await q('.est-static');
+    const live = await q('.est-live');
+    const total = await q('[data-est-total]');
+    const cta = await q('[data-est-cta]');
+    const axle1 = await q('[data-axle="braked-1"]');
+    const axle2 = await q('[data-axle="braked-2"]');
+    const lift = await q('[data-addon="lift-kit"]');
+    const missing = Object.entries({ '.est-static': stat, '.est-live': live, '[data-est-total]': total, '[data-est-cta]': cta, '[data-axle="braked-1"]': axle1, '[data-axle="braked-2"]': axle2, '[data-addon="lift-kit"]': lift })
+      .filter(([, h]) => !h).map(([k]) => k);
+    record(NEUTRAL_PAGE, width, 'estimator hooks present', missing.length === 0, missing.length ? `missing ${missing.join(', ')}` : 'all 7 hooks matched');
+    if (missing.length === 0) {
+      const decoded = async () => decodeURIComponent((await cta.getAttribute('href')) ?? '');
+      record(NEUTRAL_PAGE, width, 'estimator JS on: live visible, static hidden', (await live.isVisible()) && !(await stat.isVisible()));
+      const t0 = (await total.textContent()).trim();
+      record(NEUTRAL_PAGE, width, 'estimator starts on the default package', t0 === 'R1 499' && (await axle1.getAttribute('aria-pressed')) === 'true' && (await decoded()).includes('Single, braked: R1 499'), t0);
+      await axle2.click();
+      await lift.click();
+      const t1 = (await total.textContent()).trim();
+      const href = await decoded();
+      record(NEUTRAL_PAGE, width, 'estimator total after Double braked + lift kit', t1 === 'R4 279', t1);
+      record(
+        NEUTRAL_PAGE,
+        width,
+        'estimator pressed states follow the clicks',
+        (await axle2.getAttribute('aria-pressed')) === 'true' && (await axle1.getAttribute('aria-pressed')) === 'false' && (await lift.getAttribute('aria-pressed')) === 'true',
+      );
+      record(
+        NEUTRAL_PAGE,
+        width,
+        'estimator CTA href carries the new estimate',
+        href.startsWith(WA_PREFIX) && href.includes('Double, braked: R2 299') && href.includes('50 mm lift kit fitted: + R1 980') && href.includes('Total est.: R4 279'),
+        href.slice(WA_PREFIX.length, WA_PREFIX.length + 90).replace(/\n/g, ' | '),
+      );
+      const optH = await axle2.evaluate((e) => e.getBoundingClientRect().height);
+      record(NEUTRAL_PAGE, width, 'estimator options >= 44px high', optH >= 44, `${optH}px`);
+    }
+    await context.close();
+  }
 }
 
 // Quick-link sweep at common phone widths, on every checked page.
@@ -419,7 +533,7 @@ const LEGACY_STAYS = ['#services', '#location'];
 
 await browser.close();
 
-const pad =(s, n) => String(s).padEnd(n);
+const pad = (s, n) => String(s).padEnd(n);
 console.log(`${pad('page', 30)} ${pad('width', 6)} ${pad('check', 46)} ${pad('result', 6)} detail`);
 for (const r of rows) {
   console.log(`${pad(r.page, 30)} ${pad(r.width, 6)} ${pad(r.check, 46)} ${pad(r.result, 6)} ${r.detail}`);

@@ -564,8 +564,10 @@ section.block {
 #inspection-report .sec-title .accent,
 #inspection-report .inspection-kicker,
 #inspection-report .report-evidence {
-  color: var(--orange);
+  color: var(--orange-on-paper);
 }
+#inspection-report .report-sev { background: var(--orange-on-paper); }
+#inspection-report .report-sev.low { background: #22c55e; }
 #inspection-report .sec-title,
 #inspection-report .inspection-summary h3,
 #inspection-report .report-title,
