@@ -139,7 +139,7 @@ try_probe() {
 # probes BASE_URL: the page, asset, 404 and host-routing probes. Returns 1 at the first failure.
 probes() {
   local base="$1" path css
-  for path in / /robots.txt /sitemap.xml /sitemap-index.xml /services/recoveries/; do
+  for path in / /robots.txt /sitemap.xml /sitemap-index.xml /services/recoveries/ /find-us/ /services/caravan-service/ /services/repairs/ /services/solar-electrical/ /services/lift-kits/; do
     try_probe "${path}" 200 "${base}${path}" || return 1
   done
   # A hashed build asset: a page that loads without its CSS is broken even when / answers 200.

@@ -117,12 +117,19 @@ for (const path of PAGES) {
     const page = await context.newPage();
     const client = await context.newCDPSession(page);
     await client.send('Network.enable');
+    await client.send('Page.enable');
+    const mainFrameId = (await client.send('Page.getFrameTree')).frameTree.frame.id;
     const urls = new Map();
+    const fromMain = new Map();
     let weight = 0;
-    client.on('Network.requestWillBeSent', (e) => urls.set(e.requestId, e.request.url));
+    client.on('Network.requestWillBeSent', (e) => {
+      urls.set(e.requestId, e.request.url);
+      // The Maps embed is a third-party iframe: only requests from the top-level document count toward the budget.
+      fromMain.set(e.requestId, e.frameId === mainFrameId);
+    });
     client.on('Network.loadingFinished', (e) => {
       const url = urls.get(e.requestId) ?? '';
-      if (!url.includes('maps.google.com')) weight += e.encodedDataLength;
+      if (fromMain.get(e.requestId) !== false && !url.includes('maps.google.com')) weight += e.encodedDataLength;
     });
 
     const res = await page.goto(BASE + path, { waitUntil: 'networkidle' });
@@ -367,9 +374,52 @@ for (const width of WIDTHS) {
   await context.close();
 }
 
+// Legacy single-page anchors. A hash never reaches the server, so the Home page script redirects in the browser.
+// Expected targets are hard-coded here as an independent oracle (the plan's legacy map), not read from src.
+const LEGACY_REDIRECTS = [
+  ['#pricing', /\/services\/caravan-service\/#pricing$/],
+  ['#contact', /\/find-us\/$/],
+  ['#promo', /\/services\/lift-kits\/$/],
+  ['#kampi-widget', /\/#rentals$/],
+];
+const LEGACY_STAYS = ['#services', '#location'];
+{
+  const legacyContext = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const reached = async (page, re) => {
+    try {
+      await page.waitForURL(re, { timeout: 5000 });
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  for (const [hash, re] of LEGACY_REDIRECTS) {
+    const page = await legacyContext.newPage();
+    await page.goto(`${BASE}/${hash}`, { waitUntil: 'load' });
+    record(`/${hash}`, 'legacy', 'load redirects to its new home', await reached(page, re), page.url().replace(BASE, ''));
+    await page.close();
+  }
+  for (const hash of LEGACY_STAYS) {
+    const page = await legacyContext.newPage();
+    await page.goto(`${BASE}/${hash}`, { waitUntil: 'load' });
+    await page.waitForTimeout(500);
+    record(`/${hash}`, 'legacy', 'current-page anchor is left alone', page.url() === `${BASE}/${hash}`, page.url().replace(BASE, ''));
+    await page.close();
+  }
+  {
+    // hashchange: the visitor is already on Home and clicks an old in-page link.
+    const page = await legacyContext.newPage();
+    await page.goto(`${BASE}/`, { waitUntil: 'load' });
+    await page.evaluate(() => { location.hash = '#pricing'; });
+    record('/', 'legacy', 'hashchange to #pricing redirects', await reached(page, /\/services\/caravan-service\/#pricing$/), page.url().replace(BASE, ''));
+    await page.close();
+  }
+  await legacyContext.close();
+}
+
 await browser.close();
 
-const pad = (s, n) => String(s).padEnd(n);
+const pad =(s, n) => String(s).padEnd(n);
 console.log(`${pad('page', 30)} ${pad('width', 6)} ${pad('check', 46)} ${pad('result', 6)} detail`);
 for (const r of rows) {
   console.log(`${pad(r.page, 30)} ${pad(r.width, 6)} ${pad(r.check, 46)} ${pad(r.result, 6)} ${r.detail}`);

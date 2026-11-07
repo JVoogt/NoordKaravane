@@ -1157,6 +1157,66 @@ section.block {
   letter-spacing: 0.04em;
 }
 .hours-lines { list-style: none; }
+.loc-item:last-of-type { border-bottom: 0; padding-bottom: 0; }
+
+/* Find us: card beside the map from 960px up, stacked below. Ported from the old .loc-map rules. */
+@media (min-width: 960px) {
+  .loc-grid--split { grid-template-columns: 1fr 1.3fr; align-items: stretch; }
+}
+.loc-map {
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  overflow: hidden;
+  min-height: 480px;
+  position: relative;
+}
+.loc-map iframe {
+  display: block;
+  width: 100%; height: 100%; min-height: 480px;
+  border: 0;
+  filter: grayscale(0.5) brightness(0.65) contrast(1.1) invert(0.85) hue-rotate(180deg);
+  transition: filter .3s;
+}
+.loc-map:hover iframe {
+  filter: grayscale(0.35) brightness(0.72) contrast(1.08) invert(0.85) hue-rotate(180deg);
+}
+.loc-map-pill {
+  position: absolute; top: 16px; left: 16px;
+  background: var(--ink);
+  border: 1px solid var(--line-2);
+  padding: 8px 14px;
+  font-family: var(--f-mono);
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--paper);
+  border-radius: 99px;
+  display: inline-flex; gap: 10px; align-items: center;
+  z-index: 2;
+}
+.loc-map-pill::before {
+  content: ''; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--orange);
+  box-shadow: 0 0 0 4px rgba(233,94,29,0.2);
+}
+.service-areas {
+  margin-top: 56px;
+  padding: 32px;
+  border: 1px dashed var(--line-2);
+  border-radius: 18px;
+  background: var(--ink-2);
+}
+.service-areas h2 {
+  font-family: var(--f-mono);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--orange);
+  margin-bottom: 12px;
+}
+.service-areas p { color: var(--paper-dim); font-size: 14px; line-height: 1.65; }
 
 /* ============ FAQ (native details) ============ */
 .faq-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 32px; align-items: start; }
