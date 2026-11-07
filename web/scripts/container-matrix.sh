@@ -38,6 +38,7 @@ if [ "$QUICK" != "1" ]; then
   # pages and slash redirects
   expect_code "home" 200 /
   expect_code "recoveries page" 200 /services/recoveries/
+  for u in /find-us/ /services/caravan-service/ /services/repairs/ /services/solar-electrical/ /services/lift-kits/; do expect_code "page $u" 200 "$u"; done
   H="$(hdrs "$BASE/services/recoveries?x=1&y=2")"
   echo "$H" | head -n 1 | grep -q ' 301 ' && echo "$H" | grep -qi '^location: /services/recoveries/?x=1&y=2$' \
     && pass "slashless 301 keeps query" || fail "slashless 301 keeps query" "$(echo "$H" | grep -iE '^HTTP|^location' | tr '\n' ' ')"
@@ -55,7 +56,11 @@ if [ "$QUICK" != "1" ]; then
     [ "$SM" = "$SMI" ] && pass "sitemap.xml == sitemap-index.xml" || fail "sitemap alias" "differs"
   fi
   hdrs "$BASE/robots.txt" | grep -qi '^content-type: text/plain' && pass "robots.txt text/plain" || fail "robots.txt" "content-type"
-  hdrs "$BASE/sitemap-main.xml" | grep -qi '^location: /sitemap-0.xml' && pass "sitemap-main.xml 301" || fail "sitemap-main.xml" "no 301 to /sitemap-0.xml"
+  H="$(hdrs "$BASE/sitemap-main.xml")"
+  echo "$H" | head -n 1 | grep -q ' 301 ' && echo "$H" | grep -qi '^location: /sitemap-0.xml$' \
+    && pass "sitemap-main.xml 301 -> /sitemap-0.xml" || fail "sitemap-main.xml" "$(echo "$H" | grep -iE '^HTTP|^location' | tr '\n' ' ')"
+  expect_code "sitemap-0.xml" 200 /sitemap-0.xml
+  grep -q 'https://noordkaravane.co.za/shop/sitemap.xml' <<<"$SMI" && pass "sitemap index lists the shop sitemap" || fail "sitemap index" "no /shop/sitemap.xml entry"
 
   # favicons
   for u in /favicon.ico /favicon-96.png /favicon-192.png /apple-touch-icon.png; do expect_code "favicon $u" 200 "$u"; done

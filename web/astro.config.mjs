@@ -8,6 +8,10 @@ export default defineConfig({
   build: { format: 'directory' },
   devToolbar: { enabled: false },
   integrations: [
-    sitemap({ customSitemaps: ['https://noordkaravane.co.za/shop/sitemap.xml'] }),
+    sitemap({
+      customSitemaps: ['https://noordkaravane.co.za/shop/sitemap.xml'],
+      // The 404 page is never a sitemap entry (the integration already skips it today; the filter keeps it that way).
+      filter: (page) => !/\/404\/?$/.test(page),
+    }),
   ],
 });
