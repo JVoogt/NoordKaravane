@@ -48,7 +48,7 @@ if [ -z "${NK_DEPLOY_PULLED:-}" ]; then
   NK_DEPLOY_PULLED=1 exec bash "$SELF" "$@"
 fi
 PRE_PULL_SHA="${NK_PRE_PULL_SHA:-$(git rev-parse HEAD)}"
-unset NK_DEPLOY_PULLED NK_PRE_PULL_SHA NK_IMAGE_TAG   # must not leak into docker/compose child processes
+unset NK_DEPLOY_PULLED NK_PRE_PULL_SHA NK_IMAGE_TAG NK_COMMIT   # must not leak into docker/compose child processes
 
 BASE="${NK_BASE:-http://localhost:8260}"
 CANDIDATE=noordkaravane-candidate
@@ -62,6 +62,7 @@ LIVE_NAME="$(printf '%s\n' "$COMPOSE_CFG" | awk '/container_name:/ {print $2; ex
 LIVE_REF="$(docker compose config --images | head -n 1)"      # for example noordkaravane-web:latest
 IMAGE_REPO="${LIVE_REF%:*}"
 PREV_REF="${IMAGE_REPO}:prev"
+HEAD_SHA="$(git rev-parse HEAD)"
 CAND_REF="${IMAGE_REPO}:cand-$(git rev-parse --short HEAD)"
 
 SERVICE=noordkaravane
@@ -161,7 +162,7 @@ fi
 # No timeout around the build: a cold Node build on the Pi can legitimately take many minutes and a
 # timeout that kills it would only force a restart from scratch. The candidate probes and matrix are bounded.
 echo "==> build ${CAND_REF} (a failed build or nginx -t stops here; ${LIVE_REF} does not move and the running container is untouched)"
-NK_IMAGE_TAG="cand-$(git rev-parse --short HEAD)" docker compose build "$SERVICE"
+NK_COMMIT="$HEAD_SHA" NK_IMAGE_TAG="cand-$(git rev-parse --short HEAD)" docker compose build "$SERVICE"
 NEW_ID="$(docker image inspect --format '{{.Id}}' "$CAND_REF")"
 
 echo "==> candidate on ${CANDIDATE_BASE}"
@@ -183,10 +184,14 @@ fi
 echo "$matrix_out" | tail -n 1
 remove_candidate
 
-# The candidate passed: only now do tags move. :prev gets the image that is running now, but only when it
-# differs from the new image (a redeploy of the same commit, or a re-run after a failed swap, would
-# otherwise overwrite the last good image with the new one).
-if [ -n "$RUNNING_ID" ] && [ "$RUNNING_ID" != "$NEW_ID" ]; then
+# The candidate passed: only now do tags move. :prev gets the image that is running now, but only when
+# it is a different build: a different image id AND a different commit (the image carries the label
+# nk.commit; a rebuild of the same commit gets a new id because of the build timestamp, so the id alone
+# cannot tell). A redeploy of the same commit, or a re-run after a failed swap, would otherwise overwrite
+# the last good image with the one that is already running.
+RUNNING_COMMIT=""
+[ -n "$RUNNING_ID" ] && RUNNING_COMMIT="$(docker inspect --format '{{index .Config.Labels "nk.commit"}}' "$RUNNING_ID" 2>/dev/null || true)"
+if [ -n "$RUNNING_ID" ] && [ "$RUNNING_ID" != "$NEW_ID" ] && [ "$RUNNING_COMMIT" != "$HEAD_SHA" ]; then
   docker tag "$RUNNING_ID" "$PREV_REF" && echo ":prev now ${RUNNING_ID}" || echo "could not tag ${PREV_REF}; no fresh :prev this time"
 else
   echo ":prev unchanged"

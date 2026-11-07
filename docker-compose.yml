@@ -7,6 +7,8 @@ services:
       context: ./web
       additional_contexts:
         nkdocker: ./docker
+      labels:
+        nk.commit: ${NK_COMMIT:-unknown}
     image: noordkaravane-web:${NK_IMAGE_TAG:-latest}
     container_name: noordkaravane
     restart: unless-stopped
