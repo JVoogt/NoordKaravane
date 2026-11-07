@@ -13,8 +13,7 @@
     "test": "vitest run",
     "verify": "node scripts/verify.mjs",
     "browser": "node scripts/browser-check.mjs",
-    "//ci": "Phase 2 appends `&& npm run verify` once scripts/verify.mjs exists.",
-    "ci": "npm run check && npm test && npm run build && npm run guard:dist"
+    "ci": "npm run check && npm test && npm run build && npm run guard:dist && npm run verify"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",
