@@ -53,7 +53,7 @@ Rejected:
 8. **Testimonials not migrated.** The old reviews section shows three unattributed five-star quotes with no way to verify them. The owner's real Google profile has 24 five-star reviews. The new Home quotes 2 or 3 genuine Google reviews (reviewer's displayed first name and date, link to the profile), chosen from the live profile at build time of the content and approved by the owner. Safe default; the owner may veto.
 9. **Kampi rentals** becomes a one-line link card on Home (no iframe, uses the existing fallback link). The Google map iframe moves to Find us, lazy-loaded, with the existing text fallback link.
 10. **nginx.** The SPA catch-all (`try_files $uri $uri/ /index.html`) is replaced by `try_files $uri $uri/index.html =404` with `error_page 404 /404.html`. Existing guards are kept: `www` 301 block, `default_server` on the apex block, favicon location using `expires` only. Security headers move into one snippet included in every location that sets its own `add_header`, fixing the existing quirk where `/assets/` dropped them.
-11. **Compose.** The `noordkaravane` service changes from a bind-mounted `./site` to a `build:` of `./web` (nginx conf baked into the image via the `nkdocker` named build context, no bind mounts). Port 8260 and `deploy.sh` stay; `deploy.sh` gains `up -d --build`.
+11. **Compose.** The `noordkaravane` service changes from a bind-mounted `./site` to a `build:` of `./web` (nginx conf baked into the image via the `nkdocker` named build context, no bind mounts). Port 8260 and `deploy.sh` stay; `deploy.sh` becomes candidate-first: build under a candidate image tag (`:latest` does not move), probe a throwaway candidate container, and only then retag `:latest` and swap the real container.
 
 ## Architecture
 ```
