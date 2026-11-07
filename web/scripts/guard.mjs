@@ -38,6 +38,17 @@ function scan(files, needles, label) {
   }
 }
 
+// The em dash also hides as an HTML entity: &mdash; or a decimal or hex numeric reference, any case, any zero padding.
+const EM_DASH_ENTITY = /&(?:mdash|#0*8212|#x0*2014);/i;
+function scanEntity(files) {
+  for (const f of files) {
+    readFileSync(f, 'utf8').split('\n').forEach((line, i) => {
+      const m = line.match(EM_DASH_ENTITY);
+      if (m) failures.push(`${relative(WEB, f)}:${i + 1}: em dash entity ${JSON.stringify(m[0])}`);
+    });
+  }
+}
+
 // Every provider/seller/publisher @id a page's JSON-LD points at must be DEFINED in the same graph; a bare
 // reference to an undefined node tells search engines nothing. A definition carries at least @id, @type and
 // name: a {@type, @id}-only node used as a provider/seller/publisher is still just a reference.
@@ -88,6 +99,7 @@ if (DIST_MODE) {
   const requiresLd = (f) => f === join(dist, 'index.html') || /^services\/[^/]+\/index\.html$/.test(relative(dist, f).split('\\').join('/'));
   distFiles.filter((f) => f.endsWith('.html')).forEach((f) => checkJsonLdRefs(f, requiresLd(f)));
   scan(distFiles, [EM_DASH], 'em dash');
+  scanEntity(distFiles);
   scan(distFiles, ['aggregateRating', '17:00', ...UNSPACED_PRICES], 'forbidden');
   report('guard:dist');
 }
@@ -101,6 +113,7 @@ scan(emDashFiles, [EM_DASH], 'em dash');
 // String checks on source (excluding tests). Scripts hold the literals as oracles.
 const stringFiles = walk(join(WEB, 'src')).filter((f) => !f.endsWith('.test.ts'));
 scan(stringFiles, [...FORBIDDEN, ...UNSPACED_PRICES], 'forbidden');
+scanEntity([...stringFiles, ...walk(join(WEB, 'public'))]);
 
 // Tracked files under web/ or docker/ named business.json or business.*.json.
 let tracked = [];

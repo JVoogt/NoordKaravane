@@ -305,8 +305,16 @@ for (const route of have) {
     report(words >= 450 && words <= 750, '9 copy', '/ <main> word count', `${words} (allowed 450-750)`);
   }
   const EM_DASH = String.fromCharCode(0x2014);
-  const dashes = htmlFiles.filter((f) => readFileSync(f, 'utf8').includes(EM_DASH)).map((f) => relative(DIST, f));
-  report(dashes.length === 0, '9 copy', 'no em dash in any page', dashes.join(', '));
+  // The raw needle catches an entity left in the markup; the decoded text and attribute values catch any other
+  // spelling (named, decimal, hex, any case or padding) that a browser would turn into U+2014.
+  const ENTITY = /&(?:mdash|#0*8212|#x0*2014);/i;
+  const dashes = htmlFiles.filter((f) => {
+    const raw = readFileSync(f, 'utf8');
+    if (raw.includes(EM_DASH) || ENTITY.test(raw)) return true;
+    const root = parse(raw);
+    return root.text.includes(EM_DASH) || root.querySelectorAll('*').some((n) => Object.values(n.attributes).some((v) => v.includes(EM_DASH)));
+  }).map((f) => relative(DIST, f));
+  report(dashes.length === 0, '9 copy', 'no em dash (literal, entity or decoded) in any page', dashes.join(', '));
 }
 
 // 10. Sitemap and robots.

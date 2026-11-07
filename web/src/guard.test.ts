@@ -59,6 +59,14 @@ describe('guard --dist', () => {
     for (const needle of ['aggregateRating', '17:00', 'R1980', 'em dash']) expect(r.out).toContain(needle);
   });
 
+  it.each(['&mdash;', '&MDASH;', '&#8212;', '&#08212;', '&#x2014;', '&#X2014;', '&#x02014;'])('fails on the em dash entity %s in built output', (entity) => {
+    mkdirSync(join(web, 'dist'));
+    writeFileSync(join(web, 'dist', 'index.html'), `<p>a ${entity} b</p>`);
+    const r = run(['--dist'], { GUARD_WEB: web });
+    expect(r.code).not.toBe(0);
+    expect(r.out).toContain('em dash entity');
+  });
+
   it('passes on a clean dist', () => {
     mkdirSync(join(web, 'dist'));
     writeFileSync(join(web, 'dist', 'index.html'), '<h1>ok</h1><script type="application/ld+json">{}</script>');
@@ -209,5 +217,19 @@ describe('guard (source) does not depend on dist', () => {
     writeFileSync(join(web, 'dist', 'index.html'), 'aggregateRating');
     const r = run([], { GUARD_WEB: web });
     expect(r.code).toBe(0);
+  });
+});
+
+describe('guard source em dash entities', () => {
+  it.each(['&mdash;', '&#8212;', '&#x2014;'])('fails on %s in a source file', (entity) => {
+    writeFileSync(join(web, 'src', 'page.astro'), `<p>a ${entity} b</p>\n`);
+    const r = run([], { GUARD_WEB: web });
+    expect(r.code).not.toBe(0);
+    expect(r.out).toContain('em dash entity');
+  });
+
+  it('does not flag the en dash entity', () => {
+    writeFileSync(join(web, 'src', 'page.astro'), '<p>a &ndash; b</p>\n');
+    expect(run([], { GUARD_WEB: web }).out).not.toContain('em dash entity');
   });
 });
