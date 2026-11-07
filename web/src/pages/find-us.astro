@@ -81,9 +81,8 @@ const graph = buildGraph([orgNode(), breadcrumbNode(crumbs), faqNode(faq)]);
           </div>
         </div>
         <div class="loc-map">
-          {/* tabindex -1: a cross-origin iframe shows no focus ring from the page, so it stays out of the Tab order; the text link below is the keyboard route. */}
           <span class="loc-map-pill">Workshop</span>
-          <iframe src={mapEmbed} loading="lazy" title="Workshop map" width="600" height="480" tabindex="-1"></iframe>
+          <iframe src={mapEmbed} loading="lazy" title="Workshop map" width="600" height="480"></iframe>
         </div>
       </div>
       <p class="frame-fallback">Can't see the map? <a href={mapLink} target="_blank" rel="noopener">Open in Google Maps</a></p>
