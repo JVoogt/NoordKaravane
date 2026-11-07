@@ -1,0 +1,57 @@
+---
+// Inspection report proof block. Wording unchanged from the old page (Content Map: Inspection report).
+const points = [
+  { k: 'Evidence first', v: "Photos and notes are attached to findings, not kept in someone's head." },
+  { k: 'Priority clear', v: 'Safety-critical work is separated from nice-to-have upgrades.' },
+  { k: 'Quote before work', v: 'You approve the scope before spanners go further.' },
+  { k: 'Plain language', v: 'No workshop shorthand when you need a decision.' },
+];
+const rows = [
+  { k: 'Wheel bearing play detected', v: 'Recommend bearing service before long-distance towing.', evidence: '4 photos', low: false },
+  { k: 'Roof latch and gas strut check', v: 'Parts flagged separately so the customer can approve the repair.', evidence: '2 notes', low: false },
+  { k: 'Solar controller and battery health', v: 'Electrical reading logged and explained in customer-friendly terms.', evidence: 'Passed', low: true },
+];
+---
+
+<section id="inspection-report" class="block">
+  <div class="container">
+    <div class="sec-head">
+      <div class="sec-num" aria-hidden="true">&sect; 02 / 03</div>
+      <h2 class="sec-title">Know what is urgent, <span class="accent">and what can wait.</span></h2>
+      <p class="sec-sub">Photos, checklist notes and plain-language findings before any extra work is approved.</p>
+    </div>
+
+    <div class="inspection-wrap">
+      <div class="inspection-summary">
+        <div class="inspection-kicker">Workshop inspection app</div>
+        <h3>You leave with a clear picture.</h3>
+        <p>When your caravan or camper arrives, we inspect the running gear, electrics, seals, structure and trip-readiness. Findings are logged with photos and turned into a clear report so you can see what is safe, what needs attention, and what can wait for later.</p>
+        <div class="inspection-points">
+          {points.map((p) => <div class="inspection-point"><strong>{p.k}</strong>{p.v}</div>)}
+        </div>
+      </div>
+
+      <div class="inspection-report" role="group" aria-label="Example inspection report format">
+        <div class="report-head">
+          <div>
+            <div class="report-title">Service inspection summary</div>
+            <div class="est-total-note">Example format, no customer data shown</div>
+          </div>
+          <div class="report-status">Quote ready</div>
+        </div>
+        <div class="report-list">
+          {rows.map((r) => (
+            <div class="report-row">
+              <span class:list={['report-sev', { low: r.low }]} aria-hidden="true"></span>
+              <div class="report-copy">
+                <strong>{r.k}</strong>
+                <span>{r.v}</span>
+              </div>
+              <span class="report-evidence">{r.evidence}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

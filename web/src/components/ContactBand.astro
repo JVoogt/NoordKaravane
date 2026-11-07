@@ -1,0 +1,28 @@
+---
+// Closing "Bring her in" band: the last section of Home, every service page and Find us.
+// waText lets a page carry its own message; Home and Find us use the shared texts.
+import CtaButton from './CtaButton.astro';
+import { BUSINESS } from '../data/business';
+import { WA_TEXT, waUrl } from '../lib/whatsapp';
+
+interface Props {
+  waText?: string;
+}
+const { waText = WA_TEXT.enquire } = Astro.props;
+---
+
+<section class="block" id="contact">
+  <div class="container">
+    <div class="contact">
+      <div class="contact-inner">
+        <div class="contact-eyebrow">Ready when you are</div>
+        <h2>Bring her in. We'll make her <span class="accent">road-ready.</span></h2>
+        <p>WhatsApp lands in the workshop directly. No call-centre, no gatekeepers. You talk to the people doing the work.</p>
+        <div class="contact-actions">
+          <CtaButton href={waUrl(waText)} variant="whatsapp" external>WhatsApp {BUSINESS.phone.display}</CtaButton>
+          <CtaButton href={`tel:${BUSINESS.phone.e164}`} variant="ghost">Or call instead</CtaButton>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

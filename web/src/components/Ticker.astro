@@ -1,0 +1,21 @@
+---
+import { BUSINESS } from '../data/business';
+import { formatHoursCompact } from '../lib/hours';
+
+// Phones show the ticker static with only the hours (the `keep` item); larger screens scroll it and pause on hover.
+const items = [
+  { text: `${BUSINESS.address.locality} Workshop`, keep: false },
+  { text: '500+ caravans serviced', keep: false },
+  { text: 'Insurance-accredited recoveries', keep: false },
+  { text: `Cross-border: ${BUSINESS.crossBorder.map((c) => c.code).join(' · ')}`, keep: false },
+  { text: formatHoursCompact(BUSINESS.hours), keep: true },
+  { text: `WhatsApp ${BUSINESS.phone.display}`, keep: false },
+];
+---
+
+<div class="topbar">
+  <div class="topbar-track">
+    {items.map((t) => <span class:list={{ 'topbar-keep': t.keep }}>{t.text}</span>)}
+    {items.map((t) => <span class:list={{ 'topbar-keep': t.keep }} aria-hidden="true">{t.text}</span>)}
+  </div>
+</div>

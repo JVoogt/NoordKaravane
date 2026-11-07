@@ -1,0 +1,30 @@
+---
+// Five-step workshop process. Wording unchanged from the old page (Content Map: Process).
+const steps = [
+  { h: 'Drop it in', p: "Message us on WhatsApp with your caravan make, year and what's bothering you. We book you a slot, usually within the week." },
+  { h: 'On-ramp inspection', p: 'A full walk-around on arrival. We log brakes, bearings, tyres, electrics and structure, with photos.' },
+  { h: 'Scope & quote', p: 'You get a plain-language quote before we pick up a spanner. Optional extras flagged separately.' },
+  { h: 'Work done', p: 'The job happens in our workshop, not a parking lot. Parts sourced with warranties attached.' },
+  { h: 'Sign-off & tow', p: 'Final road-ready check, a written report in your logbook, and she rolls out straight.' },
+];
+---
+
+<section id="process" class="block">
+  <div class="container">
+    <div class="sec-head">
+      <div class="sec-num" aria-hidden="true">&sect; 03 / 03</div>
+      <h2 class="sec-title">How a service actually <em>runs through</em> our workshop.</h2>
+      <p class="sec-sub">No mystery, no surprises. Five steps from WhatsApp to keys-back.</p>
+    </div>
+
+    <ol class="process">
+      {steps.map((s, i) => (
+        <li class="step">
+          <div class="step-dot" aria-hidden="true">{String(i + 1).padStart(2, '0')}</div>
+          <h3>{s.h}</h3>
+          <p>{s.p}</p>
+        </li>
+      ))}
+    </ol>
+  </div>
+</section>

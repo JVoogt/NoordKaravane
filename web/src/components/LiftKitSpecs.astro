@@ -1,0 +1,63 @@
+---
+// Lift kit promo block (Content Map: Lift kit promo). The price comes from pricing.ts; the page's one primary CTA lives in Service.astro.
+import { Picture } from 'astro:assets';
+import liftKit from '../assets/lift-kit.jpg';
+import { ADDONS, fmtR } from '../data/pricing';
+import CtaButton from './CtaButton.astro';
+
+interface Props {
+  /** The page's own wa.me link and button label (same as the hero CTA). */
+  href: string;
+  label: string;
+}
+const { href, label } = Astro.props;
+
+const price = ADDONS.find((a) => a.id === 'lift-kit')!.price;
+const specs = [
+  { k: 'Lift height', v: '50 mm' },
+  { k: 'Fit time', v: '~ 1 day' },
+  { k: 'Warranty', v: '12 months' },
+  { k: 'Fitment', v: 'Most models' },
+];
+---
+
+<section id="lift-kit" class="block">
+  <div class="container">
+    <div class="sec-head">
+      <div class="sec-num" aria-hidden="true">&sect; Mods</div>
+      <h2 class="sec-title">The <em>simplest</em> upgrade you'll make.</h2>
+      <p class="sec-sub">A fitted 50 mm lift kit. The modification that pays for itself on the first proper trip.</p>
+    </div>
+
+    <div class="promo">
+      <div class="promo-media">
+        <Picture
+          src={liftKit}
+          formats={['avif', 'webp']}
+          fallbackFormat="jpg"
+          widths={[480, 640, 900]}
+          sizes="(max-width: 1100px) 92vw, 560px"
+          quality={70}
+          alt="Jurgens Penta with 50mm lift kit installed at Noord Karavane"
+          loading="lazy"
+          decoding="async"
+        />
+        <span class="promo-ticket">Fitted at our workshop</span>
+        <span class="promo-label">Lift kit fitment</span>
+      </div>
+      <div class="promo-detail">
+        <div class="promo-eyebrow">Featured modification</div>
+        <h3 class="promo-title">Caravan lift kit, <em>installation included.</em></h3>
+        <div class="promo-price">
+          <span class="amt">{fmtR(price)}</span>
+          <span class="unit">Fitted &middot; taxes incl.</span>
+        </div>
+        <p class="promo-sub">50 mm of clearance. Easier, more level towing. No more scraping on SA back roads, and your stabilisers will thank you.</p>
+        <dl class="promo-specs">
+          {specs.map((s) => <div class="promo-spec"><dt class="k">{s.k}</dt><dd class="v">{s.v}</dd></div>)}
+        </dl>
+        <CtaButton href={href} variant="primary" external arrow>{label}</CtaButton>
+      </div>
+    </div>
+  </div>
+</section>

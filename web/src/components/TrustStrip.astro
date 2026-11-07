@@ -1,0 +1,16 @@
+---
+import { BUSINESS } from '../data/business';
+
+const rating = BUSINESS.google.rating.toFixed(1);
+---
+
+<ul class="hero-trust" aria-label="Noord Karavane trust signals">
+  <li class="hero-trust-item">
+    <a href={BUSINESS.links.googleProfile} target="_blank" rel="noopener">
+      {rating} on Google, {BUSINESS.google.reviewCount} reviews
+    </a>
+  </li>
+  <li class="hero-trust-item"><strong>Insurance accredited</strong></li>
+  <li class="hero-trust-item"><strong>Quote before work</strong></li>
+  <li class="hero-trust-item"><strong>500+ serviced</strong></li>
+</ul>

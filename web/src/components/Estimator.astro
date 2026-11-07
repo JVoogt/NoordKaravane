@@ -1,0 +1,67 @@
+---
+// Works without JS: a static add-on list plus a CTA whose href is baked at build time as a NEUTRAL enquiry (nobody
+// has picked a package yet). With JS (html.js) the live controls replace the list and scripts/estimator.ts
+// rewrites the total and the CTA href with the real estimate on load and on every change.
+import { ADDONS, AXLE_OPTIONS, fmtR } from '../data/pricing';
+import { DEFAULT_AXLE, estimate, neutralEstimateUrl } from '../lib/estimator';
+
+const base = estimate(DEFAULT_AXLE, []);
+const addonPrice = (price: number): string => (price ? `+ ${fmtR(price)}` : 'POA');
+---
+
+<div class="estimator" data-estimator>
+  <h3>Estimate in 30 seconds</h3>
+  <p><span class="est-live-only">Pick your axle setup and any extras. </span>We'll send you a pre-filled WhatsApp.</p>
+
+  <div class="est-static">
+    <div class="est-field">
+      <div class="est-label">Add-ons</div>
+      <ul class="est-static-list">
+        {ADDONS.map((a) => (
+          <li><span>{a.label}</span><span class="est-chk-price">{addonPrice(a.price)}</span></li>
+        ))}
+      </ul>
+    </div>
+    <div class="est-total-note">Excl. parts &middot; VAT-inclusive &middot; approvals before work</div>
+  </div>
+
+  <div class="est-live">
+    <div class="est-field" role="group" aria-labelledby="est-axle-label">
+      <div class="est-label" id="est-axle-label">Axle configuration</div>
+      <div class="est-opts">
+        {AXLE_OPTIONS.map((o) => (
+          <button type="button" class="est-opt" data-axle={o.id} aria-pressed={o.id === DEFAULT_AXLE ? 'true' : 'false'}>{o.label}</button>
+        ))}
+      </div>
+    </div>
+
+    <div class="est-field" role="group" aria-labelledby="est-addons-label">
+      <div class="est-label" id="est-addons-label">Add-ons</div>
+      <div class="est-checks">
+        {ADDONS.map((a) => (
+          <button type="button" class="est-chk" data-addon={a.id} aria-pressed="false">
+            <span class="est-chk-left"><span class="box" aria-hidden="true"></span>{a.label}</span>
+            <span class="est-chk-price">{addonPrice(a.price)}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+
+    <div class="est-total">
+      <div>
+        <div class="est-total-label">Estimated total</div>
+        <div class="est-total-note">Excl. parts &middot; VAT-inclusive &middot; approvals before work</div>
+      </div>
+      <div class="est-total-amt" data-est-total aria-live="polite">{base.totalLabel}</div>
+    </div>
+  </div>
+
+  <a href={neutralEstimateUrl()} class="btn btn-whatsapp est-cta" data-est-cta target="_blank" rel="noopener">
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.5 14.4c-.3-.1-1.7-.9-2-1-.3-.1-.5-.1-.7.1-.2.3-.8 1-.9 1.2-.2.2-.3.2-.6.1-.3-.1-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.6.1-.1.3-.3.4-.5s.2-.3.3-.5c.1-.2 0-.4 0-.5s-.7-1.6-.9-2.2c-.2-.6-.5-.5-.7-.5s-.4 0-.6 0-.5.1-.8.4c-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.1.2 2.1 3.2 5.1 4.5.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.8-.7 2-1.4.2-.7.2-1.3.2-1.4-.1-.1-.3-.2-.6-.3z"/></svg>
+    Send my estimate to WhatsApp
+  </a>
+</div>
+
+<script>
+  import '../scripts/estimator';
+</script>

@@ -1,10 +1,16 @@
+# Fixed project name: it cannot collide with the shop stack (nkshop) whatever the clone directory is called.
+name: noordkaravane
+
 services:
   noordkaravane:
-    image: nginx:alpine
+    build:
+      context: ./web
+      additional_contexts:
+        nkdocker: ./docker
+      labels:
+        nk.commit: ${NK_COMMIT:-unknown}
+    image: noordkaravane-web:${NK_IMAGE_TAG:-latest}
     container_name: noordkaravane
     restart: unless-stopped
     ports:
       - "8260:80"
-    volumes:
-      - ./site:/usr/share/nginx/html:ro
-      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro

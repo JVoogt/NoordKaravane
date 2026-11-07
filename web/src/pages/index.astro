@@ -1,0 +1,167 @@
+---
+import { Picture } from 'astro:assets';
+import liftKit from '../assets/lift-kit.jpg';
+import Base from '../layouts/Base.astro';
+import ContactBand from '../components/ContactBand.astro';
+import CtaButton from '../components/CtaButton.astro';
+import Hours from '../components/Hours.astro';
+import KampiCard from '../components/KampiCard.astro';
+import Reviews from '../components/Reviews.astro';
+import ServiceCard from '../components/ServiceCard.astro';
+import TrustStrip from '../components/TrustStrip.astro';
+import { BUSINESS } from '../data/business';
+import { servicePath } from '../data/routes';
+import { SERVICE_LIST } from '../data/services';
+import { buildGraph, jsonLd, orgNode } from '../lib/schema';
+import { WA_TEXT, waUrl } from '../lib/whatsapp';
+
+const graph = buildGraph([orgNode()]);
+const description = `Pretoria North's trusted caravan workshop. Expert caravan service, repairs, trailer recoveries, solar installations, safety checks, wheel bearings, water systems & lift kits. Insurance accredited. Cross-border recoveries. 500+ caravans serviced. WhatsApp ${BUSINESS.phone.display}.`;
+---
+
+<Base
+  title="Noord Karavane | Caravan Service, Repairs & Recoveries in Pretoria North"
+  description={description}
+  path="/"
+  jsonLd={jsonLd(graph)}
+>
+  <header class="hero">
+    <div class="container hero-grid">
+      <div class="hero-main">
+        <h1 class="hero-title">
+          Keep her <span class="accent">road-ready.</span><br />
+          No surprise repairs.
+        </h1>
+        <p class="hero-lede">
+          Book a friendly workshop inspection in Pretoria North. We check your caravan or camper properly, show you the findings, quote before work starts, and help you decide what is urgent and what can wait.
+        </p>
+        <div class="hero-actions">
+          <CtaButton href={waUrl(WA_TEXT.book)} variant="primary" external arrow>Book on WhatsApp</CtaButton>
+          <CtaButton href={servicePath('caravan-service') + '#pricing'} variant="ghost">See packages from R949</CtaButton>
+        </div>
+        <TrustStrip />
+      </div>
+
+      <aside class="hero-media">
+        <span class="hero-media-tag">Workshop &middot; {BUSINESS.address.locality}</span>
+        <Picture
+          src={liftKit}
+          formats={['avif', 'webp']}
+          fallbackFormat="jpg"
+          widths={[480, 640, 900]}
+          sizes="(max-width: 1100px) 480px, 600px"
+          quality={70}
+          alt="Caravan in the Noord Karavane workshop"
+          loading="eager"
+          fetchpriority="high"
+          decoding="async"
+        />
+        <div class="hero-media-stamp">Road<br />Ready</div>
+      </aside>
+    </div>
+  </header>
+
+  <section id="services" class="block">
+    <div class="container">
+      <div class="sec-head">
+        <div class="sec-num" aria-hidden="true">&sect; 01 / 04</div>
+        <h2 class="sec-title">Everything your caravan needs, <em>under one roof.</em></h2>
+        <p class="sec-sub">From a pre-trip safety check to a full off-grid solar build.</p>
+      </div>
+      <div class="svc-grid">
+        {SERVICE_LIST.map((s) => <ServiceCard slug={s.slug} />)}
+      </div>
+    </div>
+  </section>
+
+  <section id="why-us" class="block">
+    <div class="container">
+      <div class="sec-head">
+        <div class="sec-num" aria-hidden="true">&sect; 02 / 04</div>
+        <h2 class="sec-title">Why Pretoria's caravanners <em>keep coming back.</em></h2>
+        <p class="sec-sub">Four things the regulars say, every time.</p>
+      </div>
+      <div class="why-grid">
+        <div class="why">
+          <div class="why-n">I.</div>
+          <h3>Specialists, not generalists</h3>
+          <p>Caravans are what we do, every day. Factory-trained on the major SA brands: Jurgens, Sprite, Gypsey, Conqueror, and the rest.</p>
+        </div>
+        <div class="why">
+          <div class="why-n">II.</div>
+          <h3>Quote before spanners</h3>
+          <p>You see the scope and the number before we open a single panel. Approve or walk.</p>
+        </div>
+        <div class="why">
+          <div class="why-n">III.</div>
+          <h3>Quick turnaround</h3>
+          <p>Most services done same or next day. We know a caravan sitting in the workshop is a holiday sitting still.</p>
+        </div>
+        <div class="why">
+          <div class="why-n">IV.</div>
+          <h3>Photographed &amp; logged</h3>
+          <p>Every inspection comes with photos and a written report straight in your logbook. No "trust us, it's fine."</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="reviews" class="block">
+    <div class="container">
+      <div class="sec-head">
+        <div class="sec-num" aria-hidden="true">&sect; 03 / 04</div>
+        <h2 class="sec-title">Public profiles and <span class="accent">workshop feedback.</span></h2>
+        <p class="sec-sub">Check the live profiles, then message the workshop directly.</p>
+      </div>
+      <Reviews />
+    </div>
+  </section>
+
+  <section id="location" class="block">
+    <div class="container">
+      <div class="sec-head">
+        <div class="sec-num" aria-hidden="true">&sect; 04 / 04</div>
+        <h2 class="sec-title">Drop in. <em>Kettle's always on.</em></h2>
+        <p class="sec-sub">{BUSINESS.address.street}, {BUSINESS.address.locality}. Easy to find, easier to park a caravan at.</p>
+      </div>
+      <div class="loc-grid">
+        <div class="loc-card">
+          <div class="loc-card-grid">
+            <div class="loc-item">
+              <div class="loc-k">Address</div>
+              <div class="loc-v">{BUSINESS.address.street}<br /><small>{BUSINESS.address.locality}, {BUSINESS.address.city}, {BUSINESS.address.postalCode}</small></div>
+            </div>
+            <div class="loc-item">
+              <div class="loc-k">Call</div>
+              <div class="loc-v"><a href={`tel:${BUSINESS.phone.e164}`}>{BUSINESS.phone.display}</a><small>WhatsApp preferred (faster replies)</small></div>
+            </div>
+            <div class="loc-item">
+              <div class="loc-k">Hours</div>
+              <Hours />
+            </div>
+            <div class="loc-item">
+              <div class="loc-k">Recoveries</div>
+              <div class="loc-v">Nationwide + cross-border<br /><small>{BUSINESS.crossBorder.map((c) => c.code).join(' · ')}</small></div>
+            </div>
+          </div>
+          <div class="hero-actions">
+            <CtaButton href={waUrl(WA_TEXT.findUs)} variant="primary" external arrow>Book a slot</CtaButton>
+            <CtaButton href="/find-us/" variant="ghost">Map and directions</CtaButton>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="container">
+      <KampiCard />
+    </div>
+  </section>
+
+  <ContactBand />
+
+  <script>
+    import '../scripts/legacy-hash';
+  </script>
+</Base>

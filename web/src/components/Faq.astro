@@ -1,0 +1,30 @@
+---
+// Native details/summary: works without JS. The same FaqItem[] feeds faqNode() for the JSON-LD.
+import { expandTokens, type FaqItem } from '../lib/faq';
+
+interface Props {
+  items: FaqItem[];
+}
+const { items } = Astro.props;
+---
+
+<div class="faq-list">
+  {items.map((item, i) => (
+    <details class:list={['faq-item', { 'faq-wide': !!item.list }]}>
+      <summary class="faq-q">
+        <span class="faq-num">{String(i + 1).padStart(2, '0')}</span>
+        <span>{expandTokens(item.q)}</span>
+        <span class="faq-toggle" aria-hidden="true"></span>
+      </summary>
+      <div class="faq-a">
+        <p>{expandTokens(item.a)}</p>
+        {item.list && item.list.length > 0 && (
+          <ul class="svc-checklist">
+            {item.list.map((li) => <li>{expandTokens(li)}</li>)}
+          </ul>
+        )}
+        {item.note && <p class="faq-note">{expandTokens(item.note)}</p>}
+      </div>
+    </details>
+  ))}
+</div>

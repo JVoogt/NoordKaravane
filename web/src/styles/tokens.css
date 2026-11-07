@@ -1,0 +1,26 @@
+/* Design tokens: values are verbatim from the old landing page :root (site/index.html). */
+:root {
+  --ink:        #0e0f11;
+  --ink-2:      #17181c;
+  --ink-3:      #1e2025;
+  --line:       rgba(235, 230, 221, 0.10);
+  --line-2:     rgba(235, 230, 221, 0.18);
+  --paper:      #ebe6dd;
+  --paper-dim:  rgba(235, 230, 221, 0.62);
+  --paper-low:  rgba(235, 230, 221, 0.58);
+  --orange:     #e95e1d;
+  --orange-2:   #ff7a3b;
+  --orange-low: rgba(233, 94, 29, 0.12);
+  /* Brand orange fails on paper (2.78:1). For orange text and marks on paper surfaces only: 4.6:1 on the darkest paper tint. */
+  --orange-on-paper: #a63d0f;
+  --whatsapp:   #25D366;
+
+  --f-display:  'Bebas Neue', 'Barlow', system-ui, sans-serif;
+  --f-body:     'Barlow', system-ui, -apple-system, sans-serif;
+  --f-mono:     'Barlow', system-ui, sans-serif;
+
+  --gap:        28px;
+  --section-y:  clamp(72px, 9vw, 120px);
+  --container:  min(1320px, 92vw);
+  --gutter:     clamp(20px, 4vw, 48px);
+}

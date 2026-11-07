@@ -1,0 +1,52 @@
+---
+import { Image } from 'astro:assets';
+import logo from '../assets/logo.png';
+import { BUSINESS } from '../data/business';
+import { servicePath } from '../data/routes';
+import { SERVICE_LIST } from '../data/services';
+import { formatHoursSegments } from '../lib/hours';
+import { waUrl } from '../lib/whatsapp';
+
+const year = new Date().getFullYear();
+---
+
+<footer class="foot">
+  <div class="container">
+    <div class="foot-main">
+      <div class="foot-brand">
+        <a href="/" class="brand">
+          <span class="brand-mark"><Image src={logo} width={68} height={68} format="webp" alt="Noord Karavane" /></span>
+          <span class="brand-txt">{BUSINESS.name}<small>{BUSINESS.address.locality}</small></span>
+        </a>
+        <p>A small specialist caravan workshop in Pretoria North. Servicing, repairs, solar, recoveries, modifications, done the way the regulars ask for them.</p>
+      </div>
+      <div class="foot-col">
+        <div class="foot-heading">Workshop</div>
+        <ul>
+          {SERVICE_LIST.map((s) => <li><a href={servicePath(s.slug)}>{s.name}</a></li>)}
+        </ul>
+      </div>
+      <div class="foot-col">
+        <div class="foot-heading">Company</div>
+        <ul>
+          <li><a href="/find-us/">Find us</a></li>
+          <li><a href="/#rentals">Kampi rentals</a></li>
+          <li><a href="/shop/">Shop</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <div class="foot-heading">Contact</div>
+        <ul>
+          <li><a href={waUrl()} target="_blank" rel="noopener">WhatsApp {BUSINESS.phone.display}</a></li>
+          <li><a href={`tel:${BUSINESS.phone.e164}`}>Call {BUSINESS.phone.display}</a></li>
+          <li><a href="/find-us/">{BUSINESS.address.street}</a></li>
+          <li><a href="/find-us/">{formatHoursSegments(BUSINESS.hours).map((seg, i) => (<Fragment>{i > 0 && " \u00b7 "}<span class="foot-hours-seg">{seg}</span></Fragment>))}</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>&copy; {year} {BUSINESS.name} &middot; {BUSINESS.address.locality} &middot; {BUSINESS.address.country}</span>
+      <span>Road-ready from Pretoria North</span>
+    </div>
+  </div>
+</footer>
