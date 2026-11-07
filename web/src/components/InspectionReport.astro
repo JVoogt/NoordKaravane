@@ -1,34 +1,26 @@
 ---
-// Inspection report proof block. Wording unchanged from the old page (Content Map: Inspection report).
-const points = [
-  { k: 'Evidence first', v: "Photos and notes are attached to findings, not kept in someone's head." },
-  { k: 'Priority clear', v: 'Safety-critical work is separated from nice-to-have upgrades.' },
-  { k: 'Quote before work', v: 'You approve the scope before spanners go further.' },
-  { k: 'Plain language', v: 'No workshop shorthand when you need a decision.' },
-];
+// Inspection report proof block on the Caravan service page: what the visitor gets after the walk-around.
+// The rows are an example format, labelled as such; no customer data.
+import { servicePath } from '../data/routes';
+
 const rows = [
-  { k: 'Wheel bearing play detected', v: 'Recommend bearing service before long-distance towing.', evidence: '4 photos', low: false },
-  { k: 'Roof latch and gas strut check', v: 'Parts flagged separately so the customer can approve the repair.', evidence: '2 notes', low: false },
-  { k: 'Solar controller and battery health', v: 'Electrical reading logged and explained in customer-friendly terms.', evidence: 'Passed', low: true },
+  { k: 'Wheel bearing play detected', v: 'Recommend a bearing service before long-distance towing.', evidence: '4 photos', low: false },
+  { k: 'Roof latch and gas strut check', v: 'Parts listed separately, so you can approve the repair or leave it.', evidence: '2 notes', low: false },
+  { k: 'Solar controller and battery health', v: 'Reading logged and explained in plain terms.', evidence: 'Passed', low: true },
 ];
 ---
 
 <section id="inspection-report" class="block">
   <div class="container">
     <div class="sec-head">
-      <div class="sec-num" aria-hidden="true">&sect; 02 / 03</div>
-      <h2 class="sec-title">Know what is urgent, <span class="accent">and what can wait.</span></h2>
-      <p class="sec-sub">Photos, checklist notes and plain-language findings before any extra work is approved.</p>
+      <h2 class="sec-title">What the inspection report shows</h2>
     </div>
 
     <div class="inspection-wrap">
       <div class="inspection-summary">
-        <div class="inspection-kicker">Workshop inspection app</div>
-        <h3>You leave with a clear picture.</h3>
-        <p>When your caravan or camper arrives, we inspect the running gear, electrics, seals, structure and trip-readiness. Findings are logged with photos and turned into a clear report so you can see what is safe, what needs attention, and what can wait for later.</p>
-        <div class="inspection-points">
-          {points.map((p) => <div class="inspection-point"><strong>{p.k}</strong>{p.v}</div>)}
-        </div>
+        <p>When your caravan arrives we check the running gear, electrics, seals and structure, and whether it's ready for the trip you've planned. Each finding gets photos and a note.</p>
+        <p>The report keeps safety work apart from the nice-to-haves, in plain language, so you can decide what to do now and what can wait. Nothing extra gets done without your go-ahead.</p>
+        <p class="inspection-links">Worn bearings, brakes or woodrot become a <a href={servicePath('repairs')}>caravan repair</a> quote. Battery or solar trouble goes to <a href={servicePath('solar-electrical')}>electrical and solar</a>.</p>
       </div>
 
       <div class="inspection-report" role="group" aria-label="Example inspection report format">

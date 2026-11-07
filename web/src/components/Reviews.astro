@@ -1,30 +1,45 @@
 ---
+// Google trust module. Always complete on its own: the verified rating, the review count, the date it was checked
+// and a direct link to the reviews. Review excerpts render only for entries the owner approved in reviews.ts.
 import { BUSINESS } from '../data/business';
 import { REVIEWS } from '../data/reviews';
 
-const approved = REVIEWS.filter((r) => r.approved);
-const rating = BUSINESS.google.rating.toFixed(1);
+interface Props {
+  /** Optional sentence beside the rating, e.g. what the reviews tend to mention. */
+  note?: string;
+}
+const { note } = Astro.props;
+
+const approved = REVIEWS.filter((r) => r.approved).slice(0, 3);
+const g = BUSINESS.google;
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const longDate = (iso: string): string => {
+  const [y, m, d] = iso.split('-').map(Number);
+  return `${d} ${MONTHS[m - 1]} ${y}`;
+};
 ---
 
-<div class="reviews" id="reviews-list">
-  {approved.length > 0
-    ? approved.map((r) => (
-        <article class="review">
-          <div class="review-stars" aria-hidden="true">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-          <blockquote class="review-body">{r.text}</blockquote>
-          <div class="review-meta">
-            <div class="review-author">{r.name}</div>
-            <a class="review-date" href={r.url} target="_blank" rel="noopener">{r.date}</a>
-          </div>
-        </article>
-      ))
-    : (
-        <article class="review review-card">
-          <p class="review-big">Rated <span class="accent">{rating}</span> on Google from {BUSINESS.google.reviewCount} reviews</p>
-          <div class="profile-links">
-            <a class="profile-link" href={BUSINESS.links.googleProfile} target="_blank" rel="noopener">Read Google profile</a>
-            <a class="profile-link" href={BUSINESS.links.facebook} target="_blank" rel="noopener">Visit Facebook page</a>
-          </div>
-        </article>
-      )}
+<div class="trust" id="reviews-list">
+  <div class="trust-score">
+    <p class="trust-big"><span class="trust-num">{g.rating.toFixed(1)}</span> on Google</p>
+    <p class="trust-meta">From {g.reviewCount} reviews, checked {longDate(g.asOf)}.</p>
+  </div>
+  {note && <p class="trust-note">{note}</p>}
+  <div class="profile-links">
+    <a class="profile-link" href={BUSINESS.links.googleProfile} target="_blank" rel="noopener">Read our Google reviews</a>
+    <a class="profile-link" href={BUSINESS.links.facebook} target="_blank" rel="noopener">Facebook page</a>
+  </div>
+  {approved.length > 0 && (
+    <ul class="trust-quotes">
+      {approved.map((r) => (
+        <li class="review">
+          <blockquote class="review-body" lang={r.lang}>{r.text}</blockquote>
+          <p class="review-meta">
+            <span class="review-author">{r.name}</span>
+            <a class="review-date" href={r.url} target="_blank" rel="noopener">{longDate(r.date)}</a>
+          </p>
+        </li>
+      ))}
+    </ul>
+  )}
 </div>

@@ -20,7 +20,7 @@
   --f-mono:     'Barlow', system-ui, sans-serif;
 
   --gap:        28px;
-  --section-y:  clamp(72px, 9vw, 120px);
+  --section-y:  clamp(48px, 6vw, 84px);
   --container:  min(1320px, 92vw);
   --gutter:     clamp(20px, 4vw, 48px);
 }

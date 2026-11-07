@@ -6,31 +6,41 @@ import CtaButton from '../components/CtaButton.astro';
 import Faq from '../components/Faq.astro';
 import Hours from '../components/Hours.astro';
 import { BUSINESS } from '../data/business';
+import { servicePath } from '../data/routes';
+import { SERVICE_LIST } from '../data/services';
 import { formatHoursProse } from '../lib/hours';
 import type { FaqItem } from '../lib/faq';
 import { breadcrumbNode, buildGraph, faqNode, jsonLd, orgNode } from '../lib/schema';
 import { WA_TEXT, waUrl } from '../lib/whatsapp';
 
 const path = '/find-us/';
+// Friday closing time comes from business.ts, never typed here.
+const friday = BUSINESS.hours.fri;
 const a = BUSINESS.address;
 const crumbs = [
   { name: 'Home', path: '/' },
   { name: 'Find us', path },
 ];
 
-// Old FAQ Q07. {hours} is expanded from business.ts when the page is rendered, never frozen here.
+// Old FAQ Q07 keeps its question. {hours} is expanded from business.ts when the page is rendered, never frozen here.
 const faq: FaqItem[] = [
   {
     q: 'Where is Noord Karavane located?',
     a: `${a.street}, ${a.locality}. Open {hours} We also offer on-site services at your location for a call-out fee.`,
   },
+  {
+    q: 'Do I need to book before I bring my caravan in?',
+    a: "It helps. Send a WhatsApp first and we'll give you a time to bring it in.",
+  },
+  {
+    q: 'Can I bring it in on a Friday?',
+    a: friday ? `Yes. The workshop closes at ${friday.closes} on a Friday, so come in earlier in the day.` : 'No, the workshop is closed on Fridays.',
+  },
 ];
 
-// Old "Service Areas" paragraph, kept as one paragraph. The country list comes from business.ts.
-const areas =
-  'Pretoria North, Pretoria Central, Pretoria East, Pretoria West, Centurion, Midrand, Johannesburg, Wonderboom, Sinoville, Montana, Annlin, Akasia, Rosslyn, Ga-Rankuwa, Brits, Hartbeespoort, Rustenburg, Limpopo, and the greater Gauteng region.';
 const countries = BUSINESS.crossBorder.map((c) => c.name);
 const countryList = `${countries.slice(0, -1).join(', ')} and ${countries[countries.length - 1]}`;
+const coords = `${BUSINESS.geo.lat.toFixed(5)}, ${BUSINESS.geo.lng.toFixed(5)}`;
 
 const mapEmbed = `https://maps.google.com/maps?q=${BUSINESS.links.mapsQuery}&t=&z=16&ie=UTF8&iwloc=B&output=embed`;
 const mapLink = `https://maps.google.com/maps?q=${BUSINESS.links.mapsQuery}`;
@@ -45,17 +55,15 @@ const graph = buildGraph([orgNode(), breadcrumbNode(crumbs), faqNode(faq)]);
   waText={WA_TEXT.findUs}
   jsonLd={jsonLd(graph)}
 >
-  <header class="hero">
+  <header class="hero hero--service">
     <div class="container hero-grid hero-grid--panel">
       <div class="hero-main">
         <Breadcrumbs items={crumbs} />
-        <p class="hero-eyebrow">Find us</p>
-        <h1 class="hero-title hero-title--service">Drop in. <span class="accent">Kettle's always on.</span></h1>
-        <p class="hero-lede">{a.street}, {a.locality}. Easy to find, easier to park a caravan at.</p>
-        <div class="hero-actions hero-actions--spaced">
-          <CtaButton href={waUrl(WA_TEXT.findUs)} variant="primary" external arrow>Book a slot</CtaButton>
-          <CtaButton href={mapLink} variant="ghost" external>Get directions</CtaButton>
-          <CtaButton href={`tel:${BUSINESS.phone.e164}`} variant="ghost">Call {BUSINESS.phone.display}</CtaButton>
+        <h1 class="hero-title hero-title--service">Find the workshop in {a.locality}</h1>
+        <p class="hero-lede">{a.street}, {a.locality}, {a.postalCode}. A quick WhatsApp before you tow in means we're ready for you.</p>
+        <div class="hero-actions">
+          <CtaButton href={mapLink} variant="primary" external arrow>Get directions</CtaButton>
+          <CtaButton href={waUrl(WA_TEXT.findUs)} variant="ghost" external>Book a time on WhatsApp</CtaButton>
         </div>
       </div>
       <div class="hero-panel">
@@ -65,47 +73,48 @@ const graph = buildGraph([orgNode(), breadcrumbNode(crumbs), faqNode(faq)]);
             <div class="loc-v">{a.street}<br /><small>{a.locality}, {a.city}, {a.postalCode}</small></div>
           </div>
           <div class="loc-item">
-            <div class="loc-k">Call</div>
-            <div class="loc-v"><a href={`tel:${BUSINESS.phone.e164}`}>{BUSINESS.phone.display}</a><small>WhatsApp preferred (faster replies)</small></div>
-          </div>
-          <div class="loc-item">
             <div class="loc-k">Hours</div>
             <Hours />
           </div>
           <div class="loc-item">
-            <div class="loc-k">Recoveries</div>
-            <div class="loc-v">Nationwide + cross-border<br /><small>{BUSINESS.crossBorder.map((c) => c.code).join(' · ')}</small></div>
+            <div class="loc-k">Call</div>
+            <div class="loc-v"><a href={`tel:${BUSINESS.phone.e164}`}>{BUSINESS.phone.display}</a><small>WhatsApp preferred (faster replies)</small></div>
           </div>
         </div>
       </div>
     </div>
   </header>
 
-  <section id="location" class="block">
-    <div class="container">
-      <div class="loc-map">
-        <span class="loc-map-pill">Workshop</span>
-        <iframe src={mapEmbed} loading="lazy" title="Workshop map" width="600" height="480"></iframe>
+  <section id="location" class="block block--tight">
+    <div class="container loc-split">
+      <div class="loc-map-wrap">
+        <div class="loc-map">
+          <iframe src={mapEmbed} loading="lazy" title="Map of the Noord Karavane workshop" width="600" height="420"></iframe>
+        </div>
+        <p class="frame-fallback">Can't see the map? <a class="btn btn-ghost" href={mapLink} target="_blank" rel="noopener">Open in Google Maps</a></p>
       </div>
-      <p class="frame-fallback">Can't see the map? <a class="btn btn-ghost" href={mapLink} target="_blank" rel="noopener">Open in Google Maps</a></p>
-
-      <div class="service-areas">
-        <h2>Service Areas</h2>
-        <p>Noord Karavane proudly serves caravan and trailer owners across {areas} We also provide cross-border caravan and trailer recoveries to {countryList}.</p>
+      <div class="loc-text">
+        <h2>Getting here</h2>
+        <p>The workshop is at {a.street} in {a.locality}, {a.city}. For a satnav, the GPS position is {coords}.</p>
+        <h2>Where our customers come from</h2>
+        <p>We work on caravans and trailers from Pretoria North and the suburbs around it (Wonderboom, Sinoville, Montana, Annlin and Akasia), from across Pretoria and Centurion, and from Midrand and Johannesburg. Owners also come in from Brits, Hartbeespoort, Rustenburg and Limpopo.</p>
+        <p>For a <a href={servicePath('recoveries')}>caravan or trailer recovery</a> we come to you, anywhere in South Africa and across the border to {countryList}.</p>
+        <h2>What we do here</h2>
+        <ul class="loc-services">
+          {SERVICE_LIST.map((s) => <li><a href={servicePath(s.slug)}>{s.name}</a></li>)}
+        </ul>
       </div>
     </div>
   </section>
 
-  <section id="faq" class="block">
-    <div class="container">
+  <section id="faq" class="block block--tight">
+    <div class="container faq-layout">
       <div class="sec-head">
-        <div class="sec-num">&#9830; FAQ</div>
-        <h2 class="sec-title">The <em>questions</em> that come up most.</h2>
-        <p class="sec-sub">Short answers. Message us for the full story.</p>
+        <h2 class="sec-title">Visiting the workshop</h2>
       </div>
       <Faq items={faq} />
     </div>
   </section>
 
-  <ContactBand waText={WA_TEXT.findUs} />
+  <ContactBand waText={WA_TEXT.findUs} heading="Book a time to bring it in" place="none" />
 </Base>

@@ -5,34 +5,37 @@ import { SERVICES, SERVICE_LIST, serviceMeta } from './services';
 
 const EM_DASH = String.fromCharCode(0x2014);
 
-// Verbatim from the plan's SERVICES table (old page copy; nothing invented).
+// The approved card copy from the 2026-11-07 content refactor (facts already on the service pages; nothing invented).
+// Pinned so a copy change is a deliberate, reviewed edit.
 const EXPECTED = {
   'caravan-service': {
     name: 'Caravan service',
-    blurb:
-      "Full caravan and trailer servicing. Mechanical, structural and cosmetic repairs, executed by technicians who work on caravans every day, not as a side line. Pre-trip checks: brakes, tyres, lights, signals, gas seals. We sign it off or we don't.",
+    need: 'Due for a service, or heading off on a trip',
+    blurb: 'Bearings repacked, brakes stripped and set, coupler, lights and 12 V electrics tested, and a written report at the end.',
     tag: 'From R949',
   },
   repairs: {
-    name: 'Repairs',
-    blurb:
-      'Wheel bearings, brakes, suspension, leaf springs, coupling and jockey wheel work. Pumps, tanks, geysers, pipe repairs and full plumbing overhauls. Floors, walls and frames restored to solid condition.',
+    name: 'Caravan repairs',
+    need: 'A noisy wheel, brakes that pull, a leak or a soft floor',
+    blurb: 'Bearings, brakes, suspension and couplings. Pumps, tanks and geysers. Woodrot in floors, walls and frames.',
     tag: 'Quote before work',
   },
   'solar-electrical': {
     name: 'Electrical and solar',
-    blurb: 'Panels, charge controllers, LiFePO₄ banks, inverters and proper 12 V / 220 V rewiring.',
-    tag: 'Quote on brief',
+    need: "A battery that's flat by the second night, or plans to camp off-grid",
+    blurb: 'Solar panels, charge controllers, lithium or AGM batteries, inverters, and 12 V and 220 V wiring.',
+    tag: 'Free solar quote',
   },
   recoveries: {
-    name: 'Recoveries',
-    blurb:
-      'Breakdowns, accidents, roadside. Local nationwide and cross-border to Botswana, Mozambique, Zimbabwe, Namibia and Eswatini. One number, one operator.',
+    name: 'Caravan recoveries',
+    need: 'Broken down or in an accident, far from home',
+    blurb: 'Caravans and trailers recovered nationwide, and across the border to Botswana, Mozambique, Zimbabwe, Namibia and Eswatini.',
     tag: 'Cross-border ready',
   },
   'lift-kits': {
     name: '50 mm lift kits',
-    blurb: 'Fitted at the workshop. Easier towing, better clearance, protects stabilisers.',
+    need: "Scraping on gravel roads, or a tow that isn't level",
+    blurb: 'Fitted at the workshop: more ground clearance, a more level tow and less strain on the stabilisers.',
     tag: 'R1 980 fitted',
   },
 } as const;
@@ -50,6 +53,7 @@ describe('SERVICES keyed by the one slug list', () => {
     for (const s of SERVICE_SLUGS) {
       expect(SERVICES[s].slug).toBe(s);
       expect(SERVICES[s].name.length).toBeGreaterThan(0);
+      expect(SERVICES[s].need.length).toBeGreaterThan(0);
       expect(SERVICES[s].blurb.length).toBeGreaterThan(0);
       expect(SERVICES[s].tag.length).toBeGreaterThan(0);
       expect(serviceMeta(s)).toBe(SERVICES[s]);
@@ -58,13 +62,13 @@ describe('SERVICES keyed by the one slug list', () => {
 
   it('matches the plan table verbatim', () => {
     for (const s of SERVICE_SLUGS) {
-      expect({ name: SERVICES[s].name, blurb: SERVICES[s].blurb, tag: SERVICES[s].tag }).toEqual(EXPECTED[s]);
+      expect({ name: SERVICES[s].name, need: SERVICES[s].need, blurb: SERVICES[s].blurb, tag: SERVICES[s].tag }).toEqual(EXPECTED[s]);
     }
   });
 
   it('has no em dash, 17:00 or unspaced price in any field', () => {
     for (const s of SERVICE_LIST) {
-      for (const text of [s.name, s.blurb, s.tag]) {
+      for (const text of [s.name, s.need, s.blurb, s.tag]) {
         expect(text).not.toContain(EM_DASH);
         expect(text).not.toContain('17:00');
         expect(text).not.toMatch(/R1980|R1499|R2299/);

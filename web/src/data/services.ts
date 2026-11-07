@@ -1,14 +1,16 @@
-// Pure: imports only the ServiceSlug type. Copy is the old page's wording (see the plan's Content Map).
-// Consumers: Home ServiceCard grid, Footer links, orgNode hasOfferCatalog, Service.astro related cards.
+// Pure: imports only the ServiceSlug type. Copy plan: docs/plans/2026-11-07-workshop-pages-content-refactor.md.
+// Consumers: Home ServiceCard list, Footer links, orgNode hasOfferCatalog, Service.astro related cards, breadcrumbs.
 import { SERVICE_SLUGS, type ServiceSlug } from './routes';
 
 export interface ServiceMeta {
   slug: ServiceSlug;
-  /** Card title, footer link text, hasOfferCatalog item name. */
+  /** Card title, footer link text, breadcrumb, hasOfferCatalog item name. */
   name: string;
-  /** One or two sentences, old-page wording only. */
+  /** The visitor's problem in their own words, so nobody needs the part name to pick a card. */
+  need: string;
+  /** One sentence: what the work covers. Facts already on the service page only. */
   blurb: string;
-  /** Old card foot label; carries the price where the old page stated one. */
+  /** Card foot label; carries the price where the page states one. */
   tag: string;
 }
 
@@ -16,34 +18,36 @@ export const SERVICES: Readonly<Record<ServiceSlug, ServiceMeta>> = Object.freez
   'caravan-service': {
     slug: 'caravan-service',
     name: 'Caravan service',
-    blurb:
-      "Full caravan and trailer servicing. Mechanical, structural and cosmetic repairs, executed by technicians who work on caravans every day, not as a side line. Pre-trip checks: brakes, tyres, lights, signals, gas seals. We sign it off or we don't.",
+    need: 'Due for a service, or heading off on a trip',
+    blurb: 'Bearings repacked, brakes stripped and set, coupler, lights and 12 V electrics tested, and a written report at the end.',
     tag: 'From R949',
   },
   repairs: {
     slug: 'repairs',
-    name: 'Repairs',
-    blurb:
-      'Wheel bearings, brakes, suspension, leaf springs, coupling and jockey wheel work. Pumps, tanks, geysers, pipe repairs and full plumbing overhauls. Floors, walls and frames restored to solid condition.',
+    name: 'Caravan repairs',
+    need: 'A noisy wheel, brakes that pull, a leak or a soft floor',
+    blurb: 'Bearings, brakes, suspension and couplings. Pumps, tanks and geysers. Woodrot in floors, walls and frames.',
     tag: 'Quote before work',
   },
   'solar-electrical': {
     slug: 'solar-electrical',
     name: 'Electrical and solar',
-    blurb: 'Panels, charge controllers, LiFePO₄ banks, inverters and proper 12 V / 220 V rewiring.',
-    tag: 'Quote on brief',
+    need: "A battery that's flat by the second night, or plans to camp off-grid",
+    blurb: 'Solar panels, charge controllers, lithium or AGM batteries, inverters, and 12 V and 220 V wiring.',
+    tag: 'Free solar quote',
   },
   recoveries: {
     slug: 'recoveries',
-    name: 'Recoveries',
-    blurb:
-      'Breakdowns, accidents, roadside. Local nationwide and cross-border to Botswana, Mozambique, Zimbabwe, Namibia and Eswatini. One number, one operator.',
+    name: 'Caravan recoveries',
+    need: 'Broken down or in an accident, far from home',
+    blurb: 'Caravans and trailers recovered nationwide, and across the border to Botswana, Mozambique, Zimbabwe, Namibia and Eswatini.',
     tag: 'Cross-border ready',
   },
   'lift-kits': {
     slug: 'lift-kits',
     name: '50 mm lift kits',
-    blurb: 'Fitted at the workshop. Easier towing, better clearance, protects stabilisers.',
+    need: "Scraping on gravel roads, or a tow that isn't level",
+    blurb: 'Fitted at the workshop: more ground clearance, a more level tow and less strain on the stabilisers.',
     tag: 'R1 980 fitted',
   },
 });

@@ -28,7 +28,7 @@ export const BUSINESS = {
     kampi: 'https://kampi.co.za',
     mapsQuery: '252+General+Beyers+Street,+Pretoria+North,+Pretoria,+South+Africa',
   },
-  google: { rating: 5.0, reviewCount: 24, asOf: '2026-11-06' },
+  google: { rating: 5.0, reviewCount: 24, asOf: '2026-11-07' },
   crossBorder: [
     { code: 'BW', name: 'Botswana' },
     { code: 'MZ', name: 'Mozambique' },

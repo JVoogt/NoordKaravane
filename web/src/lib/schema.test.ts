@@ -39,6 +39,16 @@ describe('orgNode', () => {
     expect(s).not.toContain('17:00');
   });
 
+  it('builds its description address from business.ts', () => {
+    expect(org.description).toContain(`${BUSINESS.address.street}, ${BUSINESS.address.locality}`);
+  });
+
+  it('states no unconfirmed claims: no paymentAccepted, no 500+, no factory training', () => {
+    expect(org.paymentAccepted).toBeUndefined();
+    const s = JSON.stringify(org);
+    expect(s).not.toMatch(/500\+|factory|trusted|expert/i);
+  });
+
   it('lists exactly the five services with names and urls from the service table', () => {
     const items = org.hasOfferCatalog.itemListElement as Obj[];
     expect(items).toHaveLength(5);
@@ -137,6 +147,14 @@ describe('serviceNode', () => {
     }) as Obj;
     expect(s.offers.price).toBe(1980);
     expect(s.offers.priceCurrency).toBe('ZAR');
+  });
+
+  it('adds areaServed only for recoveries: South Africa and the cross-border countries', () => {
+    const plain = serviceNode({ name: 'Repairs', description: 'd', path: '/services/repairs/' }) as Obj;
+    expect(plain.areaServed).toBeUndefined();
+    const r = serviceNode({ name: 'Recoveries', description: 'd', path: '/services/recoveries/', areaServed: 'recoveries' }) as Obj;
+    expect(r.areaServed.map((a: Obj) => a.name)).toEqual(['South Africa', ...BUSINESS.crossBorder.map((c) => c.name)]);
+    expect(r.areaServed.every((a: Obj) => a['@type'] === 'Country')).toBe(true);
   });
 });
 

@@ -1,6 +1,4 @@
 ---
-import { BUSINESS } from '../data/business';
-
 interface Props {
   links: Array<{ label: string; href: string; current: boolean }>;
 }
@@ -8,7 +6,6 @@ const { links } = Astro.props;
 ---
 
 <div class="mobile-quicknav">
-  <a href={`tel:${BUSINESS.phone.e164}`}>Call</a>
   {links.map((l) => <a href={l.href} aria-current={l.current ? 'page' : undefined}>{l.label}</a>)}
 </div>
 

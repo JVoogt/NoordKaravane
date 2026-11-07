@@ -104,11 +104,24 @@ if (DIST_MODE) {
   report('guard:dist');
 }
 
+// C0/C1 control characters (other than tab, newline, carriage return) in src, scripts, public text files. They are
+// invisible in an editor and come from mangled escapes: a CSS '\\201C' once became U+0081 followed by 'C'.
+const CONTROL = /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/;
+function scanControl(files) {
+  for (const f of files) {
+    readFileSync(f, 'utf8').split('\n').forEach((line, i) => {
+      const m = line.match(CONTROL);
+      if (m) failures.push(`${relative(WEB, f)}:${i + 1}: control character U+${m[0].charCodeAt(0).toString(16).toUpperCase().padStart(4, '0')}`);
+    });
+  }
+}
+
 // U+2014 anywhere in src, scripts, public text files.
 const srcFiles = walk(join(WEB, 'src'));
 const emDashFiles = [...srcFiles, ...['scripts', 'public'].flatMap((d) => walk(join(WEB, d)))];
 scanned = srcFiles.length;
 scan(emDashFiles, [EM_DASH], 'em dash');
+scanControl(emDashFiles);
 
 // String checks on source (excluding tests). Scripts hold the literals as oracles.
 const stringFiles = walk(join(WEB, 'src')).filter((f) => !f.endsWith('.test.ts'));

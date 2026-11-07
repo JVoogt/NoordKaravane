@@ -31,7 +31,7 @@ describe('BUSINESS facts', () => {
     expect(BUSINESS.links.googleProfile).toBe('https://share.google/T9FFV2QHsZb1VuVMD');
     expect(BUSINESS.links.kampi).toBe('https://kampi.co.za');
     expect(BUSINESS.links.mapsQuery).toContain('252+General+Beyers+Street');
-    expect(BUSINESS.google).toEqual({ rating: 5.0, reviewCount: 24, asOf: '2026-11-06' });
+    expect(BUSINESS.google).toEqual({ rating: 5.0, reviewCount: 24, asOf: '2026-11-07' });
   });
 
   it('holds the five cross-border countries and the recoveries note', () => {
