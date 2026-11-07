@@ -116,6 +116,213 @@ async function quicknavTabReach(page, chipCount) {
   return { reached: seen.size, hidden };
 }
 
+// Header Call button: a 44px phone-icon link beside the WhatsApp CTA, inside the viewport at every width.
+// The tel: number and the aria-label are hard-coded oracles.
+async function headerCallRow(page, path, width) {
+  const hc = await page.evaluate(() => {
+    const a = document.querySelector('.nav a.nav-call');
+    const cta = document.querySelector('.nav-cta');
+    if (!a || !cta) return null;
+    const r = a.getBoundingClientRect();
+    const c = cta.getBoundingClientRect();
+    const cs = getComputedStyle(a);
+    return {
+      href: a.getAttribute('href'),
+      label: a.getAttribute('aria-label'),
+      w: r.width,
+      h: r.height,
+      visible: cs.display !== 'none' && cs.visibility !== 'hidden' && r.width > 0,
+      inside: r.left >= 0 && r.right <= window.innerWidth,
+      beside: r.right <= c.left + 1 && Math.abs(r.top - c.top) < 30,
+    };
+  });
+  const ok = !!hc && hc.visible && hc.inside && hc.beside && hc.w >= 44 && hc.h >= 44 && hc.href === 'tel:+27833349357' && hc.label === 'Call Noord Karavane';
+  record(path, width, 'header Call button 44px, beside the WhatsApp CTA, inside viewport', ok, hc ? `${Math.round(hc.w)}x${Math.round(hc.h)} href=${hc.href} label=${hc.label} beside=${hc.beside}` : 'missing .nav a.nav-call');
+}
+
+// Round 3 (design and UX review fixes). Every row asserts something the review found missing or wrong.
+async function roundThreeChecks(page, path, width) {
+  const service = path.startsWith('/services/');
+  const isHome = path === '/';
+  const isFind = path === '/find-us/';
+  await headerCallRow(page, path, width);
+
+  // Closing CTA band (the Home "Bring her in" band) ends every page's main content.
+  const band = await page.evaluate(() => {
+    const last = document.querySelector('main > section:last-of-type');
+    const c = last?.querySelector('.contact');
+    if (!c) return null;
+    const wa = c.querySelector('a[href^="https://wa.me/27833349357"]');
+    const tel = c.querySelector('a[href="tel:+27833349357"]');
+    return { wa: !!wa, tel: !!tel, h: Math.min(...[wa, tel].filter(Boolean).map((a) => a.getBoundingClientRect().height)) };
+  });
+  record(path, width, 'closing CTA band is the last section, WhatsApp and Call 44px+', !!band && band.wa && band.tel && band.h >= 44, band ? `wa=${band.wa} tel=${band.tel} minH=${band.h}` : 'no .contact in the last main section');
+
+  // Hero panel: from 1100px the fact/contact cards sit to the right of the hero text; below that they stack under it.
+  if (service || isFind) {
+    const hp = await page.evaluate(() => {
+      const m = document.querySelector('.hero-main');
+      const p = document.querySelector('.hero-panel');
+      if (!m || !p) return null;
+      const a = m.getBoundingClientRect();
+      const b = p.getBoundingClientRect();
+      return { right: b.left >= a.right - 1 && b.height > 0, stacked: b.top >= a.bottom - 1 };
+    });
+    const want = width >= 1100 ? 'right' : 'stacked';
+    record(path, width, `hero panel is ${want === 'right' ? 'right of' : 'under'} the hero text`, !!hp && (want === 'right' ? hp.right : hp.stacked), hp ? `right=${hp.right} stacked=${hp.stacked}` : 'no .hero-panel');
+  }
+
+  // Tap targets on phones: FAQ rows, inline phone links, the Google chip and footer links are 44px+ high.
+  if (width <= 700) {
+    const small = await page.evaluate(() => {
+      const bad = [];
+      for (const sel of ['summary.faq-q', '.loc-v a[href^="tel:"]', '.hero-trust-item a', '.foot-col a', '.frame-fallback a']) {
+        for (const el of document.querySelectorAll(sel)) {
+          const r = el.getBoundingClientRect();
+          if (r.width > 0 && r.height < 43.5) bad.push(`${sel}=${Math.round(r.height)}`);
+        }
+      }
+      return [...new Set(bad)];
+    });
+    record(path, width, 'tap targets >= 44px (FAQ, phone links, Google chip, footer links)', small.length === 0, small.join(' '));
+  }
+
+  // Ticker: static on phones, paused while hovered on larger screens (WCAG 2.2.2).
+  const tick = await page.evaluate(() => {
+    const t = document.querySelector('.topbar-track');
+    return t ? getComputedStyle(t).animationName : 'missing';
+  });
+  if (width <= 700) {
+    record(path, width, 'ticker is static on phones', tick === 'none', `animation-name=${tick}`);
+  } else {
+    await page.hover('.topbar');
+    const paused = await page.evaluate(() => getComputedStyle(document.querySelector('.topbar-track')).animationPlayState);
+    await page.mouse.move(0, 400);
+    record(path, width, 'ticker pauses on hover', paused === 'paused', `play-state=${paused}`);
+  }
+
+  // Quick-link row hides on scroll down and returns on scroll up and on Tab (phone widths only, JS on).
+  if (width <= 768) {
+    // "Visible header" = the nav's bottom edge in the viewport while it is stuck to the top. Its own box (and so
+    // the page below it) must not change height: a collapsing sticky header would make the content jump.
+    const navBottom = () => page.evaluate(() => document.querySelector('.nav').getBoundingClientRect().bottom);
+    const navBox = () => page.evaluate(() => document.querySelector('.nav').offsetHeight);
+    const jump = (y) => page.evaluate((top) => window.scrollTo({ top, behavior: 'instant' }), y);
+    // Focus inside the header deliberately keeps the row open, so start from a blurred page.
+    await page.evaluate(() => document.activeElement?.blur());
+    await jump(0);
+    await page.waitForTimeout(1000); // longer than the 800ms the row stays put after a Tab press
+    const boxRest = await navBox();
+    await jump(900);
+    await page.waitForTimeout(500);
+    const down = await navBottom();
+    const boxDown = await navBox();
+    await jump(700);
+    await page.waitForTimeout(500);
+    const up = await navBottom();
+    await jump(900);
+    await page.waitForTimeout(500);
+    await page.keyboard.press('Tab');
+    await page.waitForTimeout(500);
+    const tab = await navBottom();
+    await jump(0);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    const slide = await page.evaluate(() => getComputedStyle(document.querySelector('.nav')).transitionDuration);
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    record(path, width, 'header slide has no transition under prefers-reduced-motion', slide === '0s', `transition-duration=${slide}`);
+    record(path, width, 'quicknav hides on scroll down, shows on scroll up and on Tab, without moving the content', down <= up - 40 && tab >= up - 2 && boxDown === boxRest, `visible: down=${Math.round(down)} up=${Math.round(up)} afterTab=${Math.round(tab)}; box ${boxRest}px -> ${boxDown}px`);
+  }
+
+  // Page-specific rows.
+  if (path === '/') {
+    const chips = await page.evaluate(() => [...document.querySelectorAll('.hero-trust-item')].map((e) => e.textContent.trim()));
+    record(path, width, 'Home trust chips do not repeat "WhatsApp direct"', !chips.some((c) => /whatsapp direct/i.test(c)), chips.join(' | '));
+  }
+  if (path === '/services/recoveries/') {
+    const r = await page.evaluate(() => {
+      const top = (s) => document.querySelector(s)?.getBoundingClientRect().top ?? null;
+      const badge = document.querySelector('.hero-badge');
+      const h1 = document.querySelector('h1').getBoundingClientRect();
+      const bg = (el) => (el ? getComputedStyle(el).backgroundColor : null);
+      const call = document.querySelector('.hero-actions a[href^="tel:"]');
+      const wa = document.querySelector('.hero-actions a[href^="https://wa.me/"]');
+      const b = badge?.getBoundingClientRect();
+      return {
+        actions: top('.hero-actions'),
+        facts: top('.facts'),
+        chips: top('.chip-list'),
+        badgeText: badge?.textContent.trim() ?? null,
+        badgeSize: badge ? parseFloat(getComputedStyle(badge).fontSize) : 0,
+        badgeGap: b ? Math.abs(h1.top - b.bottom) : null,
+        badgeInHours: !!badge?.closest('.loc-card, .loc-v'),
+        equal: !!call && !!wa && bg(call) === bg(wa) && bg(call) !== 'rgba(0, 0, 0, 0)',
+        callFirst: !!call && !!wa && (call.compareDocumentPosition(wa) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0,
+      };
+    });
+    record(path, width, 'Recoveries 24/7 is a visible badge beside the H1 (14px+)', r.badgeText === 'Recoveries 24/7' && r.badgeSize >= 14 && r.badgeGap !== null && r.badgeGap <= 48 && !r.badgeInHours, `text=${r.badgeText} size=${r.badgeSize} gap=${r.badgeGap && Math.round(r.badgeGap)}`);
+    record(path, width, 'Recoveries Call and WhatsApp buttons carry equal weight, Call first', r.equal && r.callFirst, `equal=${r.equal} callFirst=${r.callFirst}`);
+    if (width < 1100) {
+      record(path, width, 'Recoveries actions sit above the fact cards and country pills', r.actions !== null && r.facts !== null && r.chips !== null && r.actions < r.facts && r.actions < r.chips, `actions=${Math.round(r.actions)} facts=${Math.round(r.facts)} chips=${Math.round(r.chips)}`);
+    }
+  }
+  if (path === '/services/repairs/' && width >= 1100) {
+    const c = await page.evaluate(() => {
+      const hs = [...document.querySelectorAll('.svc-cols h2')].map((h) => h.getBoundingClientRect().top);
+      const h1 = parseFloat(getComputedStyle(document.querySelector('h1')).fontSize);
+      const h2 = document.querySelector('.svc-cols h2') ? parseFloat(getComputedStyle(document.querySelector('.svc-cols h2')).fontSize) : 0;
+      const hero = document.querySelector('.hero').getBoundingClientRect().bottom;
+      return { n: hs.length, aligned: hs.length > 0 && Math.max(...hs) - Math.min(...hs) < 4, h1, h2, below: hs.length > 0 && Math.min(...hs) >= hero - 1 };
+    });
+    record(path, width, 'Repairs sub-headings are three columns under the hero, smaller than the H1', c.n === 3 && c.aligned && c.below && c.h2 < c.h1 * 0.6, `n=${c.n} aligned=${c.aligned} below=${c.below} h1=${c.h1} h2=${c.h2}`);
+  }
+  if (path === '/services/lift-kits/') {
+    const l = await page.evaluate(() => {
+      const a = document.querySelector('#lift-kit a.btn-primary[href^="https://wa.me/27833349357"]');
+      const specs = document.querySelector('#lift-kit .promo-specs');
+      if (!a || !specs) return null;
+      return { h: a.getBoundingClientRect().height, below: a.getBoundingClientRect().top >= specs.getBoundingClientRect().bottom - 1, n: document.querySelectorAll('#lift-kit .btn-primary').length };
+    });
+    record(path, width, 'lift kit price block ends in one primary CTA, 44px+', !!l && l.h >= 44 && l.below && l.n === 1, l ? `h=${l.h} below=${l.below} n=${l.n}` : 'no primary wa.me button in #lift-kit');
+  }
+  if (path === NEUTRAL_PAGE) {
+    const order = await page.evaluate(() => [...document.querySelectorAll('main > header, main > section')].map((s) => s.id || s.tagName.toLowerCase()));
+    record(path, width, 'Caravan page order: hero, pricing, inspection report, process, FAQ', JSON.stringify(order.slice(0, 5)) === JSON.stringify(['header', 'pricing', 'inspection-report', 'process', 'faq']), order.join(' > '));
+    const pk = await page.evaluate(() => ({ active: document.querySelectorAll('.price.active').length, pkg: document.querySelectorAll('[data-package]').length, label: getComputedStyle(document.querySelector('.estimator'), '::before').content }));
+    record(path, width, 'package rows are static (no active highlight) and the estimator label has no "v.1"', pk.active === 0 && pk.pkg === 0 && !/v\.1/.test(pk.label), `active=${pk.active} data-package=${pk.pkg} label=${pk.label}`);
+    const proc = await page.evaluate(() => {
+      const dots = [...document.querySelectorAll('.step-dot')].map((d) => getComputedStyle(d).backgroundColor);
+      const cols = getComputedStyle(document.querySelector('.process')).gridTemplateColumns.split(' ').length;
+      return { styles: new Set(dots).size, n: dots.length, cols };
+    });
+    record(path, width, 'process markers share one style' + (width <= 700 ? ' and stack in one column' : ''), proc.n === 5 && proc.styles === 1 && (width > 700 || proc.cols === 1), `n=${proc.n} styles=${proc.styles} cols=${proc.cols}`);
+    if (width <= 700) {
+      const pts = await page.evaluate(() => {
+        const e = document.querySelector('.inspection-summary')?.getBoundingClientRect();
+        const p = document.querySelector('.inspection-points')?.getBoundingClientRect();
+        return { points: p?.height ?? 0, summary: e?.height ?? 0 };
+      });
+      record(path, width, 'inspection principle cards are tightened on phones (under 330px tall)', width >= 390 ? pts.points < 330 : true, `points=${Math.round(pts.points)}px summary=${Math.round(pts.summary)}px`);
+    }
+  }
+  if (isFind) {
+    const f = await page.evaluate(() => {
+      const dir = document.querySelector('.hero-actions a[href*="maps.google.com"]');
+      const fb = document.querySelector('.frame-fallback a');
+      return { dir: dir?.textContent.trim() ?? null, dirH: dir?.getBoundingClientRect().height ?? 0, fbBtn: !!fb?.classList.contains('btn-ghost'), fbH: fb?.getBoundingClientRect().height ?? 0 };
+    });
+    record(path, width, 'Find us hero has a "Get directions" button, map fallback is a ghost button (44px+)', f.dir === 'Get directions' && f.dirH >= 44 && f.fbBtn && f.fbH >= 44, `dir=${f.dir} ${f.dirH}px fallbackGhost=${f.fbBtn} ${f.fbH}px`);
+  }
+  if (service) {
+    const loc = await page.evaluate(() => {
+      const b = document.querySelector('.loc-card > a.btn');
+      const c = b?.parentElement;
+      if (!b || !c) return null;
+      return { w: b.getBoundingClientRect().width, cw: c.getBoundingClientRect().width };
+    });
+    record(path, width, 'loc-card "Find us" button is not stretched', !!loc && loc.w < loc.cw * 0.6, loc ? `button ${Math.round(loc.w)}px in ${Math.round(loc.cw)}px card` : 'no .loc-card > a.btn');
+  }
+}
+
 const browser = await chromium.launch({ executablePath: EXECUTABLE });
 
 for (const path of PAGES) {
@@ -212,6 +419,9 @@ for (const path of PAGES) {
     record(path, width, 'tab walk shows focus ring', walkOk, walkOk ? `${stops} stops` : walkDetail);
 
     // Sticky header height: the quick-link row must not wrap to a second row on phones.
+    // Measured at the top of the page: below it the quick-link row slides away on scroll down (checked separately).
+    await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+    await page.waitForTimeout(300);
     const headerH = await page.evaluate(() => document.querySelector('.nav')?.getBoundingClientRect().height ?? -1);
     const limit = width <= 320 ? 140 : width <= 390 ? 130 : width <= 768 ? 140 : null;
     if (limit !== null) record(path, width, `sticky header <= ${limit}px`, headerH > 0 && headerH <= limit, `${Math.round(headerH)}px`);
@@ -351,6 +561,8 @@ for (const path of PAGES) {
       record(path, width, 'hero call button 44px+ with number', !!call && call.h >= 44 && call.text === 'Call 083 334 9357' && call.href === 'tel:+27833349357', call ? `${call.text} h=${call.h}` : 'missing');
     }
 
+    await roundThreeChecks(page, path, width);
+
     // Footer hours: every segment is nowrap so a time never breaks mid-range.
     const hoursWrap = await page.evaluate(() => {
       const segs = [...document.querySelectorAll('.foot-hours-seg')];
@@ -417,9 +629,10 @@ if (PAGES.includes(NEUTRAL_PAGE)) {
     const axle1 = await q('[data-axle="braked-1"]');
     const axle2 = await q('[data-axle="braked-2"]');
     const lift = await q('[data-addon="lift-kit"]');
-    const missing = Object.entries({ '.est-static': stat, '.est-live': live, '[data-est-total]': total, '[data-est-cta]': cta, '[data-axle="braked-1"]': axle1, '[data-axle="braked-2"]': axle2, '[data-addon="lift-kit"]': lift })
+    const unsure = await q('[data-axle="other"]');
+    const missing = Object.entries({ '.est-static': stat, '.est-live': live, '[data-est-total]': total, '[data-est-cta]': cta, '[data-axle="braked-1"]': axle1, '[data-axle="braked-2"]': axle2, '[data-addon="lift-kit"]': lift, '[data-axle="other"]': unsure })
       .filter(([, h]) => !h).map(([k]) => k);
-    record(NEUTRAL_PAGE, width, 'estimator hooks present', missing.length === 0, missing.length ? `missing ${missing.join(', ')}` : 'all 7 hooks matched');
+    record(NEUTRAL_PAGE, width, 'estimator hooks present', missing.length === 0, missing.length ? `missing ${missing.join(', ')}` : 'all 8 hooks matched');
     if (missing.length === 0) {
       const decoded = async () => decodeURIComponent((await cta.getAttribute('href')) ?? '');
       record(NEUTRAL_PAGE, width, 'estimator JS on: live visible, static hidden', (await live.isVisible()) && !(await stat.isVisible()));
@@ -445,6 +658,11 @@ if (PAGES.includes(NEUTRAL_PAGE)) {
       );
       const optH = await axle2.evaluate((e) => e.getBoundingClientRect().height);
       record(NEUTRAL_PAGE, width, 'estimator options >= 44px high', optH >= 44, `${optH}px`);
+      // "Not sure" is a starting price, never a confident total (screen and WhatsApp message).
+      await unsure.click();
+      const t2 = (await total.textContent()).replace(/\s+/g, ' ').trim();
+      const href2 = await decoded();
+      record(NEUTRAL_PAGE, width, 'estimator "Not sure" shows a "From" total and says so in the message', t2 === 'From R3 479' && href2.includes('Total est.: from R3 479 (excl. parts)'), `${t2} | ${href2.slice(-70).replace(/\n/g, ' | ')}`);
     }
     await context.close();
   }
@@ -485,6 +703,26 @@ for (const width of WIDTHS) {
   if (limit !== null) record('/404.html', width, `sticky header <= ${limit}px`, m.nav > 0 && m.nav <= limit, `${Math.round(m.nav)}px`);
   record('/404.html', width, 'header CTA visible, inside viewport, >= 44px', !!m.cta && m.cta.inside && m.cta.h >= 44, m.cta ? `h=${m.cta.h}` : 'missing .nav-cta');
   record('/404.html', width, 'has an h1', m.h1);
+  await headerCallRow(page, '/404.html', width);
+  const callH = await page.evaluate(() => document.querySelector('.notfound a[href="tel:+27833349357"]')?.getBoundingClientRect().height ?? 0);
+  record('/404.html', width, 'page has a Call button, 44px+', callH >= 44, `h=${callH}`);
+  await context.close();
+}
+
+// A missing nested URL must render the styled 404 page (root-relative assets), not a bare error or unstyled HTML.
+// Needs the nginx container (error_page 404 /404.html); a plain static file server answers with its own error page.
+for (const width of [390, 1440]) {
+  const context = await browser.newContext({ viewport: { width, height: 900 } });
+  const page = await context.newPage();
+  const res = await page.goto(BASE + '/services/nope/', { waitUntil: 'networkidle' });
+  const s = await page.evaluate(() => ({
+    h1: document.querySelector('h1')?.textContent.trim() ?? null,
+    bg: getComputedStyle(document.body).backgroundColor,
+    font: getComputedStyle(document.querySelector('h1') ?? document.body).fontFamily,
+    nav: !!document.querySelector('.nav a.nav-call'),
+    rel: [...document.querySelectorAll('link[rel=stylesheet],script[src]')].every((n) => (n.getAttribute('href') ?? n.getAttribute('src')).startsWith('/')),
+  }));
+  record('/services/nope/', width, 'missing nested URL is a 404 that renders styled', res?.status() === 404 && s.h1 === 'Page not found.' && s.bg === 'rgb(14, 15, 17)' && /bebas/i.test(s.font) && s.nav && s.rel, `status=${res?.status()} h1=${s.h1} bg=${s.bg} font=${s.font.slice(0, 20)} nav=${s.nav} rootRelative=${s.rel}`);
   await context.close();
 }
 

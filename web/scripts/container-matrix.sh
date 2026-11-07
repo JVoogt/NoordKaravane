@@ -45,6 +45,16 @@ if [ "$QUICK" != "1" ]; then
   expect_code "bare directory is 404 page" 404 /services/
   B="$(curl -s --max-time 10 "$BASE/nope/")"
   echo "$B" | grep -q '<h1' && pass "404 page body has h1" || fail "404 page body" "no h1"
+  # A missing nested URL gets the same styled 404 page: its css and scripts are root-relative (/_astro/...), so
+  # they resolve from any depth, and the stylesheet it names is really served. Plus the Call button.
+  expect_code "nested missing url is 404" 404 /services/nope/
+  NB="$(curl -s --max-time 10 "$BASE/services/nope/")"
+  echo "$NB" | grep -q '<h1' && pass "nested 404 body has h1" || fail "nested 404 body" "no h1"
+  NREL="$(echo "$NB" | grep -oE '(href|src)="[^"]*(\.css|\.js)"' | grep -vcE '="(/|https?:)' || true)"
+  [ "$NREL" = "0" ] && pass "nested 404 css and js references are root-relative" || fail "nested 404 assets" "$NREL non-root-relative reference(s)"
+  NCSS="$(echo "$NB" | grep -oE 'href="/_astro/[^"]*\.css"' | head -n 1 | sed 's/^href="//; s/"$//')"
+  [ -n "$NCSS" ] && expect_code "nested 404 stylesheet is served ($NCSS)" 200 "$NCSS" || fail "nested 404 stylesheet" "no /_astro/ css link"
+  echo "$NB" | grep -qE 'btn btn-ghost[^>]*>[^<]*Call 083 334 9357' && pass "404 page has a Call button" || fail "404 Call button" "no ghost Call button in the 404 body"
 
   # sitemap, robots: each body must be non-empty before the two are compared
   SM="$(curl -s --max-time 10 "$BASE/sitemap.xml")"

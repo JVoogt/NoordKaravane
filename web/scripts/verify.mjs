@@ -408,6 +408,30 @@ for (const route of have) {
   }
 }
 
+// 14. Page structure (design review round): Caravan service order, the closing CTA band on every page,
+// the header Call button, the Home trust chips.
+{
+  const CARAVAN = '/services/caravan-service/';
+  if (pages.has(CARAVAN)) {
+    const order = pages.get(CARAVAN).root.querySelectorAll('main > header, main > section').map((n) => n.getAttribute('id') ?? n.tagName.toLowerCase());
+    const want = ['header', 'pricing', 'inspection-report', 'process', 'faq'];
+    report(JSON.stringify(order.slice(0, 5)) === JSON.stringify(want), '14 structure', `${CARAVAN} section order`, `got ${order.join(' > ')}`);
+  }
+  for (const route of have) {
+    const root = pages.get(route).root;
+    const lastSection = root.querySelectorAll('main > section').at(-1);
+    const band = lastSection?.querySelector('.contact');
+    const ok = !!band && !!band.querySelector('a[href^="https://wa.me/27833349357"]') && !!band.querySelector('a[href="tel:+27833349357"]');
+    report(ok, '14 structure', `${route} closing CTA band`, ok ? 'last section has a WhatsApp and a Call link' : 'last <main> section has no .contact band with both links');
+    const call = root.querySelector('.nav a.nav-call');
+    report(!!call && call.getAttribute('href') === 'tel:+27833349357' && call.getAttribute('aria-label') === 'Call Noord Karavane', '14 structure', `${route} header Call button`, call ? 'tel link and aria-label ok' : 'no .nav a.nav-call');
+  }
+  if (pages.has('/')) {
+    const chips = pages.get('/').root.querySelectorAll('.hero-trust-item').map((n) => squash(n.text));
+    report(!chips.some((c) => /whatsapp direct/i.test(c)), '14 structure', '/ trust chips', chips.join(' | '));
+  }
+}
+
 if (failures > 0) {
   console.error(`verify: FAIL (${failures})`);
   process.exit(1);
