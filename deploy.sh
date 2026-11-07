@@ -9,8 +9,9 @@
 #      image, so there are no bind mounts). :latest does not move during the build
 #   3. start the candidate image as a throwaway container on 127.0.0.1:${NK_CANDIDATE_PORT:-8261}, run the
 #      probes and the quick container matrix against it
-#   4. only if the candidate passes: promote the running image to :prev (only when it differs from the new
-#      image), retag the candidate as :latest, recreate the real container and probe it again
+#   4. only if the candidate passes: promote the running image to :prev (only when it is a different build
+#      AND is the image behind :proven), retag the candidate as :latest, recreate the real container and
+#      probe it again; :proven is set only after those probes pass
 # A failure before step 4 never touches the running site, :latest or :prev. Nothing is restored
 # automatically and no state file is written; the rollback is manual (below).
 #
@@ -25,8 +26,10 @@
 # MANUAL ROLLBACK (the swap itself failed, or the new site is wrong in a way no probe catches). Roll back
 # BEFORE re-running deploy.sh: a re-run builds and starts the same commit again.
 #   web stack:    docker tag noordkaravane-web:prev noordkaravane-web:latest && docker compose up -d --force-recreate --no-deps --no-build noordkaravane
-#   legacy stack: git checkout <sha-before-the-first-pull> -- docker-compose.yml docker/nginx.conf && docker compose up -d --force-recreate --no-build noordkaravane
-#                 (the failure text prints the exact sha; or on a dev machine: git revert -m 1 <merge-sha>, push, then on the Pi: git pull && ./deploy.sh)
+#   legacy stack: git checkout <legacy-sha> -- docker-compose.yml docker/nginx.conf && docker compose up -d --force-recreate --no-build noordkaravane
+#                 (the failure text works out <legacy-sha> from history: the parent of the first commit that moved
+#                 docker-compose.yml away from nginx:alpine; or on a dev machine: git revert -m 1 <merge-sha>, push,
+#                 then on the Pi: git pull && ./deploy.sh)
 set -euo pipefail
 
 cd "$(dirname "$0")"
@@ -41,14 +44,11 @@ if [ -z "${NK_DEPLOY_PULLED:-}" ]; then
   command -v flock >/dev/null 2>&1 || { echo "flock is not installed (it ships in util-linux); cannot take the deploy lock"; exit 1; }
   exec 9>.git/nk-deploy.lock
   flock -n 9 || { echo "another deploy is running"; exit 1; }
-  NK_PRE_PULL_SHA="$(git rev-parse HEAD)"
-  export NK_PRE_PULL_SHA
   echo "==> git pull"
-  git pull --ff-only
+  git pull --ff-only 9>&-   # fd 9 closed for git: an auto-gc it detaches must not keep holding the lock
   NK_DEPLOY_PULLED=1 exec bash "$SELF" "$@"
 fi
-PRE_PULL_SHA="${NK_PRE_PULL_SHA:-$(git rev-parse HEAD)}"
-unset NK_DEPLOY_PULLED NK_PRE_PULL_SHA NK_IMAGE_TAG NK_COMMIT   # must not leak into docker/compose child processes
+unset NK_DEPLOY_PULLED NK_IMAGE_TAG NK_COMMIT   # must not leak into docker/compose child processes
 
 BASE="${NK_BASE:-http://localhost:8260}"
 CANDIDATE=noordkaravane-candidate
@@ -62,22 +62,50 @@ LIVE_NAME="$(printf '%s\n' "$COMPOSE_CFG" | awk '/container_name:/ {print $2; ex
 LIVE_REF="$(docker compose config --images | head -n 1)"      # for example noordkaravane-web:latest
 IMAGE_REPO="${LIVE_REF%:*}"
 PREV_REF="${IMAGE_REPO}:prev"
+PROVEN_REF="${IMAGE_REPO}:proven"
 HEAD_SHA="$(git rev-parse HEAD)"
 CAND_REF="${IMAGE_REPO}:cand-$(git rev-parse --short HEAD)"
 
 SERVICE=noordkaravane
 SWAPPING=0
 LEGACY=0
+PREV_NOTE="not updated by this deploy"
 
 remove_candidate() { docker rm -f "$CANDIDATE" >/dev/null 2>&1 || true; }
 
+# The commit holding the legacy (nginx:alpine) stack, found from history: the parent of the OLDEST commit of the
+# current run of docker-compose.yml versions that no longer use nginx:alpine. Prints nothing when not found
+# (no such commit, or the current compose still uses nginx:alpine).
+legacy_sha() {
+  local sha newer=""
+  for sha in $(git rev-list HEAD -- docker-compose.yml); do
+    if git show "${sha}:docker-compose.yml" 2>/dev/null | grep -q 'nginx:alpine'; then
+      [ -n "$newer" ] && git rev-parse --verify -q "${newer}^"
+      return 0
+    fi
+    newer="$sha"
+  done
+  return 0
+}
+
 rollback_text() {
+  local lsha
   if [ "$LEGACY" = 1 ]; then
+    lsha="$(legacy_sha || true)"
     echo "Restore the old (legacy) stack by hand, BEFORE re-running deploy.sh:"
-    echo "  git checkout ${PRE_PULL_SHA} -- docker-compose.yml docker/nginx.conf && docker compose up -d --force-recreate --no-build ${SERVICE}"
+    if [ -n "$lsha" ]; then
+      echo "  git checkout ${lsha} -- docker-compose.yml docker/nginx.conf && docker compose up -d --force-recreate --no-build ${SERVICE}"
+    else
+      echo "  no legacy sha found; restore docker-compose.yml and docker/nginx.conf from the commit before the Astro merge, then: docker compose up -d --force-recreate --no-build ${SERVICE}"
+    fi
   else
     echo "Roll back by hand, BEFORE re-running deploy.sh (a re-run builds and starts this same commit again):"
     echo "  docker tag ${PREV_REF} ${LIVE_REF} && docker compose up -d --force-recreate --no-deps --no-build ${SERVICE}"
+    if docker image inspect "$PREV_REF" >/dev/null 2>&1; then
+      echo "  (${PREV_REF} is ${PREV_NOTE})"
+    else
+      echo "  (${PREV_REF} does not exist: there is no earlier web image to roll back to)"
+    fi
   fi
 }
 
@@ -93,6 +121,7 @@ on_exit() {
 }
 trap on_exit EXIT
 trap 'exit 130' INT TERM
+trap 'exit 129' HUP
 
 # try_probe NAME WANT_CODE URL [curl args]: up to 5 tries, 1s apart. Returns 1 instead of exiting.
 try_probe() {
@@ -151,12 +180,16 @@ cid="$(docker compose ps -aq "$SERVICE")" || { echo "DEPLOY ABORTED before the b
 RUNNING_ID=""
 if [ -z "$cid" ]; then
   echo "no existing container for ${SERVICE}"
-elif [ "$(docker inspect --format '{{.Config.Image}}' "$cid")" = "$LIVE_REF" ]; then
-  RUNNING_ID="$(docker inspect --format '{{.Image}}' "$cid")"
-  echo "existing web image ${RUNNING_ID}"
 else
-  LEGACY=1
-  echo "existing container is the legacy stack ($(docker inspect --format '{{.Config.Image}}' "$cid"))"
+  # Assigned first, so an inspect failure aborts here instead of being read as "legacy".
+  cid_image="$(docker inspect --format '{{.Config.Image}}' "$cid")" || { echo "DEPLOY ABORTED before the build: could not inspect container ${cid}"; exit 1; }
+  if [ "$cid_image" = "$LIVE_REF" ]; then
+    RUNNING_ID="$(docker inspect --format '{{.Image}}' "$cid")" || { echo "DEPLOY ABORTED before the build: could not inspect container ${cid}"; exit 1; }
+    echo "existing web image ${RUNNING_ID}"
+  else
+    LEGACY=1
+    echo "existing container is the legacy stack (${cid_image})"
+  fi
 fi
 
 # No timeout around the build: a cold Node build on the Pi can legitimately take many minutes and a
@@ -167,7 +200,7 @@ NEW_ID="$(docker image inspect --format '{{.Id}}' "$CAND_REF")"
 
 echo "==> candidate on ${CANDIDATE_BASE}"
 remove_candidate   # a stale candidate from a crashed run
-if ! docker run -d --rm --name "$CANDIDATE" -p "127.0.0.1:${CANDIDATE_PORT}:80" "$CAND_REF" >/dev/null; then
+if ! docker run -d --name "$CANDIDATE" -p "127.0.0.1:${CANDIDATE_PORT}:80" "$CAND_REF" >/dev/null; then
   echo "candidate could not start: is port ${CANDIDATE_PORT} busy? Set NK_CANDIDATE_PORT to a free port."
   echo "DEPLOY ABORTED: the running site was not touched"
   exit 1
@@ -184,17 +217,30 @@ fi
 echo "$matrix_out" | tail -n 1
 remove_candidate
 
-# The candidate passed: only now do tags move. :prev gets the image that is running now, but only when
-# it is a different build: a different image id AND a different commit (the image carries the label
-# nk.commit; a rebuild of the same commit gets a new id because of the build timestamp, so the id alone
-# cannot tell). A redeploy of the same commit, or a re-run after a failed swap, would otherwise overwrite
-# the last good image with the one that is already running.
-RUNNING_COMMIT=""
-[ -n "$RUNNING_ID" ] && RUNNING_COMMIT="$(docker inspect --format '{{index .Config.Labels "nk.commit"}}' "$RUNNING_ID" 2>/dev/null || true)"
-if [ -n "$RUNNING_ID" ] && [ "$RUNNING_ID" != "$NEW_ID" ] && [ "$RUNNING_COMMIT" != "$HEAD_SHA" ]; then
-  docker tag "$RUNNING_ID" "$PREV_REF" && echo ":prev now ${RUNNING_ID}" || echo "could not tag ${PREV_REF}; no fresh :prev this time"
-else
+# The candidate passed: only now do tags move. The image that is replaced becomes :prev (the manual rollback
+# target) only when ALL hold:
+#   - it is a different build: a different image id AND a different nk.commit label than HEAD (a rebuild of
+#     the same commit gets a new id from the build timestamp, so the id alone cannot tell);
+#   - it is the image behind :proven, which is set only after a swap's probes passed. A fix-forward after a
+#     failed swap would otherwise promote the bad image that is running;
+# With no container at all (removed by hand) the image behind :latest stands in for the running one.
+PREV_SRC="$RUNNING_ID"
+if [ -z "$cid" ]; then
+  PREV_SRC="$(docker image inspect --format '{{.Id}}' "$LIVE_REF" 2>/dev/null || true)"
+fi
+PREV_SRC_COMMIT=""
+[ -n "$PREV_SRC" ] && PREV_SRC_COMMIT="$(docker inspect --format '{{index .Config.Labels "nk.commit"}}' "$PREV_SRC" 2>/dev/null || true)"
+PROVEN_ID="$(docker image inspect --format '{{.Id}}' "$PROVEN_REF" 2>/dev/null || true)"
+if [ -z "$PREV_SRC" ]; then
+  echo ":prev unchanged (no earlier web image)"
+elif [ "$PREV_SRC" = "$NEW_ID" ] || [ "$PREV_SRC_COMMIT" = "$HEAD_SHA" ]; then
   echo ":prev unchanged"
+elif [ "$PREV_SRC" != "$PROVEN_ID" ]; then
+  echo "running image unproven, :prev left alone"
+else
+  docker tag "$PREV_SRC" "$PREV_REF" || { echo "DEPLOY ABORTED before the swap: could not tag ${PREV_REF}; the running site and ${LIVE_REF} were not touched"; exit 1; }
+  PREV_NOTE="fresh: set by this deploy to ${PREV_SRC}"
+  echo ":prev now ${PREV_SRC}"
 fi
 docker tag "$CAND_REF" "$LIVE_REF"
 
@@ -215,6 +261,7 @@ if ! probes "$BASE"; then
   exit 1
 fi
 SWAPPING=0
+docker tag "$NEW_ID" "$PROVEN_REF"   # probes passed: this image is proven
 
 echo "image $(docker inspect --format '{{.Id}}' "$LIVE_REF")"
 echo "DEPLOYED"
