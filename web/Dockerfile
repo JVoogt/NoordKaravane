@@ -6,8 +6,9 @@ ENV NODE_OPTIONS=--max-old-space-size=1536 ASTRO_TELEMETRY_DISABLED=1 TZ=Africa/
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
-# Fail the image build on a type, test or guard failure (nothing else gates production).
-RUN npm run check && npm test && npm run build && npm run guard:dist
+# Fail the image build on a type, test, guard or dist-integrity failure (nothing else gates production).
+# verify reads dist/, src/data/legacy-hash-map.json and src/data/reviews.ts, all present in this stage (COPY . .).
+RUN npm run check && npm test && npm run build && npm run guard:dist && npm run verify
 
 FROM nginx:alpine
 COPY --from=build /src/dist /usr/share/nginx/html
