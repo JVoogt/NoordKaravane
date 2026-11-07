@@ -2,6 +2,7 @@
 import { Picture } from 'astro:assets';
 import liftKit from '../assets/lift-kit.jpg';
 import Base from '../layouts/Base.astro';
+import ContactBand from '../components/ContactBand.astro';
 import CtaButton from '../components/CtaButton.astro';
 import Hours from '../components/Hours.astro';
 import KampiCard from '../components/KampiCard.astro';
@@ -158,21 +159,7 @@ const description = `Pretoria North's trusted caravan workshop. Expert caravan s
     </div>
   </section>
 
-  <section class="block" id="contact">
-    <div class="container">
-      <div class="contact">
-        <div class="contact-inner">
-          <div class="contact-eyebrow">Ready when you are</div>
-          <h2>Bring her in. We'll make her <span class="accent">road-ready.</span></h2>
-          <p>WhatsApp lands in the workshop directly. No call-centre, no gatekeepers. You talk to the people doing the work.</p>
-          <div class="contact-actions">
-            <CtaButton href={waUrl(WA_TEXT.enquire)} variant="whatsapp" external>WhatsApp {BUSINESS.phone.display}</CtaButton>
-            <CtaButton href={`tel:${BUSINESS.phone.e164}`} variant="ghost">Or call instead</CtaButton>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
+  <ContactBand />
 
   <script>
     import '../scripts/legacy-hash';

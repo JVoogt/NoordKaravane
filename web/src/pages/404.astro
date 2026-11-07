@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import CtaButton from '../components/CtaButton.astro';
+import { BUSINESS } from '../data/business';
 import { buildGraph, jsonLd } from '../lib/schema';
 import { WA_TEXT, waUrl } from '../lib/whatsapp';
 ---
@@ -19,6 +20,7 @@ import { WA_TEXT, waUrl } from '../lib/whatsapp';
       <div class="hero-actions">
         <CtaButton href="/" variant="primary">Back to home</CtaButton>
         <CtaButton href={waUrl(WA_TEXT.enquire)} variant="whatsapp" external arrow>Book on WhatsApp</CtaButton>
+        <CtaButton href={`tel:${BUSINESS.phone.e164}`} variant="ghost">Call {BUSINESS.phone.display}</CtaButton>
       </div>
     </div>
   </section>

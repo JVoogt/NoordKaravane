@@ -37,5 +37,34 @@ const { links } = Astro.props;
       [...row.children].forEach((chip) => ro.observe(chip));
     }
     sync();
+
+    // The sticky header costs ~128px on a phone: the chip row slides away on scroll down and returns on scroll up,
+    // near the top of the page, on any Tab press and whenever focus is inside the header. Without JS it never hides.
+    const nav = row.closest<HTMLElement>('.nav');
+    if (nav) {
+      let lastY = window.scrollY;
+      let tabAt = -Infinity; // a scroll caused by Tab moving focus must not hide the row again
+      const setHidden = (hide: boolean) => {
+        if (hide) nav.style.setProperty('--qn-h', `${row.offsetHeight}px`);
+        nav.toggleAttribute('data-qn-hidden', hide);
+      };
+      window.addEventListener(
+        'scroll',
+        () => {
+          const y = window.scrollY;
+          const dy = y - lastY;
+          if (y < 80 || dy < -4) setHidden(false);
+          else if (dy > 4 && performance.now() - tabAt > 800 && !nav.contains(document.activeElement)) setHidden(true);
+          lastY = y;
+        },
+        { passive: true },
+      );
+      nav.addEventListener('focusin', () => setHidden(false));
+      document.addEventListener('keydown', (e) => {
+        if (e.key !== 'Tab') return;
+        tabAt = performance.now();
+        setHidden(false);
+      });
+    }
   }
 </script>

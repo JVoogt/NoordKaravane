@@ -3,6 +3,14 @@
 import { Picture } from 'astro:assets';
 import liftKit from '../assets/lift-kit.jpg';
 import { ADDONS, fmtR } from '../data/pricing';
+import CtaButton from './CtaButton.astro';
+
+interface Props {
+  /** The page's own wa.me link and button label (same as the hero CTA). */
+  href: string;
+  label: string;
+}
+const { href, label } = Astro.props;
 
 const price = ADDONS.find((a) => a.id === 'lift-kit')!.price;
 const specs = [
@@ -48,6 +56,7 @@ const specs = [
         <dl class="promo-specs">
           {specs.map((s) => <div class="promo-spec"><dt class="k">{s.k}</dt><dd class="v">{s.v}</dd></div>)}
         </dl>
+        <CtaButton href={href} variant="primary" external arrow>{label}</CtaButton>
       </div>
     </div>
   </div>

@@ -2,6 +2,7 @@
 import type { CollectionEntry } from 'astro:content';
 import Base from './Base.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
+import ContactBand from '../components/ContactBand.astro';
 import CtaButton from '../components/CtaButton.astro';
 import Faq from '../components/Faq.astro';
 import Hours from '../components/Hours.astro';
@@ -15,8 +16,12 @@ import { waUrl } from '../lib/whatsapp';
 
 interface Props {
   entry: CollectionEntry<'services'>;
+  /** Markdown body goes in a block under the hero instead of inside it (Repairs: three sub-headed paragraphs). */
+  bodyBelow?: boolean;
+  /** Emergency page: the Call button is filled and first, with the same weight as WhatsApp. */
+  emergency?: boolean;
 }
-const { entry } = Astro.props;
+const { entry, bodyBelow = false, emergency = false } = Astro.props;
 const d = entry.data;
 const slug = entry.id as ServiceSlug;
 assertRelatedOk(slug, d.related);
@@ -37,13 +42,28 @@ const graph = buildGraph([
 
 <Base title={d.title} description={d.description} path={path} waText={d.whatsappText} jsonLd={jsonLd(graph)}>
   <header class="hero">
-    <div class="container hero-grid hero-grid--single">
+    <div class="container hero-grid hero-grid--panel">
       <div class="hero-main">
         <Breadcrumbs items={crumbs} />
         <p class="hero-eyebrow">{d.eyebrow}</p>
         <slot name="tag" />
         <h1 class="hero-title hero-title--service">{d.h1}</h1>
-        <div class="svc-body"><slot /></div>
+        {!bodyBelow && <div class="svc-body"><slot /></div>}
+        <div class="hero-actions hero-actions--spaced">
+          {emergency ? (
+            <Fragment>
+              <CtaButton href={`tel:${BUSINESS.phone.e164}`} variant="primary">Call {BUSINESS.phone.display}</CtaButton>
+              <CtaButton href={waUrl(d.whatsappText)} variant="primary" external arrow>{d.ctaLabel}</CtaButton>
+            </Fragment>
+          ) : (
+            <Fragment>
+              <CtaButton href={waUrl(d.whatsappText)} variant="primary" external arrow>{d.ctaLabel}</CtaButton>
+              <CtaButton href={`tel:${BUSINESS.phone.e164}`} variant="ghost">Call {BUSINESS.phone.display}</CtaButton>
+            </Fragment>
+          )}
+        </div>
+      </div>
+      <div class="hero-panel">
         {d.facts && d.facts.length > 0 && (
           <dl class="facts">
             {d.facts.map((f) => (
@@ -52,13 +72,27 @@ const graph = buildGraph([
           </dl>
         )}
         <slot name="hero-extra" />
-        <div class="hero-actions hero-actions--spaced">
-          <CtaButton href={waUrl(d.whatsappText)} variant="primary" external arrow>{d.ctaLabel}</CtaButton>
-          <CtaButton href={`tel:${BUSINESS.phone.e164}`} variant="ghost">Call {BUSINESS.phone.display}</CtaButton>
+        <div class="loc-card hero-contact">
+          <div class="loc-item">
+            <div class="loc-k">Call</div>
+            <div class="loc-v"><a href={`tel:${BUSINESS.phone.e164}`}>{BUSINESS.phone.display}</a><small>WhatsApp preferred (faster replies)</small></div>
+          </div>
+          <div class="loc-item">
+            <div class="loc-k">Hours</div>
+            <Hours />
+          </div>
         </div>
       </div>
     </div>
   </header>
+
+  {bodyBelow && (
+    <section class="block block--tight">
+      <div class="container">
+        <div class="svc-body svc-cols"><slot /></div>
+      </div>
+    </section>
+  )}
 
   <slot name="extras" />
 
@@ -98,4 +132,6 @@ const graph = buildGraph([
       </div>
     </div>
   </section>
+
+  <ContactBand waText={d.whatsappText} />
 </Base>

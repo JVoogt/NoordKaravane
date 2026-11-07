@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
+import ContactBand from '../components/ContactBand.astro';
 import CtaButton from '../components/CtaButton.astro';
 import Faq from '../components/Faq.astro';
 import Hours from '../components/Hours.astro';
@@ -45,7 +46,7 @@ const graph = buildGraph([orgNode(), breadcrumbNode(crumbs), faqNode(faq)]);
   jsonLd={jsonLd(graph)}
 >
   <header class="hero">
-    <div class="container hero-grid hero-grid--single">
+    <div class="container hero-grid hero-grid--panel">
       <div class="hero-main">
         <Breadcrumbs items={crumbs} />
         <p class="hero-eyebrow">Find us</p>
@@ -53,15 +54,11 @@ const graph = buildGraph([orgNode(), breadcrumbNode(crumbs), faqNode(faq)]);
         <p class="hero-lede">{a.street}, {a.locality}. Easy to find, easier to park a caravan at.</p>
         <div class="hero-actions hero-actions--spaced">
           <CtaButton href={waUrl(WA_TEXT.findUs)} variant="primary" external arrow>Book a slot</CtaButton>
+          <CtaButton href={mapLink} variant="ghost" external>Get directions</CtaButton>
           <CtaButton href={`tel:${BUSINESS.phone.e164}`} variant="ghost">Call {BUSINESS.phone.display}</CtaButton>
         </div>
       </div>
-    </div>
-  </header>
-
-  <section id="location" class="block">
-    <div class="container">
-      <div class="loc-grid loc-grid--split">
+      <div class="hero-panel">
         <div class="loc-card">
           <div class="loc-item">
             <div class="loc-k">Address</div>
@@ -80,12 +77,17 @@ const graph = buildGraph([orgNode(), breadcrumbNode(crumbs), faqNode(faq)]);
             <div class="loc-v">Nationwide + cross-border<br /><small>{BUSINESS.crossBorder.map((c) => c.code).join(' · ')}</small></div>
           </div>
         </div>
-        <div class="loc-map">
-          <span class="loc-map-pill">Workshop</span>
-          <iframe src={mapEmbed} loading="lazy" title="Workshop map" width="600" height="480"></iframe>
-        </div>
       </div>
-      <p class="frame-fallback">Can't see the map? <a href={mapLink} target="_blank" rel="noopener">Open in Google Maps</a></p>
+    </div>
+  </header>
+
+  <section id="location" class="block">
+    <div class="container">
+      <div class="loc-map">
+        <span class="loc-map-pill">Workshop</span>
+        <iframe src={mapEmbed} loading="lazy" title="Workshop map" width="600" height="480"></iframe>
+      </div>
+      <p class="frame-fallback">Can't see the map? <a class="btn btn-ghost" href={mapLink} target="_blank" rel="noopener">Open in Google Maps</a></p>
 
       <div class="service-areas">
         <h2>Service Areas</h2>
@@ -104,4 +106,6 @@ const graph = buildGraph([orgNode(), breadcrumbNode(crumbs), faqNode(faq)]);
       <Faq items={faq} />
     </div>
   </section>
+
+  <ContactBand waText={WA_TEXT.findUs} />
 </Base>
