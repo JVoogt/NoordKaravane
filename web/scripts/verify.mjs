@@ -44,6 +44,29 @@ const FORBIDDEN_STRINGS = ['17:00', 'Mon-Fri 08', 'Mon–Fri'];
 // Oracle: the only price amounts the site may state.
 const PRICE_AMOUNTS = new Set([949, 1499, 2299, 1980, 850, 1200]);
 const PRICE_RANGE = 'R949 - R2 299';
+// Oracle: which amounts each page may state anywhere (visible text, title, meta, JSON-LD). Related cards show the
+// Caravan service tag (R949); the org node on Home and Find us carries priceRange (R949 - R2 299); Solar and
+// Recoveries state no price of their own, and Solar has no related card that carries one.
+const ROUTE_PRICES = {
+  '/': [949, 1980, 2299],
+  '/services/caravan-service/': [949, 1499, 2299, 1980, 850, 1200],
+  '/services/repairs/': [949],
+  '/services/solar-electrical/': [],
+  '/services/recoveries/': [949],
+  '/services/lift-kits/': [1980, 949],
+  '/find-us/': [949, 2299],
+};
+
+// Oracle: the WhatsApp message each page's primary CTA and header CTA must carry (decoded text parameter).
+const CTA_TEXT = {
+  '/': "Hi, I'd like to book a service slot.",
+  '/services/caravan-service/': "Hi, I'd like to book a caravan service or repair.",
+  '/services/repairs/': "Hi, I'd like help with caravan bearings, brakes or chassis work.",
+  '/services/solar-electrical/': "Hi, I'd like a quote for caravan electrical or solar work.",
+  '/services/recoveries/': 'Hi, I need help with a caravan or trailer recovery.',
+  '/services/lift-kits/': "Hi, I'm interested in the 50 mm caravan lift kit (R1 980).",
+  '/find-us/': "Hi, I'd like to book a time to bring in my caravan.",
+};
 
 const normalize = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, ''); // same one-liner as src/lib/faq normalizeForParity
 const squash = (s) => s.replace(/\s+/g, ' ').trim();
@@ -88,6 +111,9 @@ function visibleText(node) {
   clone.querySelectorAll('script,style,template').forEach((n) => n.remove());
   return squash(clone.text);
 }
+
+const jsonStrings = (v) => (typeof v === 'string' ? [v] : v && typeof v === 'object' ? Object.values(v).flatMap(jsonStrings) : []);
+const metaContents = (root) => root.querySelectorAll('meta[content]').map((m) => squash(m.getAttribute('content') ?? ''));
 
 function jsonLdBlocks(root) {
   return root.querySelectorAll('script[type="application/ld+json"]').map((s) => {
@@ -148,6 +174,10 @@ const graphOf = (route) => {
     // A "full" organisation node is defined by its fields, not by @type: the service-page stub shares the type.
     const orgs = graph.filter((n) => n['@id'] === ORG_ID);
     const full = orgs.filter((n) => n.openingHoursSpecification && n.address);
+    if (route !== '/') {
+      const count = (type) => graph.filter((n) => [].concat(n['@type'] ?? []).includes(type)).length;
+      report(count('BreadcrumbList') === 1 && count('FAQPage') === 1, '3 json-ld', route, `BreadcrumbList x${count('BreadcrumbList')}, FAQPage x${count('FAQPage')} (each must be exactly 1)`);
+    }
     if (route === '/' || route === '/find-us/') {
       const types = [].concat(full[0]?.['@type'] ?? []);
       report(orgs.length === 1 && full.length === 1 && types.includes('AutoRepair'), '3 json-ld', route, `full AutoRepair node with @id ${ORG_ID}: ${full.length} of ${orgs.length} org node(s)`);
@@ -233,18 +263,20 @@ for (const route of have) {
   }
 }
 
-// 6. Prices: visible text and JSON-LD string values only, never attributes (wa.me hrefs) or asset file names.
+// 6. Prices: visible text, title, meta/og/twitter content and JSON-LD string values; never other attributes (wa.me
+// hrefs) or asset file names. Each page may only state the amounts in its own allow-list.
 {
-  const strings = (v) => (typeof v === 'string' ? [v] : v && typeof v === 'object' ? Object.values(v).flatMap(strings) : []);
   for (const route of have) {
     const { root } = pages.get(route);
-    const texts = [visibleText(root), ...jsonLdBlocks(root).filter((b) => b.ok).flatMap((b) => strings(b.data))];
+    const texts = [visibleText(root), ...metaContents(root), ...jsonLdBlocks(root).filter((b) => b.ok).flatMap((b) => jsonStrings(b.data))];
+    const allowed = new Set(ROUTE_PRICES[route]);
     const problems = [];
     for (const t of texts) {
       for (const m of t.matchAll(/\bR\d+(?: \d{3})*/g)) {
         const amount = Number(m[0].slice(1).replace(/ /g, ''));
         if (!PRICE_AMOUNTS.has(amount)) problems.push(`${m[0]} is not a known amount`);
         else if (amount >= 1000 && !m[0].includes(' ')) problems.push(`${m[0]} has no space grouping`);
+        else if (!allowed.has(amount)) problems.push(`${m[0]} is not allowed on this page (allowed: ${[...allowed].join(', ') || 'none'})`);
       }
     }
     report(problems.length === 0, '6 prices', route, [...new Set(problems)].join('; '));
@@ -272,9 +304,17 @@ for (const route of have) {
   const legacy = JSON.parse(readFileSync(join(WEB, 'src/data/legacy-hash-map.json'), 'utf8'));
   const problems = [];
   const checkTarget = (target, fromRoute, label) => {
-    if (/^(https?:|mailto:|tel:|\/\/)/.test(target) || target.startsWith('/shop/')) return;
-    if (!target.startsWith('/') && !target.startsWith('#')) return;
-    const { file, hash, path } = resolveTarget(target, fromRoute);
+    if (/^(mailto:|tel:|javascript:|data:)/i.test(target)) return;
+    // Resolve against the page URL: root-relative, relative, fragment-only and same-origin absolute all end up here.
+    let u;
+    try {
+      u = new URL(target, ORIGIN + fromRoute);
+    } catch {
+      problems.push(`${label}: ${target} is not a valid URL`);
+      return;
+    }
+    if (u.origin !== ORIGIN || u.pathname.startsWith('/shop/')) return;
+    const { file, hash, path } = resolveTarget(u.pathname + u.hash, fromRoute);
     if (!existsSync(file) || !statSync(file).isFile()) problems.push(`${label}: ${target} has no file (${path})`);
     else if (hash && file.endsWith('.html') && !idsOf(file).has(hash)) problems.push(`${label}: ${target} has no #${hash} in ${path}`);
   };
@@ -335,6 +375,37 @@ for (const route of have) {
   const approved = /approved\s*:\s*true/.test(src);
   const quotes = pages.get('/')?.root.querySelectorAll('blockquote').length ?? 0;
   report(approved || quotes === 0, '11 reviews', '/', approved ? 'an approved review exists, quotes allowed' : `no approved review, ${quotes} blockquote(s)`);
+}
+
+// 12. WhatsApp CTAs: the hero primary CTA and the header CTA carry the page's own message (decoded text parameter).
+{
+  const textParam = (href) => {
+    try {
+      return new URL(href).searchParams.get('text');
+    } catch {
+      return null;
+    }
+  };
+  for (const route of have) {
+    const root = pages.get(route).root;
+    const hero = root.querySelector('.hero-actions a[href^="https://wa.me/27833349357"]')?.getAttribute('href');
+    const nav = root.querySelector('.nav-cta')?.getAttribute('href');
+    const want = CTA_TEXT[route];
+    report(hero !== undefined && textParam(hero) === want, '12 cta text', `${route} hero CTA`, `want ${JSON.stringify(want)}, got ${JSON.stringify(hero === undefined ? 'no hero wa.me link' : textParam(hero))}`);
+    report(nav !== undefined && textParam(nav) === want, '12 cta text', `${route} header CTA`, `want ${JSON.stringify(want)}, got ${JSON.stringify(nav === undefined ? 'no .nav-cta' : textParam(nav))}`);
+  }
+}
+
+// 13. Render sweep: no template accident reaches a visitor (visible text, title, meta, JSON-LD strings).
+{
+  const BAD = /\b(undefined|NaN|null)\b|\[object Object\]|R(NaN|undefined)|\{(hours|price:[^}]*)\}/;
+  for (const route of have) {
+    const root = pages.get(route).root;
+    const hits = [visibleText(root), ...metaContents(root), ...jsonLdBlocks(root).filter((b) => b.ok).flatMap((b) => jsonStrings(b.data))]
+      .map((t) => t.match(BAD)?.[0])
+      .filter(Boolean);
+    report(hits.length === 0, '13 render sweep', route, [...new Set(hits)].join(', '));
+  }
 }
 
 if (failures > 0) {
