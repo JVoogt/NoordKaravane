@@ -12,6 +12,11 @@ export interface Estimate {
   url: string;
 }
 
+/** Neutral enquiry (old page wording) for the no-JS CTA: with JS off nobody chose a package, so none is claimed. */
+export function neutralEstimateUrl(): string {
+  return waUrl("Hi, I'd like an estimate for a caravan service.");
+}
+
 const NOT_SURE_CAVEAT = ' (not sure on axle config, please confirm)';
 
 /**

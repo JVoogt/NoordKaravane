@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { AddonId, AxleId } from '../data/pricing';
-import { DEFAULT_AXLE, estimate } from './estimator';
+import { DEFAULT_AXLE, estimate, neutralEstimateUrl } from './estimator';
 import { waUrl } from './whatsapp';
 
 // Worked totals are literals on purpose: the expected values never come from the code under test.
@@ -88,5 +88,18 @@ describe('estimate: robustness', () => {
   it('lists add-ons in catalogue order whatever order they were passed in', () => {
     const e = estimate('braked-1', ['water-test', 'lift-kit']);
     expect(e.lines.map((l) => l.label)).toEqual(['Single, braked', '50 mm lift kit fitted', 'Water system pressure test']);
+  });
+});
+
+describe('neutralEstimateUrl: the no-JS baked CTA', () => {
+  it('is the old page neutral enquiry, verbatim', () => {
+    expect(neutralEstimateUrl()).toBe(
+      "https://wa.me/27833349357?text=Hi%2C%20I'd%20like%20an%20estimate%20for%20a%20caravan%20service.",
+    );
+  });
+
+  it('does not claim a package or a total the visitor never chose', () => {
+    expect(neutralEstimateUrl()).not.toBe(estimate(DEFAULT_AXLE, []).url);
+    expect(decodeURIComponent(neutralEstimateUrl())).not.toMatch(/R\d|Total/);
   });
 });
