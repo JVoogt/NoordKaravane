@@ -205,8 +205,15 @@ async function roundThreeChecks(page, path, width) {
   if (width <= 768) {
     // "Visible header" = the nav's bottom edge in the viewport while it is stuck to the top. Its own box (and so
     // the page below it) must not change height: a collapsing sticky header would make the content jump.
-    const navBottom = () => page.evaluate(() => document.querySelector('.nav').getBoundingClientRect().bottom);
-    const navBox = () => page.evaluate(() => document.querySelector('.nav').offsetHeight);
+    // The chip row hangs under the brand row (absolute): it counts as visible while its opacity is above half.
+    const navBottom = () =>
+      page.evaluate(() => {
+        const nav = document.querySelector('.nav').getBoundingClientRect();
+        const row = document.querySelector('.mobile-quicknav');
+        return Number(getComputedStyle(row).opacity) > 0.5 ? row.getBoundingClientRect().bottom : nav.bottom;
+      });
+    // Where <main> starts in the document: it must not move when the row hides (no content jump).
+    const navBox = () => page.evaluate(() => Math.round(document.querySelector('main').getBoundingClientRect().top + window.scrollY));
     const jump = (y) => page.evaluate((top) => window.scrollTo({ top, behavior: 'instant' }), y);
     // Focus inside the header deliberately keeps the row open, so start from a blurred page.
     await page.evaluate(() => document.activeElement?.blur());
@@ -230,7 +237,7 @@ async function roundThreeChecks(page, path, width) {
     const slide = await page.evaluate(() => getComputedStyle(document.querySelector('.nav')).transitionDuration);
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     record(path, width, 'header slide has no transition under prefers-reduced-motion', slide === '0s', `transition-duration=${slide}`);
-    record(path, width, 'quicknav hides on scroll down, shows on scroll up and on Tab, without moving the content', down <= up - 40 && tab >= up - 2 && boxDown === boxRest, `visible: down=${Math.round(down)} up=${Math.round(up)} afterTab=${Math.round(tab)}; box ${boxRest}px -> ${boxDown}px`);
+    record(path, width, 'quicknav hides on scroll down, shows on scroll up and on Tab, without moving the content', down <= up - 40 && tab >= up - 2 && boxDown === boxRest, `visible: down=${Math.round(down)} up=${Math.round(up)} afterTab=${Math.round(tab)}; main top ${boxRest}px -> ${boxDown}px`);
   }
 
   // Page-specific rows.
@@ -422,7 +429,14 @@ for (const path of PAGES) {
     // Measured at the top of the page: below it the quick-link row slides away on scroll down (checked separately).
     await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
     await page.waitForTimeout(300);
-    const headerH = await page.evaluate(() => document.querySelector('.nav')?.getBoundingClientRect().height ?? -1);
+    // Header height = the brand row plus the chip row that hangs under it (when shown).
+    const headerH = await page.evaluate(() => {
+      const nav = document.querySelector('.nav')?.getBoundingClientRect();
+      if (!nav) return -1;
+      const row = document.querySelector('.mobile-quicknav');
+      const rr = row && getComputedStyle(row).display !== 'none' ? row.getBoundingClientRect() : null;
+      return (rr ? Math.max(nav.bottom, rr.bottom) : nav.bottom) - nav.top;
+    });
     const limit = width <= 320 ? 140 : width <= 390 ? 130 : width <= 768 ? 140 : null;
     if (limit !== null) record(path, width, `sticky header <= ${limit}px`, headerH > 0 && headerH <= limit, `${Math.round(headerH)}px`);
 
@@ -693,7 +707,12 @@ for (const width of WIDTHS) {
     return {
       sw: document.documentElement.scrollWidth,
       iw: window.innerWidth,
-      nav: document.querySelector('.nav')?.getBoundingClientRect().height ?? -1,
+      nav: (() => {
+        const n = document.querySelector('.nav')?.getBoundingClientRect();
+        const row = document.querySelector('.mobile-quicknav');
+        const rr = row && getComputedStyle(row).display !== 'none' ? row.getBoundingClientRect() : null;
+        return n ? (rr ? Math.max(n.bottom, rr.bottom) : n.bottom) - n.top : -1;
+      })(),
       cta: r ? { h: r.height, inside: r.left >= 0 && r.right <= window.innerWidth } : null,
       h1: !!document.querySelector('h1'),
     };

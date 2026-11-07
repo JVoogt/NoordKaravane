@@ -163,13 +163,14 @@
   mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
   scroll-padding-inline: var(--gutter) 40px;
 }
-/* Scroll down hides the chip row (QuickNav.astro sets data-qn-hidden and --qn-h, the row's height): the sticky
-   offset goes negative so the row slides above the viewport while the header keeps its height in the flow, so
-   nothing below it jumps. The chips stay focusable; a Tab press or focus inside the header brings the row back.
-   The slide only runs when motion is welcome. */
-.nav[data-qn-hidden] { top: calc(var(--qn-h, 58px) * -1); }
+/* Below 1361px the chip row hangs under the header row (absolute, out of the flow); the nav keeps a margin of the
+   same height, so the page starts where it always did. Scrolling down hides the row (QuickNav.astro sets
+   data-qn-hidden): it fades and lifts away, nothing below it moves, and the sticky header drops from 128px to
+   the 70px brand row. The chips stay focusable; a Tab press or focus inside the header brings the row back.
+   The fade only runs when motion is welcome. */
+.nav[data-qn-hidden] .mobile-quicknav { opacity: 0; transform: translateY(-8px); pointer-events: none; }
 @media (prefers-reduced-motion: no-preference) {
-  .nav { transition: top .2s ease; }
+  .mobile-quicknav { transition: opacity .15s ease, transform .2s ease; }
 }
 .mobile-quicknav[data-end] { -webkit-mask-image: none; mask-image: none; }
 .mobile-quicknav a {
@@ -1492,7 +1493,17 @@ section.block--tight { padding: clamp(40px, 5vw, 64px) 0; }
    swap to the quick-link row, but the Book on WhatsApp button stays in the bar at every width. */
 @media (max-width: 1360px) {
   .nav-links { display: none; }
-  .mobile-quicknav { display: flex; }
+  .nav { margin-bottom: 59px; }
+  .mobile-quicknav {
+    display: flex;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    height: 59px;
+    background: rgba(14, 15, 17, 0.92);
+    border-bottom: 1px solid var(--line);
+  }
 }
 @media (max-width: 700px) {
   .nav-inner { gap: 10px; padding: 12px 0; }

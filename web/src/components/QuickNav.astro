@@ -44,10 +44,7 @@ const { links } = Astro.props;
     if (nav) {
       let lastY = window.scrollY;
       let tabAt = -Infinity; // a scroll caused by Tab moving focus must not hide the row again
-      const setHidden = (hide: boolean) => {
-        if (hide) nav.style.setProperty('--qn-h', `${row.offsetHeight}px`);
-        nav.toggleAttribute('data-qn-hidden', hide);
-      };
+      const setHidden = (hide: boolean) => nav.toggleAttribute('data-qn-hidden', hide);
       window.addEventListener(
         'scroll',
         () => {
