@@ -13,19 +13,26 @@ function init(root: HTMLElement): void {
   const addonButtons = [...root.querySelectorAll<HTMLButtonElement>('[data-addon]')];
   const total = root.querySelector<HTMLElement>('[data-est-total]');
   const cta = root.querySelector<HTMLAnchorElement>('[data-est-cta]');
-  // The static package cards sit outside the estimator; the one matching the chosen axle gets the active highlight.
-  const cards = [...document.querySelectorAll<HTMLElement>('[data-package]')];
 
   let axle: AxleId = DEFAULT_AXLE;
   const picked = new Set<AddonId>();
 
   const render = (): void => {
     const result = estimate(axle, [...picked]);
-    if (total) total.textContent = result.totalLabel;
+    if (total) {
+      // "Not sure" is a starting price: the small "From" sits before the amount.
+      total.replaceChildren();
+      if (result.approximate) {
+        const from = document.createElement('span');
+        from.className = 'est-from';
+        from.textContent = 'From';
+        total.append(from, ' ');
+      }
+      total.append(result.totalLabel);
+    }
     if (cta) cta.href = result.url;
     axleButtons.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.axle === axle)));
     addonButtons.forEach((b) => b.setAttribute('aria-pressed', String(isAddonId(b.dataset.addon) && picked.has(b.dataset.addon))));
-    cards.forEach((c) => c.classList.toggle('active', c.dataset.package === axle));
   };
 
   axleButtons.forEach((b) =>

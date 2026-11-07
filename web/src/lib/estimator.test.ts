@@ -66,6 +66,22 @@ describe('estimate: not sure on axle', () => {
   });
 });
 
+describe('estimate: approximate total', () => {
+  it('flags "Not sure" as a starting price in the flag and the message', () => {
+    const e = estimate('other', []);
+    expect(e.approximate).toBe(true);
+    expect(e.message).toContain('Total est.: from R1 499 (excl. parts)');
+    const withAddon = estimate('other', ['lift-kit']);
+    expect(withAddon.message).toContain('Total est.: from R3 479 (excl. parts)');
+  });
+
+  it('keeps a known axle exact', () => {
+    const e = estimate('braked-1', []);
+    expect(e.approximate).toBe(false);
+    expect(e.message).toContain('Total est.: R1 499 (excl. parts)');
+  });
+});
+
 describe('estimate: robustness', () => {
   it('falls back to the default axle for an unknown axle id', () => {
     const e = estimate('bogus' as string as AxleId, []);

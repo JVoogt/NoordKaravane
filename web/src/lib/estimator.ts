@@ -10,6 +10,8 @@ export interface Estimate {
   lines: Array<{ label: string; price: number }>;
   message: string;
   url: string;
+  /** True when the axle is "Not sure": the total is a starting price ("from"), not a quote. */
+  approximate: boolean;
 }
 
 /** Neutral enquiry (old page wording) for the no-JS CTA: with JS off nobody chose a package, so none is claimed. */
@@ -33,14 +35,15 @@ export function estimate(axle: AxleId, addons: AddonId[]): Estimate {
   const total = lines.reduce((sum, l) => sum + l.price, 0);
   const totalLabel = fmtR(total);
 
-  const caveat = axleOption.id === 'other' ? NOT_SURE_CAVEAT : '';
+  const approximate = axleOption.id === 'other';
+  const caveat = approximate ? NOT_SURE_CAVEAT : '';
   const message = [
     'Hi Noord Karavane, estimate from your site:',
     `• ${axleOption.label}: ${fmtR(axleOption.price)}${caveat}`,
     ...chosen.map((a) => `• ${a.label}: ${a.price ? '+ ' + fmtR(a.price) : 'POA'}`),
-    `Total est.: ${totalLabel} (excl. parts)`,
+    `Total est.: ${approximate ? 'from ' : ''}${totalLabel} (excl. parts)`,
     'Can you confirm availability?',
   ].join('\n');
 
-  return { total, totalLabel, lines, message, url: waUrl(message) };
+  return { total, totalLabel, lines, message, url: waUrl(message), approximate };
 }
