@@ -272,9 +272,12 @@ services:
     container_name: nkshop-redis
     restart: unless-stopped
     <<: *logging
+    # Run as the image's redis user (uid/gid 999) from the start. As root, the entrypoint first runs
+    # `find /data ! -user redis -exec chown`, and with cap_drop ALL root cannot read the 0700 appendonlydir
+    # Redis creates, so every restart after the first crash-looped ("find: ./appendonlydir: Permission denied").
+    user: "999:999"
     security_opt: ["no-new-privileges:true"]
     cap_drop: ["ALL"]
-    cap_add: ["CHOWN", "SETUID", "SETGID"]   # entrypoint chowns /data then drops to the redis user
     init: true
     environment:
       TZ: ${TZ:-Africa/Johannesburg}
