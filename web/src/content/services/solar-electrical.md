@@ -1,6 +1,6 @@
 ---
 title: "Caravan Electrical and Solar in Pretoria North | Noord Karavane"
-description: "Caravan solar and electrical work in Pretoria North: panels, charge controllers, lithium or AGM batteries, inverters and 12 V / 220 V wiring. The solar quote is free."
+description: "Caravan solar and electrical work in Pretoria North: panels, charge controllers, lithium or AGM batteries, inverters and 12 V / 220 V wiring. Free solar quote."
 h1: "Caravan electrical and solar in Pretoria North"
 lede: "Solar panels, charge controllers, lithium or AGM batteries, inverters and 12 V / 220 V wiring, sized to the way you camp. We fix electrical faults too, and the solar quote is free."
 order: 3

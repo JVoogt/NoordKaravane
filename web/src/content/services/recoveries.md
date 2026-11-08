@@ -30,7 +30,7 @@ faq:
   - q: "Which countries do you recover from?"
     a: "Botswana, Mozambique, Zimbabwe, Namibia and Eswatini, as well as anywhere inside South Africa."
   - q: "Can you fix the caravan after the recovery?"
-    a: "Yes. If it needs work afterwards, our workshop in Pretoria North can look at it and quote the repairs before anything is done."
+    a: "If it needs work afterwards, our workshop in Pretoria North can quote the repairs before anything is done."
 related:
   - repairs
   - caravan-service

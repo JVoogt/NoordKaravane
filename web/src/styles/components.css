@@ -1580,3 +1580,9 @@ section.block--band { padding: clamp(36px, 4.5vw, 64px) 0; }
   .price { padding: 12px 18px; }
   .pricing-main { gap: 24px; }
 }
+
+/* Smallest phones: the chip row keeps 44px targets but loses some padding, so more chips show before the fade. */
+@media (max-width: 360px) {
+  .mobile-quicknav { gap: 3px; padding-inline: 10px; }
+  .mobile-quicknav a { padding: 0 6px; }
+}

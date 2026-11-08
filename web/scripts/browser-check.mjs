@@ -352,15 +352,22 @@ const RECOVERY_CHIPS = [
 ];
 // Explanatory copy: 16px floor. Interactive or decision metadata: 14px floor.
 const BODY_16 = ['.step p', '.report-copy span', '.estimator > p', '.faq-a p', '.svc-includes li', '.svc-blurb', '.review-body', '.how-steps p', '.checklist li', '.hero-safety', '.inspection-summary p', '.loc-text p', '.book-row p'];
+// Short uppercase labels (not sentences): 13px floor.
+const LABEL_13 = ['.est-label', '.est-total-label', '.fact dt', '.loc-k', '.foot-heading', '.promo-spec .k'];
 const META_14 = ['.est-opt', '.est-chk', '.est-chk-price', '.est-total-note', '.svc-foot', '.review-meta', '.review-date', '.crumbs', '.mobile-quicknav a', '.nav-links a', '.hero-trust-item a', '.profile-link', '.price .amt sub', '.topbar', '.fact dd', '.loc-v small', '.promo-price .unit', '.page-nav a', '.map-bar-addr span'];
 
 async function remediationChecks(page, path, width) {
-  const floors = await page.evaluate(({ body, meta }) => {
+  const floors = await page.evaluate(({ body, meta, label }) => {
     const bad = [];
+    // Measure FAQ answers too: open every <details> for the scan, then put each back as it was.
+    const closed = [...document.querySelectorAll('details:not([open])')];
+    closed.forEach((d) => (d.open = true));
+    let seen = 0;
     const scan = (sels, min) => {
       for (const sel of sels) {
         for (const el of document.querySelectorAll(sel)) {
           if (!el.checkVisibility || !el.checkVisibility()) continue;
+          seen++;
           const px = parseFloat(getComputedStyle(el).fontSize);
           if (px < min - 0.01) bad.push(`${sel}=${px}px (<${min})`);
         }
@@ -368,9 +375,12 @@ async function remediationChecks(page, path, width) {
     };
     scan(body, 16);
     scan(meta, 14);
-    return [...new Set(bad)];
-  }, { body: BODY_16, meta: META_14 });
-  record(path, width, 'readability floors: explanatory copy 16px+, decision metadata 14px+', floors.length === 0, floors.slice(0, 6).join(' '));
+    scan(label, 13);
+    closed.forEach((d) => (d.open = false));
+    return { bad: [...new Set(bad)], seen };
+  }, { body: BODY_16, meta: META_14, label: LABEL_13 });
+  // seen > 20: every page has far more than 20 matching elements, so an empty selector list cannot pass.
+  record(path, width, 'readability floors: explanatory copy 16px+, decision metadata 14px+, labels 13px+', floors.bad.length === 0 && floors.seen > 20, floors.bad.slice(0, 6).join(' ') || `${floors.seen} elements measured`);
 
   if (path === '/services/recoveries/') {
     const t = await page.evaluate(() => {
@@ -813,12 +823,13 @@ for (const width of [390, 1440]) {
     return { wait: vis(wait) ? wait.textContent.trim() : null, btn: vis(btn), clickable: !!hit && (hit === btn || btn.contains(hit)), addr: vis(document.querySelector('.map-bar-addr')) };
   });
   record('/find-us/', width, 'map placeholder: address, GPS and a clickable Maps button before the iframe loads', !!m.wait && m.btn && m.clickable && m.addr, JSON.stringify(m));
-  // Keyboard: the Maps button is reachable, and tabbing into the map shows a ring on its frame.
+  // Keyboard: focusing the map iframe draws a ring on its frame.
+  await page.focus('.loc-map iframe');
   const ring = await page.evaluate(() => {
-    const css = [...document.styleSheets].flatMap((sh) => { try { return [...sh.cssRules]; } catch { return []; } }).map((r) => r.cssText).join(' ');
-    return /\.loc-map:focus-within/.test(css);
+    const cs = getComputedStyle(document.querySelector('.loc-map'));
+    return { style: cs.outlineStyle, w: parseFloat(cs.outlineWidth), focused: document.activeElement?.tagName };
   });
-  record('/find-us/', width, 'map frame has a :focus-within ring for keyboard users', ring, String(ring));
+  record('/find-us/', width, 'map frame shows a focus ring while the map has keyboard focus', ring.focused === 'IFRAME' && ring.style !== 'none' && ring.w > 0, JSON.stringify(ring));
   await context.close();
 }
 

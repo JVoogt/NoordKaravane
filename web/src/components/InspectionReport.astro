@@ -4,7 +4,7 @@
 import { servicePath } from '../data/routes';
 
 const rows = [
-  { k: 'Wheel bearing play detected', v: 'Recommend replacing the bearing before long-distance towing.', evidence: '4 photos', low: false },
+  { k: 'Wheel bearing play detected', v: 'Recommend a bearing service before long-distance towing.', evidence: '4 photos', low: false },
   { k: 'Roof latch and gas strut check', v: 'Parts listed separately, so you can approve the repair or leave it.', evidence: '2 notes', low: false },
   { k: 'Solar controller and battery health', v: 'Reading logged and explained.', evidence: 'Passed', low: true },
 ];
@@ -18,7 +18,7 @@ const rows = [
 
     <div class="inspection-wrap">
       <div class="inspection-summary">
-        <p>Each finding gets photos and a note. Safety work is listed apart from the nice-to-haves, so you can decide what to do now and what can wait before your trip.</p>
+        <p>Each finding gets photos and a note. Safety work is listed apart from the nice-to-haves, so you can decide what to do now and what can wait. Nothing extra gets done without your go-ahead.</p>
         <p class="inspection-links">Worn bearings, brakes or woodrot become a <a href={servicePath('repairs')}>caravan repair</a> quote. Battery or solar trouble goes to <a href={servicePath('solar-electrical')}>electrical and solar</a>.</p>
       </div>
 

@@ -21,6 +21,7 @@ faq:
     a: "Mostly servicing: a full safety and roadworthy service on caravans, campers and trailers. We also do repairs (bearings, brakes, chassis, plumbing and woodrot), electrical and solar work, 50 mm lift kits, and caravan and trailer recoveries."
   - q: "What's included in a basic caravan service?"
     a: "Every package works through the same checklist: bearings, brakes and hubs, the coupler and front shock, lights, plugs and 12 V electrics, steadies and jacks, a written report, and a wash inside and out, except the canvas."
+    note: "If a part needs replacing, you see the price before we fit it."
   - q: "How much does a caravan service cost?"
     a: "{price:unbraked-1} for a single axle without brakes, {price:braked-1} for a single axle with brakes, and {price:braked-2} for a double axle with brakes. That covers the whole checklist. Parts are extra."
   - q: "Which package does my caravan need?"
