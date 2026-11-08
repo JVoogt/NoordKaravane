@@ -351,7 +351,7 @@ const RECOVERY_CHIPS = [
   ['Service area', '#service-area'],
 ];
 // Explanatory copy: 16px floor. Interactive or decision metadata: 14px floor.
-const BODY_16 = ['.step p', '.report-copy span', '.estimator > p', '.faq-a p', '.svc-includes li', '.svc-blurb', '.review-body', '.how-steps p', '.checklist li', '.hero-safety', '.inspection-summary p', '.loc-text p', '.book-row p'];
+const BODY_16 = ['.step p', '.report-copy span', '.estimator > p', '.faq-a p', '.svc-includes li', '.svc-blurb', '.review-body', '.how-steps p', '.checklist li', '.hero-safety', '.inspection-summary p', '.loc-text p', '.book-row p', '.svc-body li', '.svc-body p', '.hero-lede', '.contact-main p', '.contact-aside'];
 // Short uppercase labels (not sentences): 13px floor.
 const LABEL_13 = ['.est-label', '.est-total-label', '.fact dt', '.loc-k', '.foot-heading', '.promo-spec .k'];
 const META_14 = ['.est-opt', '.est-chk', '.est-chk-price', '.est-total-note', '.svc-foot', '.review-meta', '.review-date', '.crumbs', '.mobile-quicknav a', '.nav-links a', '.hero-trust-item a', '.profile-link', '.price .amt sub', '.topbar', '.fact dd', '.loc-v small', '.promo-price .unit', '.page-nav a', '.map-bar-addr span'];
@@ -453,12 +453,13 @@ async function remediationChecks(page, path, width) {
     record(path, width, 'caravan booking CTA sits after the estimator (44px+)', nav.bookAfter && nav.bookH >= 44, `after=${nav.bookAfter} h=${nav.bookH}`);
   }
 
-  if (path === '/services/solar-electrical/' && width >= 1100) {
+  if (path === '/services/solar-electrical/') {
+    // One related service: no card band stranded in an empty row; a sentence in the closing band links it instead.
     const one = await page.evaluate(() => {
-      const cards = [...document.querySelectorAll('#related .svc')];
-      return { n: cards.length, w: cards[0]?.getBoundingClientRect().width ?? 0 };
+      const a = document.querySelector('main > section:last-of-type .contact-related a[href="/services/repairs/"]');
+      return { band: !!document.querySelector('#related'), link: a?.textContent.trim() ?? null };
     });
-    record(path, width, 'a single related card keeps a card width (no stretched row)', one.n === 1 && one.w > 200 && one.w <= 460, `n=${one.n} w=${Math.round(one.w)}`);
+    record(path, width, 'a lone related service is a text link in the closing band, not a card grid', !one.band && one.link === 'caravan repairs', JSON.stringify(one));
   }
 }
 

@@ -46,6 +46,7 @@ const graph = buildGraph([
   faqNode(d.faq),
 ]);
 const g = BUSINESS.google;
+const lone = d.related.length === 1 ? serviceMeta(d.related[0]) : null;
 ---
 
 <Base title={d.title} description={d.description} path={path} waText={d.whatsappText} jsonLd={jsonLd(graph)}>
@@ -69,7 +70,7 @@ const g = BUSINESS.google;
           <Fragment>
             <p class="hero-lede">{d.lede}</p>
             <div class="hero-actions">
-              <CtaButton href={waUrl(d.whatsappText)} variant="primary" external arrow>{d.ctaLabel}</CtaButton>
+              <CtaButton href={waUrl(d.whatsappText)} variant="primary" external>{d.ctaLabel}</CtaButton>
               <CtaButton href={`tel:${BUSINESS.phone.e164}`} variant="ghost">Call {BUSINESS.phone.display}</CtaButton>
             </div>
           </Fragment>
@@ -81,7 +82,7 @@ const g = BUSINESS.google;
       <div class="hero-panel">
         {d.checklist && (
           <div class="checklist" id="what-to-send">
-            <h2>{d.checklist.heading}</h2>
+            <h2 class="checklist-title">{d.checklist.heading}</h2>
             <ul>{d.checklist.items.map((it) => <li>{it}</li>)}</ul>
           </div>
         )}
@@ -119,7 +120,9 @@ const g = BUSINESS.google;
     </div>
   </section>
 
-  {d.related.length > 0 && (
+  {/* Two or more related services get a card band; a lone one is a sentence in the closing band (below), not a
+      card stranded in an empty row. */}
+  {d.related.length > 1 && (
     <section class="block block--tight" id="related">
       <div class="container related-layout">
         <div class="sec-head">
@@ -132,5 +135,23 @@ const g = BUSINESS.google;
     </section>
   )}
 
-  <ContactBand waText={d.whatsappText} heading={d.closing?.heading} text={d.closing?.text} recoveries={emergency} callFirst={emergency} />
+  <ContactBand waText={d.whatsappText} heading={d.closing?.heading} text={d.closing?.text} recoveries={emergency} callFirst={emergency}>
+    {lone && (
+      <p class="contact-aside contact-related">
+        {lone.need}? See <a href={servicePath(lone.slug)}>{lone.name.charAt(0).toLowerCase() + lone.name.slice(1)}</a>.
+      </p>
+    )}
+  </ContactBand>
 </Base>
+
+<style>
+  .checklist-title {
+    font-family: var(--f-display);
+    font-weight: 400;
+    font-size: clamp(28px, 2.6vw, 34px);
+    line-height: 1;
+    margin-bottom: 14px;
+    min-width: 0;
+    overflow-wrap: break-word;
+  }
+</style>

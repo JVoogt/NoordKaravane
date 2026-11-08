@@ -41,7 +41,7 @@ const tel = `tel:${BUSINESS.phone.e164}`;
   <div class="container nav-inner">
     <a href="/" class="brand">
       <span class="brand-mark"><Image src={logo} width={68} height={68} format="webp" alt="Noord Karavane" loading="eager" /></span>
-      <span class="brand-txt">{BUSINESS.name}<small>{BUSINESS.address.locality}</small></span>
+      <span class="brand-txt">{BUSINESS.name} <small>{BUSINESS.address.locality}</small></span>
     </a>
     <div class="nav-links">
       {links.map((l) => <a href={l.href} aria-current={l.current ? 'page' : undefined}>{l.label}</a>)}
@@ -54,7 +54,6 @@ const tel = `tel:${BUSINESS.phone.e164}`;
       </a>
       <a href={waUrl(waText)} class:list={['nav-cta', { 'nav-cta--second': emergency }]} target="_blank" rel="noopener">
         {emergency ? 'WhatsApp' : 'Book on WhatsApp'}
-        {!emergency && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>}
       </a>
     </div>
   </div>

@@ -64,7 +64,7 @@ const graph = buildGraph([orgNode(), breadcrumbNode(crumbs), faqNode(faq)]);
         <h1 class="hero-title hero-title--service">Find the workshop in {a.locality}</h1>
         <p class="hero-lede">{a.street}, {a.locality}, {a.postalCode}. A quick WhatsApp before you tow in means we're ready for you.</p>
         <div class="hero-actions">
-          <CtaButton href={mapLink} variant="primary" external arrow>Get directions</CtaButton>
+          <CtaButton href={mapLink} variant="primary" external>Get directions</CtaButton>
           <CtaButton href={waUrl(WA_TEXT.findUs)} variant="ghost" external>Book a time on WhatsApp</CtaButton>
         </div>
       </div>
@@ -106,14 +106,14 @@ const graph = buildGraph([orgNode(), breadcrumbNode(crumbs), faqNode(faq)]);
             <iframe src={mapEmbed} loading="lazy" title="Map of the Noord Karavane workshop" width="600" height="420"></iframe>
           </div>
         </div>
-      </div>
-      <div class="loc-text">
-        <h2>Getting here</h2>
-        <p>The workshop is at {a.street} in {a.locality}, {a.city}. For a satnav, the GPS position is {coords}.</p>
         <figure class="loc-photo">
           <Image src={wallSign} widths={[480, 800]} sizes="(max-width: 959px) 92vw, 600px" format="webp" quality={72} alt={`The painted Noord Karavane sign on the workshop wall, with ${BUSINESS.phone.display} and ${a.street}, ${a.locality}`} />
           <figcaption>Look for this painted wall at {a.street}. Our sign is on the left, beside the Kampi one.</figcaption>
         </figure>
+      </div>
+      <div class="loc-text">
+        <h2>Getting here</h2>
+        <p>The workshop is at {a.street} in {a.locality}, {a.city}. For a satnav, the GPS position is {coords}.</p>
         <h2>Where our customers come from</h2>
         <p>We work on caravans and trailers from Pretoria North and the suburbs around it (Wonderboom, Sinoville, Montana, Annlin and Akasia), from across Pretoria and Centurion, and from Midrand and Johannesburg. Owners also come in from Brits, Hartbeespoort, Rustenburg and Limpopo.</p>
         <p>For a <a href={servicePath('recoveries')}>caravan or trailer recovery</a> we come to you, anywhere in South Africa and across the border to {countryList}.</p>
@@ -136,3 +136,15 @@ const graph = buildGraph([orgNode(), breadcrumbNode(crumbs), faqNode(faq)]);
 
   <ContactBand waText={WA_TEXT.findUs} heading="Book a time to bring it in" place="none" />
 </Base>
+
+<script>
+  // Tabbing into Google's map moves focus inside a cross-origin frame, where neither :focus nor :focus-within
+  // matches on this page. Mark the iframe while it holds focus so its frame shows the same ring as everything else.
+  const frame = document.querySelector<HTMLIFrameElement>('.loc-map iframe');
+  if (frame) {
+    const sync = () => frame.classList.toggle('has-focus', document.activeElement === frame);
+    window.addEventListener('blur', () => setTimeout(sync, 0));
+    window.addEventListener('focus', sync);
+    document.addEventListener('focusin', sync);
+  }
+</script>

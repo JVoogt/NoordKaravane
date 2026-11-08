@@ -5,7 +5,7 @@ h1: "50 mm caravan lift kits, fitted in Pretoria North"
 lede: "A 50 mm lift kit, fitted here at the workshop with taxes included. The caravan clears gravel roads more easily, tows more level and puts less strain on the stabilisers."
 order: 5
 whatsappText: "Hi, I'm interested in the 50 mm caravan lift kit ({price:lift-kit})."
-ctaLabel: "Book a fitment"
+ctaLabel: "Book a fitment on WhatsApp"
 schemaName: "50 mm caravan lift kit fitting"
 priceFrom:
   id: "lift-kit"

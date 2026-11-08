@@ -5,7 +5,7 @@ h1: "Caravan and trailer service in Pretoria North"
 lede: "A full safety and roadworthy service for caravans and trailers, from {price:unbraked-1}. We repack the bearings, strip and set the brakes, test the coupler, lights and 12 V electrics, and give you a written report."
 order: 1
 whatsappText: "Hi, I'd like to book a caravan service or repair."
-ctaLabel: "Book a service slot"
+ctaLabel: "Book on WhatsApp"
 schemaName: "Caravan and trailer service"
 priceFrom:
   id: "unbraked-1"
