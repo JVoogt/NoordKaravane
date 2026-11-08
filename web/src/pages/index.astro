@@ -19,7 +19,7 @@ const from = fmtR(Math.min(...AXLE_OPTIONS.map((o) => o.price)));
 const axle = (id: string): string => fmtR(AXLE_OPTIONS.find((o) => o.id === id)!.price);
 const liftKitPrice = fmtR(ADDONS.find((o) => o.id === 'lift-kit')!.price);
 const graph = buildGraph([orgNode()]);
-const description = `Caravan workshop at ${a.street}, ${a.locality}: services from ${from}, repairs, electrical and solar, 50 mm lift kits and insurance-accredited recoveries.`;
+const description = `Caravan workshop at ${a.street}, ${a.locality}: services from ${from}, repairs, electrical and solar, lift kits and insurance-accredited recoveries.`;
 
 const steps = [
   { h: "Tell us what's going on", p: "Send a WhatsApp with the make and year, what it's doing, and a photo if you have one." },
@@ -92,7 +92,6 @@ const steps = [
       <div class="how-main">
         <div class="sec-head">
           <h2 class="sec-title">How a job runs here</h2>
-          <p class="sec-sub">Caravans are what we do, every day.</p>
         </div>
         <ol class="how-steps">
           {steps.map((s, i) => (

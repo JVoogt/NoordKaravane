@@ -11,6 +11,7 @@ import Ticker from '../components/Ticker.astro';
 import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
 import { BUSINESS } from '../data/business';
+import { servicePath } from '../data/routes';
 import { WA_TEXT, waUrl } from '../lib/whatsapp';
 
 interface Props {
@@ -69,7 +70,7 @@ const ogImageUrl = BUSINESS.url + ogImage;
   </head>
   <body>
     <a class="sr-only" href="#main">Skip to content</a>
-    <Ticker />
+    <Ticker emergency={path === servicePath('recoveries')} />
     <Nav path={path} waText={waText} />
     <main id="main">
       <slot />

@@ -49,6 +49,12 @@ describe('orgNode', () => {
     expect(s).not.toMatch(/500\+|factory|trusted|expert/i);
   });
 
+  it('links the Facebook page and the Google Business Profile (stable cid URL, never the share.google redirect)', () => {
+    expect(org.sameAs).toEqual(['https://www.facebook.com/NoordKaravane', 'https://www.google.com/maps?cid=1109550773885984048']);
+    expect(org.hasMap).toBe('https://www.google.com/maps?cid=1109550773885984048');
+    expect(JSON.stringify(org)).not.toContain('share.google');
+  });
+
   it('lists exactly the five services with names and urls from the service table', () => {
     const items = org.hasOfferCatalog.itemListElement as Obj[];
     expect(items).toHaveLength(5);

@@ -29,6 +29,14 @@ describe('service frontmatter schema', () => {
     expect(serviceSchema.safeParse(base).success).toBe(true);
   });
 
+  it('accepts an emergency safety line and a what-to-send checklist, and rejects a thin or loose checklist', () => {
+    const checklist = { heading: 'What to send us', items: ['Your live location', 'What happened'] };
+    expect(serviceSchema.safeParse({ ...base, safety: 'Call emergency services first.', checklist }).success).toBe(true);
+    expect(serviceSchema.safeParse({ ...base, checklist: { heading: 'h', items: ['only one'] } }).success).toBe(false);
+    expect(serviceSchema.safeParse({ ...base, checklist: { ...checklist, extra: 1 } }).success).toBe(false);
+    expect(serviceSchema.safeParse({ ...base, safety: '  ' }).success).toBe(false);
+  });
+
   it('rejects a whitespace-only title', () => {
     expect(serviceSchema.safeParse({ ...base, title: '   ' }).success).toBe(false);
   });

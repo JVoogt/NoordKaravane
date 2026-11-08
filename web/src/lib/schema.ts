@@ -56,7 +56,9 @@ export function orgNode(): Node {
     priceRange: priceRange(),
     // paymentAccepted is left out until the owner confirms the methods and the site shows them.
     currenciesAccepted: 'ZAR',
-    sameAs: [BUSINESS.links.facebook],
+    hasMap: BUSINESS.links.googleMaps,
+    // The Facebook page and the Google Business Profile (its stable cid URL, not the share.google redirect).
+    sameAs: [BUSINESS.links.facebook, BUSINESS.links.googleMaps],
   };
 }
 

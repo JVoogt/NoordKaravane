@@ -1,5 +1,7 @@
 ---
+import { Image } from 'astro:assets';
 import Base from '../layouts/Base.astro';
+import wallSign from '../assets/workshop-wall-sign.jpg';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
 import ContactBand from '../components/ContactBand.astro';
 import CtaButton from '../components/CtaButton.astro';
@@ -50,7 +52,7 @@ const graph = buildGraph([orgNode(), breadcrumbNode(crumbs), faqNode(faq)]);
 
 <Base
   title="Find Us in Pretoria North | Noord Karavane"
-  description={`Noord Karavane is at ${a.street}, ${a.locality}. Open ${formatHoursProse(BUSINESS.hours)} WhatsApp ${BUSINESS.phone.display}.`}
+  description={`${a.street}, ${a.locality}. Open ${formatHoursProse(BUSINESS.hours)} WhatsApp ${BUSINESS.phone.display}.`}
   path={path}
   waText={WA_TEXT.findUs}
   jsonLd={jsonLd(graph)}
@@ -73,7 +75,7 @@ const graph = buildGraph([orgNode(), breadcrumbNode(crumbs), faqNode(faq)]);
             <div class="loc-v">{a.street}<br /><small>{a.locality}, {a.city}, {a.postalCode}</small></div>
           </div>
           <div class="loc-item">
-            <div class="loc-k">Hours</div>
+            <div class="loc-k">Workshop hours</div>
             <Hours />
           </div>
           <div class="loc-item">
@@ -88,14 +90,30 @@ const graph = buildGraph([orgNode(), breadcrumbNode(crumbs), faqNode(faq)]);
   <section id="location" class="block block--tight">
     <div class="container loc-split">
       <div class="loc-map-wrap">
-        <div class="loc-map">
-          <iframe src={mapEmbed} loading="lazy" title="Map of the Noord Karavane workshop" width="600" height="420"></iframe>
+        {/* The address, GPS and the Maps link sit in a bar on the map frame itself, so the box says something useful
+            while Google's map loads, if it never loads, and with JavaScript off. The bar is outside the iframe, so
+            it stays clickable and in the Tab order after the map appears. */}
+        <div class="map-card">
+          <div class="map-bar">
+            <p class="map-bar-addr">
+              <strong>{a.street}, {a.locality}</strong>
+              <span>GPS {coords}</span>
+            </p>
+            <a class="btn btn-primary" href={mapLink} target="_blank" rel="noopener">Open in Google Maps</a>
+          </div>
+          <div class="loc-map">
+            <p class="loc-map-wait" aria-hidden="true">The map loads here. If it doesn't, use Open in Google Maps above.</p>
+            <iframe src={mapEmbed} loading="lazy" title="Map of the Noord Karavane workshop" width="600" height="420"></iframe>
+          </div>
         </div>
-        <p class="frame-fallback">Can't see the map? <a class="btn btn-ghost" href={mapLink} target="_blank" rel="noopener">Open in Google Maps</a></p>
       </div>
       <div class="loc-text">
         <h2>Getting here</h2>
         <p>The workshop is at {a.street} in {a.locality}, {a.city}. For a satnav, the GPS position is {coords}.</p>
+        <figure class="loc-photo">
+          <Image src={wallSign} widths={[480, 800]} sizes="(max-width: 959px) 92vw, 600px" format="webp" quality={72} alt={`The painted Noord Karavane sign on the workshop wall, with ${BUSINESS.phone.display} and ${a.street}, ${a.locality}`} />
+          <figcaption>Look for this painted wall at {a.street}. Our sign is on the left, beside the Kampi one.</figcaption>
+        </figure>
         <h2>Where our customers come from</h2>
         <p>We work on caravans and trailers from Pretoria North and the suburbs around it (Wonderboom, Sinoville, Montana, Annlin and Akasia), from across Pretoria and Centurion, and from Midrand and Johannesburg. Owners also come in from Brits, Hartbeespoort, Rustenburg and Limpopo.</p>
         <p>For a <a href={servicePath('recoveries')}>caravan or trailer recovery</a> we come to you, anywhere in South Africa and across the border to {countryList}.</p>

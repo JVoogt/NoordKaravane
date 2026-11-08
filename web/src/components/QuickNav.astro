@@ -1,12 +1,18 @@
 ---
 interface Props {
-  links: Array<{ label: string; href: string; current: boolean }>;
+  links: Array<{ label: string; href: string; current: boolean; external?: boolean }>;
 }
 const { links } = Astro.props;
 ---
 
 <div class="mobile-quicknav">
-  {links.map((l) => <a href={l.href} aria-current={l.current ? 'page' : undefined}>{l.label}</a>)}
+  {links.map((l) =>
+    l.external ? (
+      <a href={l.href} target="_blank" rel="noopener">{l.label}</a>
+    ) : (
+      <a href={l.href} aria-current={l.current ? 'page' : undefined}>{l.label}</a>
+    ),
+  )}
 </div>
 
 <script>

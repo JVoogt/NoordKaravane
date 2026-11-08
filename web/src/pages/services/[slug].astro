@@ -1,6 +1,7 @@
 ---
 import { getCollection, render } from 'astro:content';
 import Service from '../../layouts/Service.astro';
+import CtaButton from '../../components/CtaButton.astro';
 import Estimator from '../../components/Estimator.astro';
 import InspectionReport from '../../components/InspectionReport.astro';
 import LiftKitSpecs from '../../components/LiftKitSpecs.astro';
@@ -36,13 +37,24 @@ const amountOf = (axle: AxleId): string => fmtR(AXLE_OPTIONS.find((o) => o.id ==
     <p slot="tag" class="hero-badge-row"><span class="hero-badge">{BUSINESS.recoveriesNote}</span></p>
   )}
   {id === 'recoveries' && (
-    <ul slot="hero-extra" class="chip-list" aria-label="Cross-border recoveries">
+    <ul slot="hero-extra" class="chip-list" aria-label="Countries we recover from, besides South Africa">
       {BUSINESS.crossBorder.map((c) => <li>{c.name}</li>)}
     </ul>
   )}
 
   {id === 'caravan-service' && (
     <Fragment slot="extras">
+      {/* A long page with four jobs: jump links to each, plain anchors, not sticky (the header already is). */}
+      <nav class="page-nav" aria-label="On this page">
+        <div class="container">
+          <ul>
+            <li><a href="#pricing">Prices</a></li>
+            <li><a href="#included">Included</a></li>
+            <li><a href="#inspection-report">Report</a></li>
+            <li><a href="#contact">Book</a></li>
+          </ul>
+        </div>
+      </nav>
       <section id="pricing" class="block">
         <div class="container">
           <div class="sec-head">
@@ -59,9 +71,13 @@ const amountOf = (axle: AxleId): string => fmtR(AXLE_OPTIONS.find((o) => o.id ==
                   </div>
                 ))}
               </div>
-              <div class="svc-includes"><Content /></div>
+              <div class="svc-includes" id="included"><Content /></div>
             </div>
             <Estimator />
+          </div>
+          <div class="book-row">
+            <p>Know which package you need? Book your slot now. The report and the process are further down.</p>
+            <CtaButton href={waUrl(entry.data.whatsappText)} variant="primary" external arrow>{entry.data.ctaLabel}</CtaButton>
           </div>
         </div>
       </section>

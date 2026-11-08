@@ -11,8 +11,6 @@ priceFrom:
   id: "unbraked-1"
   from: true
 facts:
-  - k: "Packages"
-    v: "From {price:unbraked-1}"
   - k: "Parts"
     v: "Quoted before fitting"
   - k: "Turnaround"
@@ -22,7 +20,7 @@ faq:
   - q: "What caravan services do you offer in Pretoria North?"
     a: "Mostly servicing: a full safety and roadworthy service on caravans, campers and trailers. We also do repairs (bearings, brakes, chassis, plumbing and woodrot), electrical and solar work, 50 mm lift kits, and caravan and trailer recoveries."
   - q: "What's included in a basic caravan service?"
-    a: "Every package works through the same checklist, listed beside the prices on this page: bearings, brakes and hubs, the coupler and front shock, lights, plugs and 12 V electrics, steadies and jacks, a written report, and a wash inside and out."
+    a: "Every package works through the same checklist: bearings, brakes and hubs, the coupler and front shock, lights, plugs and 12 V electrics, steadies and jacks, a written report, and a wash inside and out, except the canvas."
     note: "If a part needs replacing, you see the price before we fit it."
   - q: "How much does a caravan service cost?"
     a: "{price:unbraked-1} for a single axle without brakes, {price:braked-1} for a single axle with brakes, and {price:braked-2} for a double axle with brakes. That covers the whole checklist. Parts are extra."
@@ -46,9 +44,9 @@ closing:
 - Wheel bearings removed, cleaned, inspected, greased and refitted (replacements quoted separately)
 - Brakes and wheel hubs stripped and cleaned
 - Brakes adjusted and set up
-- Coupler and front shock absorber tested and greased
+- Coupler (the part that locks onto your towball) and front shock absorber tested and greased
 - Front and rear lights tested
-- Steadies and jacks cleaned and greased
+- Corner steadies (the wind-down legs) and jacks cleaned and greased
 - Plugs, switches, 12 V electrics and the battery tested
 - A full inspection and a written report
-- A wash inside and out (canvas excluded, available on request)
+- A wash inside and out, except the canvas (ask us if you want the canvas washed too)

@@ -2,6 +2,13 @@
 import { BUSINESS } from '../data/business';
 import { formatHoursCompact } from '../lib/hours';
 
+interface Props {
+  /** Recoveries page: one static line that says recoveries run 24/7 and dials the number. No workshop hours here,
+      so a stranded visitor never reads "closed" first. */
+  emergency?: boolean;
+}
+const { emergency = false } = Astro.props;
+
 // Phones show the ticker static with only the hours (the `keep` item); larger screens scroll it and pause on hover.
 const items = [
   { text: `Caravan workshop, ${BUSINESS.address.street}, ${BUSINESS.address.locality}`, keep: false },
@@ -13,9 +20,15 @@ const items = [
 ];
 ---
 
-<div class="topbar">
-  <div class="topbar-track">
-    {items.map((t) => <span class:list={{ 'topbar-keep': t.keep }}>{t.text}</span>)}
-    {items.map((t) => <span class:list={{ 'topbar-keep': t.keep }} aria-hidden="true">{t.text}</span>)}
+{emergency ? (
+  <div class="topbar topbar--emergency">
+    <a class="topbar-call" href={`tel:${BUSINESS.phone.e164}`}>{`${BUSINESS.recoveriesNote} · Call ${BUSINESS.phone.display}`}</a>
   </div>
-</div>
+) : (
+  <div class="topbar">
+    <div class="topbar-track">
+      {items.map((t) => <span class:list={{ 'topbar-keep': t.keep }}>{t.text}</span>)}
+      {items.map((t) => <span class:list={{ 'topbar-keep': t.keep }} aria-hidden="true">{t.text}</span>)}
+    </div>
+  </div>
+)}

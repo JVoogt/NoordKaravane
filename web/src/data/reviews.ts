@@ -6,7 +6,9 @@
 // Surnames are shortened because this repo is public. url is the public Maps listing (Google gives no per-review link).
 // To publish: the owner picks two or three, sets approved: true, and checks the excerpt still matches Google.
 // 2026-11-07: the owner approved Vernon d. P., Zenelda S. and Johan & Magda A.
-const LISTING = 'https://www.google.com/maps?cid=1109550773885984048';
+import { BUSINESS } from './business';
+
+const LISTING = BUSINESS.links.googleMaps;
 
 export const REVIEWS: Array<{ name: string; date: string; text: string; url: string; approved: boolean; lang?: string }> = [
   {
