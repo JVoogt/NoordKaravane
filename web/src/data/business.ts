@@ -25,6 +25,8 @@ export const BUSINESS = {
   links: {
     facebook: 'https://www.facebook.com/NoordKaravane',
     googleProfile: 'https://share.google/T9FFV2QHsZb1VuVMD',
+    /** The Google Business Profile's stable Maps URL (cid). Identity for JSON-LD sameAs/hasMap; the share link above is a tracked redirect, kept for visible links. */
+    googleMaps: 'https://www.google.com/maps?cid=1109550773885984048',
     kampi: 'https://kampi.co.za',
     mapsQuery: '252+General+Beyers+Street,+Pretoria+North,+Pretoria,+South+Africa',
   },

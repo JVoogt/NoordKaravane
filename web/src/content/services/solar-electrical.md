@@ -2,7 +2,7 @@
 title: "Caravan Electrical and Solar in Pretoria North | Noord Karavane"
 description: "Caravan solar and electrical work in Pretoria North: panels, charge controllers, lithium or AGM batteries, inverters and 12 V / 220 V wiring. The solar quote is free."
 h1: "Caravan electrical and solar in Pretoria North"
-lede: "Solar panels, charge controllers, lithium (LiFePO₄) or AGM batteries, inverters and 12 V / 220 V wiring, sized to the way you camp. We fix electrical faults too, and the solar quote is free."
+lede: "Solar panels, charge controllers, lithium or AGM batteries, inverters and 12 V / 220 V wiring, sized to the way you camp. We fix electrical faults too, and the solar quote is free."
 order: 3
 whatsappText: "Hi, I'd like a quote for caravan electrical or solar work."
 ctaLabel: "Ask for a free solar quote"
@@ -11,15 +11,15 @@ facts:
   - k: "Solar quote"
     v: "Free"
   - k: "Pricing"
-    v: "Quoted on your brief"
+    v: "Quoted for what you want to run"
 faqTitle: "Solar and electrical questions"
 faq:
   - q: "Can you install solar panels on my caravan?"
     a: "Yes. We fit complete systems: panels, a charge controller, a lithium or AGM battery bank, an inverter if you need 220 V, and the wiring that ties it together. The size depends on what you run and how long you stay off-grid."
   - q: "How is solar work priced?"
-    a: "We quote on your brief. Tell us what you want to power and we price a system for it, and the quote costs you nothing."
+    a: "Tell us what you want to power and we price a system for it. The quote costs you nothing."
   - q: "Lithium or AGM: which battery should I fit?"
-    a: "Both work. Lithium (LiFePO₄) weighs less and gives you more usable power from each charge. AGM costs less to buy. Tell us your budget and how you camp, and we'll recommend one."
+    a: "Both work. Lithium (LiFePO₄) weighs less and gives you more usable power from each charge. AGM, a sealed lead-acid battery, costs less to buy. Tell us your budget and how you camp, and we'll recommend one."
 related:
   - repairs
 closing:

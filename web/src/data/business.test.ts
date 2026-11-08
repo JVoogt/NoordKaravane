@@ -29,6 +29,7 @@ describe('BUSINESS facts', () => {
   it('holds links and the google rating with its as-of date', () => {
     expect(BUSINESS.links.facebook).toBe('https://www.facebook.com/NoordKaravane');
     expect(BUSINESS.links.googleProfile).toBe('https://share.google/T9FFV2QHsZb1VuVMD');
+    expect(BUSINESS.links.googleMaps).toBe('https://www.google.com/maps?cid=1109550773885984048');
     expect(BUSINESS.links.kampi).toBe('https://kampi.co.za');
     expect(BUSINESS.links.mapsQuery).toContain('252+General+Beyers+Street');
     expect(BUSINESS.google).toEqual({ rating: 5.0, reviewCount: 24, asOf: '2026-11-07' });

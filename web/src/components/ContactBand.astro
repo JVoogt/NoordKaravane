@@ -18,7 +18,7 @@ interface Props {
   placeLabel?: string;
   /** Add the recoveries line under the workshop hours (Recoveries page). */
   recoveries?: boolean;
-  /** Emergency page: Call first and filled, WhatsApp beside it with the same weight (matches the hero). */
+  /** Emergency page: Call first and filled, WhatsApp beside it as the ghost second choice (matches the hero). */
   callFirst?: boolean;
 }
 const {
@@ -44,7 +44,7 @@ const a = BUSINESS.address;
           {callFirst ? (
             <Fragment>
               <CtaButton href={`tel:${BUSINESS.phone.e164}`} variant="primary">Call {BUSINESS.phone.display}</CtaButton>
-              <CtaButton href={waUrl(waText)} variant="primary" external>WhatsApp {BUSINESS.phone.display}</CtaButton>
+              <CtaButton href={waUrl(waText)} variant="ghost" external>WhatsApp {BUSINESS.phone.display}</CtaButton>
             </Fragment>
           ) : (
             <Fragment>
@@ -61,9 +61,15 @@ const a = BUSINESS.address;
             <div class="loc-v">{a.street}<small>{a.locality}, {a.city}, {a.postalCode}</small></div>
           </div>
           <div class="loc-item">
-            <div class="loc-k">Hours</div>
-            <Hours recoveries={recoveries} />
+            <div class="loc-k">Workshop hours</div>
+            <Hours />
           </div>
+          {recoveries && (
+            <div class="loc-item">
+              <div class="loc-k">{BUSINESS.recoveriesNote}</div>
+              <div class="loc-v"><a href={`tel:${BUSINESS.phone.e164}`}>Call {BUSINESS.phone.display}</a></div>
+            </div>
+          )}
           <CtaButton href="/find-us/" variant="ghost">{placeLabel}</CtaButton>
         </div>
       )}

@@ -176,10 +176,10 @@ async function roundThreeChecks(page, path, width) {
   if (width <= 700) {
     const small = await page.evaluate(() => {
       const bad = [];
-      for (const sel of ['summary.faq-q', '.loc-v a[href^="tel:"]', '.hero-trust-item a', '.foot-col a', '.frame-fallback a']) {
+      for (const sel of ['summary.faq-q', '.loc-v a[href^="tel:"]', '.hero-trust-item a', '.foot-col a', '.map-bar a', 'a.review-date', '.crumbs a', 'a.brand', '.page-nav a', '.topbar-call', '.mobile-quicknav a']) {
         for (const el of document.querySelectorAll(sel)) {
           const r = el.getBoundingClientRect();
-          if (r.width > 0 && r.height < 43.5) bad.push(`${sel}=${Math.round(r.height)}`);
+          if (r.width > 0 && (r.height < 43.5 || r.width < 43.5)) bad.push(`${sel}=${Math.round(r.width)}x${Math.round(r.height)}`);
         }
       }
       return [...new Set(bad)];
@@ -192,7 +192,10 @@ async function roundThreeChecks(page, path, width) {
     const t = document.querySelector('.topbar-track');
     return t ? getComputedStyle(t).animationName : 'missing';
   });
-  if (width <= 700) {
+  if (path === '/services/recoveries/') {
+    // Recoveries has no ticker at all: one static 24/7 line (asserted in remediationChecks).
+    record(path, width, 'recovery topbar does not move', tick === 'missing', `track=${tick}`);
+  } else if (width <= 700) {
     record(path, width, 'ticker is static on phones', tick === 'none', `animation-name=${tick}`);
   } else {
     await page.hover('.topbar');
@@ -262,12 +265,19 @@ async function roundThreeChecks(page, path, width) {
         badgeSize: badge ? parseFloat(getComputedStyle(badge).fontSize) : 0,
         badgeGap: b ? Math.abs(h1.top - b.bottom) : null,
         badgeInHours: !!badge?.closest('.loc-card, .loc-v'),
-        equal: !!call && !!wa && bg(call) === bg(wa) && bg(call) !== 'rgba(0, 0, 0, 0)',
+        // Call is the one filled button; WhatsApp is the outlined second choice. Same rule in the closing band.
+        primaryCall: !!call && !!wa && bg(call) !== 'rgba(0, 0, 0, 0)' && bg(wa) === 'rgba(0, 0, 0, 0)',
         callFirst: !!call && !!wa && (call.compareDocumentPosition(wa) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0,
+        bandPrimaryCall: (() => {
+          const c = document.querySelector('.contact a[href^="tel:"]');
+          const w = document.querySelector('.contact a[href^="https://wa.me/"]');
+          return !!c && !!w && bg(c) !== 'rgba(0, 0, 0, 0)' && bg(w) === 'rgba(0, 0, 0, 0)' && (c.compareDocumentPosition(w) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
+        })(),
       };
     });
     record(path, width, 'Recoveries 24/7 is a visible badge beside the H1 (14px+)', r.badgeText === 'Recoveries 24/7' && r.badgeSize >= 14 && r.badgeGap !== null && r.badgeGap <= 48 && !r.badgeInHours, `text=${r.badgeText} size=${r.badgeSize} gap=${r.badgeGap && Math.round(r.badgeGap)}`);
-    record(path, width, 'Recoveries Call and WhatsApp buttons carry equal weight, Call first', r.equal && r.callFirst, `equal=${r.equal} callFirst=${r.callFirst}`);
+    record(path, width, 'Recoveries hero: Call is the filled primary and comes first, WhatsApp is the ghost second', r.primaryCall && r.callFirst, `primaryCall=${r.primaryCall} callFirst=${r.callFirst}`);
+    record(path, width, 'Recoveries closing band: Call filled and first, WhatsApp ghost', r.bandPrimaryCall, `bandPrimaryCall=${r.bandPrimaryCall}`);
     if (width < 1100) {
       record(path, width, 'Recoveries actions sit above the fact cards and country pills', r.actions !== null && r.facts !== null && r.chips !== null && r.actions < r.facts && r.actions < r.chips, `actions=${Math.round(r.actions)} facts=${Math.round(r.facts)} chips=${Math.round(r.chips)}`);
     }
@@ -315,10 +325,10 @@ async function roundThreeChecks(page, path, width) {
   if (isFind) {
     const f = await page.evaluate(() => {
       const dir = document.querySelector('.hero-actions a[href*="maps.google.com"]');
-      const fb = document.querySelector('.frame-fallback a');
-      return { dir: dir?.textContent.trim() ?? null, dirH: dir?.getBoundingClientRect().height ?? 0, fbBtn: !!fb?.classList.contains('btn-ghost'), fbH: fb?.getBoundingClientRect().height ?? 0 };
+      const fb = document.querySelector('.map-bar a[href*="maps.google.com"]');
+      return { dir: dir?.textContent.trim() ?? null, dirH: dir?.getBoundingClientRect().height ?? 0, fbText: fb?.textContent.trim() ?? null, fbBtn: !!fb?.classList.contains('btn-primary'), fbH: fb?.getBoundingClientRect().height ?? 0 };
     });
-    record(path, width, 'Find us hero has a "Get directions" button, map fallback is a ghost button (44px+)', f.dir === 'Get directions' && f.dirH >= 44 && f.fbBtn && f.fbH >= 44, `dir=${f.dir} ${f.dirH}px fallbackGhost=${f.fbBtn} ${f.fbH}px`);
+    record(path, width, 'Find us hero has a "Get directions" button; the map frame carries a primary "Open in Google Maps" (44px+)', f.dir === 'Get directions' && f.dirH >= 44 && f.fbBtn && f.fbText === 'Open in Google Maps' && f.fbH >= 44, `dir=${f.dir} ${f.dirH}px mapBar=${f.fbText} primary=${f.fbBtn} ${f.fbH}px`);
   }
   if (service) {
     const loc = await page.evaluate(() => {
@@ -329,6 +339,152 @@ async function roundThreeChecks(page, path, width) {
     });
     record(path, width, 'loc-card "Find us" button is not stretched', !!loc && loc.w < loc.cw * 0.6, loc ? `button ${Math.round(loc.w)}px in ${Math.round(loc.cw)}px card` : 'no .loc-card > a.btn');
   }
+}
+
+// Post-launch remediation (2026-11-08). Hard-coded oracles: the recovery topbar copy, the recovery chip row,
+// the readability floors and the caravan page's jump links and booking row.
+const RECOVERY_TOPBAR = 'Recoveries 24/7 · Call 083 334 9357';
+const RECOVERY_CHIPS = [
+  ['Call', 'tel:+27833349357'],
+  ['WhatsApp', `${WA_PREFIX}?text=`],
+  ['What to send', '#what-to-send'],
+  ['Service area', '#service-area'],
+];
+// Explanatory copy: 16px floor. Interactive or decision metadata: 14px floor.
+const BODY_16 = ['.step p', '.report-copy span', '.estimator > p', '.faq-a p', '.svc-includes li', '.svc-blurb', '.review-body', '.how-steps p', '.checklist li', '.hero-safety', '.inspection-summary p', '.loc-text p', '.book-row p'];
+const META_14 = ['.est-opt', '.est-chk', '.est-chk-price', '.est-total-note', '.svc-foot', '.review-meta', '.review-date', '.crumbs', '.mobile-quicknav a', '.nav-links a', '.hero-trust-item a', '.profile-link', '.price .amt sub', '.topbar', '.fact dd', '.loc-v small', '.promo-price .unit', '.page-nav a', '.map-bar-addr span'];
+
+async function remediationChecks(page, path, width) {
+  const floors = await page.evaluate(({ body, meta }) => {
+    const bad = [];
+    const scan = (sels, min) => {
+      for (const sel of sels) {
+        for (const el of document.querySelectorAll(sel)) {
+          if (!el.checkVisibility || !el.checkVisibility()) continue;
+          const px = parseFloat(getComputedStyle(el).fontSize);
+          if (px < min - 0.01) bad.push(`${sel}=${px}px (<${min})`);
+        }
+      }
+    };
+    scan(body, 16);
+    scan(meta, 14);
+    return [...new Set(bad)];
+  }, { body: BODY_16, meta: META_14 });
+  record(path, width, 'readability floors: explanatory copy 16px+, decision metadata 14px+', floors.length === 0, floors.slice(0, 6).join(' '));
+
+  if (path === '/services/recoveries/') {
+    const t = await page.evaluate(() => {
+      const bar = document.querySelector('.topbar');
+      const a = bar?.querySelector('a.topbar-call');
+      return {
+        text: bar?.textContent.replace(/\s+/g, ' ').trim() ?? null,
+        href: a?.getAttribute('href') ?? null,
+        h: a?.getBoundingClientRect().height ?? 0,
+        track: !!bar?.querySelector('.topbar-track'),
+      };
+    });
+    record(path, width, 'recovery topbar says 24/7 and dials the number (no workshop hours, no ticker)', t.text === RECOVERY_TOPBAR && t.href === 'tel:+27833349357' && t.h >= 44 && !t.track, `text=${t.text} href=${t.href} h=${Math.round(t.h)} ticker=${t.track}`);
+
+    // Header: on this page the Call button is the filled primary pill, WhatsApp the outlined second.
+    const h = await page.evaluate(() => {
+      const call = document.querySelector('.nav a.nav-call');
+      const wa = document.querySelector('.nav a.nav-cta');
+      const bg = (el) => getComputedStyle(el).backgroundColor;
+      return call && wa ? { callFilled: bg(call) !== 'rgba(0, 0, 0, 0)', waFilled: bg(wa) !== 'rgba(0, 0, 0, 0)', callFirst: call.getBoundingClientRect().right <= wa.getBoundingClientRect().left + 1, callText: call.textContent.trim(), phoneShown: !!document.querySelector('.nav .nav-phone') } : null;
+    });
+    record(path, width, 'recovery header: filled Call first, WhatsApp outlined second', !!h && h.callFilled && !h.waFilled && h.callFirst && h.callText === 'Call' && !h.phoneShown, JSON.stringify(h));
+
+    const chips = await page.evaluate(() => [...document.querySelectorAll('.mobile-quicknav a')].map((a) => [a.textContent.trim(), a.getAttribute('href')]));
+    const chipsOk = chips.length === RECOVERY_CHIPS.length && RECOVERY_CHIPS.every(([label, href], i) => chips[i][0] === label && chips[i][1].startsWith(href));
+    const targets = await page.evaluate(() => ['#what-to-send', '#service-area'].every((id) => !!document.querySelector(id)));
+    record(path, width, 'recovery chip row: Call, WhatsApp, What to send, Service area (no Shop, no Pricing)', chipsOk && targets, chips.map((c) => c[0]).join(' | '));
+
+    // Above the fold: no workshop hours and no "Closed" anywhere a stranded visitor looks first.
+    await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+    const fold = await page.evaluate(() => {
+      const hits = [];
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+        const el = n.parentElement;
+        if (!el || !el.checkVisibility || !el.checkVisibility()) continue;
+        if (!/\d\d:\d\d|closed/i.test(n.textContent)) continue;
+        const r = el.getBoundingClientRect();
+        if (r.bottom > 0 && r.top < window.innerHeight) hits.push(n.textContent.trim().slice(0, 40));
+      }
+      return hits;
+    });
+    record(path, width, 'recovery first screen shows no workshop hours or "Closed"', fold.length === 0, fold.join(' | '));
+
+    const order = await page.evaluate(() => {
+      const top = (s) => document.querySelector(s)?.getBoundingClientRect().top ?? null;
+      return { actions: top('.hero-actions'), safety: top('.hero-safety'), lede: top('.hero-lede'), list: top('#what-to-send'), facts: top('#service-area'), safetyText: document.querySelector('.hero-safety')?.textContent.trim() ?? '' };
+    });
+    const orderOk = order.actions !== null && order.safety !== null && order.actions < order.safety && order.safety < order.lede && (width >= 1100 || order.list < order.facts) && /emergency services first/.test(order.safetyText);
+    record(path, width, 'recovery order: Call/WhatsApp, safety line, lede; what to send before the facts on phones', orderOk, JSON.stringify(order).slice(0, 160));
+
+    const band = await page.evaluate(() => [...document.querySelectorAll('.contact .loc-k')].map((e) => e.textContent.trim()));
+    record(path, width, 'recovery closing band labels "Workshop hours" and "Recoveries 24/7" separately', band.includes('Workshop hours') && band.includes('Recoveries 24/7'), band.join(' | '));
+  }
+
+  if (path !== '/services/recoveries/') {
+    const plain = await page.evaluate(() => ({ track: !!document.querySelector('.topbar .topbar-track'), call: !!document.querySelector('.topbar-call') }));
+    record(path, width, 'workshop topbar keeps the hours ticker (no recovery line)', plain.track && !plain.call, JSON.stringify(plain));
+  }
+
+  if (path === NEUTRAL_PAGE) {
+    const nav = await page.evaluate(() => {
+      const links = [...document.querySelectorAll('nav.page-nav a')].map((a) => a.getAttribute('href'));
+      const est = document.querySelector('.estimator')?.getBoundingClientRect();
+      const book = document.querySelector('#pricing .book-row a[href^="https://wa.me/27833349357"]')?.getBoundingClientRect();
+      const nav = document.querySelector('nav.page-nav');
+      return { links, ok: links.every((h) => !!document.querySelector(h)), sticky: nav ? getComputedStyle(nav).position : null, bookAfter: !!est && !!book && book.top >= est.bottom - 1, bookH: book?.height ?? 0 };
+    });
+    record(path, width, 'caravan jump links: Prices, Included, Report, Book, all targets exist, not sticky', JSON.stringify(nav.links) === JSON.stringify(['#pricing', '#included', '#inspection-report', '#contact']) && nav.ok && nav.sticky === 'static', JSON.stringify(nav.links));
+    record(path, width, 'caravan booking CTA sits after the estimator (44px+)', nav.bookAfter && nav.bookH >= 44, `after=${nav.bookAfter} h=${nav.bookH}`);
+  }
+
+  if (path === '/services/solar-electrical/' && width >= 1100) {
+    const one = await page.evaluate(() => {
+      const cards = [...document.querySelectorAll('#related .svc')];
+      return { n: cards.length, w: cards[0]?.getBoundingClientRect().width ?? 0 };
+    });
+    record(path, width, 'a single related card keeps a card width (no stretched row)', one.n === 1 && one.w > 200 && one.w <= 460, `n=${one.n} w=${Math.round(one.w)}`);
+  }
+}
+
+// Shift+Tab from the bottom: every stop must sit below the sticky header (WCAG 2.4.11). The visible header is the
+// brand row plus the chip row while the chip row is shown (a Tab press brings it back).
+async function backwardFocusCheck(page, path, width) {
+  await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }));
+  await page.locator('footer').last().click({ position: { x: 1, y: 1 } }).catch(() => {});
+  const hidden = [];
+  let stops = 0;
+  for (let i = 0; i < 24; i++) {
+    await page.keyboard.press('Shift+Tab');
+    await page.waitForTimeout(220);
+    const s = await page.evaluate(() => {
+      const el = document.activeElement;
+      if (!el || el === document.body) return null;
+      if (el.closest('.nav, .topbar') || getComputedStyle(el).position === 'fixed' || el.tagName === 'IFRAME') return { skip: true };
+      const r0 = el.getBoundingClientRect();
+      // The skip link is drawn over the header on focus by design: it passes when it is the element on top.
+      if (el.matches('a[href="#main"]')) {
+        const hit = document.elementFromPoint(r0.left + r0.width / 2, r0.top + r0.height / 2);
+        return { skip: false, ok: hit === el || el.contains(hit), what: `skip link covered by ${hit?.className}` };
+      }
+      const nav = document.querySelector('.nav').getBoundingClientRect();
+      const row = document.querySelector('.mobile-quicknav');
+      const rowShown = row && getComputedStyle(row).display !== 'none' && Number(getComputedStyle(row).opacity) > 0.5;
+      const headerBottom = rowShown ? Math.max(nav.bottom, row.getBoundingClientRect().bottom) : nav.bottom;
+      const r = el.getBoundingClientRect();
+      return { skip: false, ok: r.top >= headerBottom - 1, what: `${el.tagName.toLowerCase()}.${String(el.className).split(' ')[0]} "${el.textContent.trim().slice(0, 24)}" top=${Math.round(r.top)} header=${Math.round(headerBottom)}` };
+    });
+    if (!s) break;
+    if (s.skip) continue;
+    stops++;
+    if (!s.ok) hidden.push(s.what);
+  }
+  record(path, width, 'Shift+Tab: no focused element hidden under the sticky header', stops > 5 && hidden.length === 0, hidden.length ? hidden.slice(0, 3).join('; ') : `${stops} stops`);
 }
 
 const browser = await chromium.launch({ executablePath: EXECUTABLE });
@@ -578,6 +734,7 @@ for (const path of PAGES) {
     }
 
     await roundThreeChecks(page, path, width);
+    await remediationChecks(page, path, width);
 
     // Footer hours: every segment is nowrap so a time never breaks mid-range.
     const hoursWrap = await page.evaluate(() => {
@@ -628,7 +785,55 @@ for (const path of PAGES) {
     const href = cta ? await cta.getAttribute('href') : null;
     record(path, 'nojs', 'estimator CTA is the neutral wa.me enquiry', href === NEUTRAL_ESTIMATE_HREF, href ?? 'selector [data-est-cta] matches nothing');
   }
+  if (path === '/find-us/') {
+    const m = await page.evaluate(() => {
+      const a = document.querySelector('.map-bar a[href*="maps.google.com"]');
+      return { href: a?.getAttribute('href') ?? null, visible: !!a && a.checkVisibility(), addr: document.querySelector('.map-bar-addr')?.textContent.replace(/\s+/g, ' ').trim() ?? '' };
+    });
+    record(path, 'nojs', 'map bar: address, GPS and an "Open in Google Maps" link without JavaScript', m.visible && !!m.href && /252 General Beyers Street/.test(m.addr) && /GPS -25\.\d+, 28\.\d+/.test(m.addr), JSON.stringify(m));
+  }
   await context.close();
+}
+
+// Map before it loads: Google blocked entirely, so the frame shows only what the page itself provides.
+for (const width of [390, 1440]) {
+  if (!PAGES.includes('/find-us/')) break;
+  const context = await browser.newContext({ viewport: { width, height: 900 } });
+  const page = await context.newPage();
+  await page.route(/google\.com|gstatic\.com|googleapis\.com/, (r) => r.abort());
+  await page.goto(BASE + '/find-us/', { waitUntil: 'load' });
+  const m = await page.evaluate(() => {
+    const vis = (el) => !!el && el.checkVisibility() && el.getBoundingClientRect().height > 0;
+    const wait = document.querySelector('.loc-map-wait');
+    const btn = document.querySelector('.map-bar a.btn-primary');
+    btn?.scrollIntoView({ block: 'center', behavior: 'instant' });
+    const r = btn?.getBoundingClientRect();
+    // The button must be the element actually hit at its centre (nothing, such as an empty iframe, on top of it).
+    const hit = r ? document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2) : null;
+    return { wait: vis(wait) ? wait.textContent.trim() : null, btn: vis(btn), clickable: !!hit && (hit === btn || btn.contains(hit)), addr: vis(document.querySelector('.map-bar-addr')) };
+  });
+  record('/find-us/', width, 'map placeholder: address, GPS and a clickable Maps button before the iframe loads', !!m.wait && m.btn && m.clickable && m.addr, JSON.stringify(m));
+  // Keyboard: the Maps button is reachable, and tabbing into the map shows a ring on its frame.
+  const ring = await page.evaluate(() => {
+    const css = [...document.styleSheets].flatMap((sh) => { try { return [...sh.cssRules]; } catch { return []; } }).map((r) => r.cssText).join(' ');
+    return /\.loc-map:focus-within/.test(css);
+  });
+  record('/find-us/', width, 'map frame has a :focus-within ring for keyboard users', ring, String(ring));
+  await context.close();
+}
+
+// Shift+Tab focus visibility and reduced motion, per page at a phone and a desktop width.
+for (const path of PAGES) {
+  for (const width of [390, 1440]) {
+    const context = await browser.newContext({ viewport: { width, height: 900 }, reducedMotion: 'reduce' });
+    const page = await context.newPage();
+    await page.route(/maps\.google\.com/, (r) => r.abort());
+    await page.goto(BASE + path, { waitUntil: 'load' });
+    const running = await page.evaluate(() => document.getAnimations().filter((a) => a.playState === 'running' && (a.effect?.getComputedTiming().iterations ?? 1) === Infinity).map((a) => `${a.effect?.target?.className ?? '?'}:${a.animationName ?? ''}`));
+    record(path, width, 'prefers-reduced-motion: no endless animation runs', running.length === 0, running.join(', ') || 'none');
+    await backwardFocusCheck(page, path, width);
+    await context.close();
+  }
 }
 
 // JS on: the live estimator updates the total, the pressed states and the CTA href. Missing hooks FAIL.

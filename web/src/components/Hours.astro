@@ -1,17 +1,12 @@
 ---
-// Workshop hours, one line per day group. The recoveries line shows only where recoveries are the subject,
-// so a closed weekend and "24/7" never sit side by side without a label.
+// Workshop hours, one line per day group. The recoveries line is not part of this block: where recoveries are the
+// subject, ContactBand shows "Recoveries 24/7" as its own labelled item, so "closed" never reads as recoveries.
 import { BUSINESS } from '../data/business';
 import { formatHoursLines } from '../lib/hours';
 
-interface Props {
-  recoveries?: boolean;
-}
-const { recoveries = false } = Astro.props;
 const lines = formatHoursLines(BUSINESS.hours);
 ---
 
 <div class="loc-v">
   {lines.map((line, i) => (<Fragment>{i > 0 && <br />}{line}</Fragment>))}
-  {recoveries && <small>{BUSINESS.recoveriesNote}, on the same number</small>}
 </div>

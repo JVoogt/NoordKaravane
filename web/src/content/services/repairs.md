@@ -15,7 +15,7 @@ facts:
 faqTitle: "Caravan repair questions"
 faq:
   - q: "What repairs do you handle?"
-    a: "Running gear: wheel bearings, brakes, suspension, leaf springs, the coupling and the jockey wheel. Water: pumps, tanks, geysers and pipework, on gas or electric. Structure: woodrot in floors, walls and frames."
+    a: "Running gear: wheel bearings, brakes, suspension, leaf springs, the coupler and the jockey wheel. Water: pumps, tanks, geysers and pipework, on gas or electric. Structure: woodrot in floors, walls and frames."
   - q: "Do I see the cost before work starts?"
     a: "Yes. The quote comes first, with any replacement parts priced on it, and nothing gets fitted that you haven't approved."
   - q: "I don't know what's wrong. Can you still help?"
@@ -35,7 +35,7 @@ closing:
 
 Watch for a wheel that grinds or hums, a hub too hot to touch after a drive, brakes that pull to one side, or a caravan that sits low on one side.
 
-We repair wheel bearings, brakes, suspension, leaf springs, couplings and jockey wheels, then test them before you tow away. A routine bearing repack is part of every [caravan service](/services/caravan-service/).
+We repair wheel bearings, brakes, suspension, leaf springs, couplers and jockey wheels, then test them before you tow away. A routine bearing repack is part of every [caravan service](/services/caravan-service/).
 
 ## Water systems and geysers
 

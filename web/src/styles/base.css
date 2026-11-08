@@ -18,8 +18,11 @@ ul { list-style: none; }
 
 .container { width: var(--container); margin-inline: auto; }
 
-/* Anchors clear the sticky nav (and its quick-link row on small screens). */
-[id] { scroll-margin-top: 140px; }
+/* Anchor jumps and focus scrolling both clear the sticky nav: 70px header plus the 59px quick-link row below 1361px
+   (Shift+Tab brings the row back, so it counts), the header alone above that. One mechanism only: scroll-padding on
+   the scroller, never scroll-margin on targets as well, or the offsets add up. */
+html { scroll-padding-top: 140px; }
+@media (min-width: 1361px) { html { scroll-padding-top: 96px; } }
 
 /* One focus rule for every interactive element (replaces the old hand-kept selector list). */
 :where(a, button, summary, input, [tabindex]):focus-visible {

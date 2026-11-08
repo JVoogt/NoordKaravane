@@ -11,6 +11,7 @@ const WEB = fileURLToPath(new URL('../', import.meta.url));
 const DIST = join(WEB, 'dist');
 const ORIGIN = 'https://noordkaravane.co.za';
 const ORG_ID = `${ORIGIN}/#org`;
+const GBP_URL = 'https://www.google.com/maps?cid=1109550773885984048';
 
 // Oracle: design success criterion 2.
 const ROUTES = [
@@ -181,6 +182,9 @@ const graphOf = (route) => {
     if (route === '/' || route === '/find-us/') {
       const types = [].concat(full[0]?.['@type'] ?? []);
       report(orgs.length === 1 && full.length === 1 && types.includes('AutoRepair'), '3 json-ld', route, `full AutoRepair node with @id ${ORG_ID}: ${full.length} of ${orgs.length} org node(s)`);
+      // The Google Business Profile is part of the entity: its stable cid URL, beside Facebook (oracle, not imported).
+      const same = [].concat(full[0]?.sameAs ?? []);
+      report(same.includes(GBP_URL) && same.includes('https://www.facebook.com/NoordKaravane') && full[0]?.hasMap === GBP_URL, '3 json-ld', `${route} sameAs`, `sameAs=${JSON.stringify(same)} hasMap=${full[0]?.hasMap}`);
     } else {
       const refs = graph.filter((n) => n.provider?.['@id'] === ORG_ID).length;
       report(full.length === 0 && refs >= 1, '3 json-ld', route, `no full org node (${full.length}), ${refs} node(s) referencing ${ORG_ID}`);
@@ -367,6 +371,31 @@ for (const route of have) {
   const index = read('sitemap-index.xml');
   report(index.includes(`${ORIGIN}/shop/sitemap.xml`) && index.includes(`${ORIGIN}/sitemap-0.xml`), '10 sitemap', 'sitemap-index.xml lists sitemap-0 and the shop sitemap');
   report(read('robots.txt').includes('sitemap-index.xml'), '10 sitemap', 'robots.txt references sitemap-index.xml');
+  // Robots policy: search and live-answer agents named and allowed, training crawlers named and disallowed, everyone
+  // else allowed. Groups are parsed the RFC 9309 way (consecutive User-agent lines share the rules under them).
+  const groups = [];
+  let cur = null;
+  for (const raw of read('robots.txt').split('\n')) {
+    const line = raw.replace(/#.*/, '').trim();
+    const m = line.match(/^([A-Za-z-]+)\s*:\s*(.*)$/);
+    if (!m) continue;
+    const [, key, val] = [m[0], m[1].toLowerCase(), m[2].trim()];
+    if (key === 'user-agent') {
+      if (!cur || cur.rules.length) groups.push((cur = { agents: [], rules: [] }));
+      cur.agents.push(val.toLowerCase());
+    } else if (cur && (key === 'allow' || key === 'disallow')) cur.rules.push(`${key}:${val}`);
+  }
+  const rulesFor = (agent) => groups.filter((g) => g.agents.includes(agent.toLowerCase())).flatMap((g) => g.rules);
+  for (const bot of ['OAI-SearchBot', 'ChatGPT-User', 'Claude-SearchBot', 'Claude-User', 'PerplexityBot']) {
+    const r = rulesFor(bot);
+    report(r.includes('allow:/') && !r.some((x) => x.startsWith('disallow:/')), '10 robots', `${bot} is named and allowed`, r.join(' ') || 'not named');
+  }
+  for (const bot of ['GPTBot', 'ClaudeBot', 'Google-Extended', 'CCBot']) {
+    const r = rulesFor(bot);
+    report(r.includes('disallow:/') && !r.includes('allow:/'), '10 robots', `${bot} (training) is disallowed`, r.join(' ') || 'not named');
+  }
+  const star = rulesFor('*');
+  report(star.includes('allow:/') && !star.includes('disallow:/'), '10 robots', '* (Googlebot, Bingbot and the rest) is allowed', star.join(' '));
 }
 
 // 11. Reviews guard.
@@ -427,6 +456,13 @@ for (const route of have) {
     report(ok, '14 structure', `${route} closing CTA band`, ok ? 'last section has a WhatsApp and a Call link' : 'last <main> section has no .contact band with both links');
     const call = root.querySelector('.nav a.nav-call');
     report(!!call && call.getAttribute('href') === 'tel:+27833349357' && call.getAttribute('aria-label') === 'Call Noord Karavane', '14 structure', `${route} header Call button`, call ? 'tel link and aria-label ok' : 'no .nav a.nav-call');
+    // Recoveries: Call is the header's primary (filled) action; elsewhere WhatsApp booking is. The topbar on
+    // Recoveries is the 24/7 line with the number and carries no workshop hours.
+    const rec = route === '/services/recoveries/';
+    report(call?.classList.contains('nav-call--primary') === rec, '14 structure', `${route} header primary action`, rec ? 'Call is primary' : 'WhatsApp booking is primary');
+    const top = root.querySelector('.topbar');
+    const topText = squash(top?.text ?? '');
+    report(rec ? topText === 'Recoveries 24/7 · Call 083 334 9357' && !/\d\d:\d\d/.test(topText) : !!top?.querySelector('.topbar-track'), '14 structure', `${route} topbar`, topText.slice(0, 80));
   }
   if (pages.has('/')) {
     const chips = pages.get('/').root.querySelectorAll('.hero-trust-item').map((n) => squash(n.text));

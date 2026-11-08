@@ -44,6 +44,10 @@ export const serviceSchema = z
     priceFrom: z.object({ id: z.enum(PRICE_IDS), from: z.boolean() }).strict().optional(),
     // The closing contact band's heading and line, when the page has something specific to ask for.
     closing: z.object({ heading: text, text: text }).strict().optional(),
+    // Emergency pages: a one-line safety instruction under the hero buttons (no response times).
+    safety: text.optional(),
+    // Emergency pages: what to have ready, shown at the top of the hero panel (before the facts) as #what-to-send.
+    checklist: z.object({ heading: text, items: z.array(text).min(2) }).strict().optional(),
   })
   .strict();
 

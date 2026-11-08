@@ -17,7 +17,7 @@ interface Props {
   entry: CollectionEntry<'services'>;
   /** Markdown body as three side-by-side columns under the hero (Repairs: one column per kind of repair). */
   bodyColumns?: boolean;
-  /** Emergency page: the Call button is filled and first, with the same weight as WhatsApp. */
+  /** Emergency page: Call is the filled primary action and comes first, WhatsApp is the ghost second choice. */
   emergency?: boolean;
   /** Render the default slot (the markdown body) in its own section under the hero. */
   body?: boolean;
@@ -55,33 +55,46 @@ const g = BUSINESS.google;
         <Breadcrumbs items={crumbs} />
         <slot name="tag" />
         <h1 class="hero-title hero-title--service">{d.h1}</h1>
-        <p class="hero-lede">{d.lede}</p>
-        <div class="hero-actions">
-          {emergency ? (
-            <Fragment>
+        {/* Stranded visitor: the Call button straight under the H1, WhatsApp second, then the safety line. */}
+        {emergency ? (
+          <Fragment>
+            <div class="hero-actions hero-actions--emergency">
               <CtaButton href={`tel:${BUSINESS.phone.e164}`} variant="primary">Call {BUSINESS.phone.display}</CtaButton>
-              <CtaButton href={waUrl(d.whatsappText)} variant="primary" external arrow>{d.ctaLabel}</CtaButton>
-            </Fragment>
-          ) : (
-            <Fragment>
+              <CtaButton href={waUrl(d.whatsappText)} variant="ghost" external>{d.ctaLabel}</CtaButton>
+            </div>
+            {d.safety && <p class="hero-safety">{d.safety}</p>}
+            <p class="hero-lede">{d.lede}</p>
+          </Fragment>
+        ) : (
+          <Fragment>
+            <p class="hero-lede">{d.lede}</p>
+            <div class="hero-actions">
               <CtaButton href={waUrl(d.whatsappText)} variant="primary" external arrow>{d.ctaLabel}</CtaButton>
               <CtaButton href={`tel:${BUSINESS.phone.e164}`} variant="ghost">Call {BUSINESS.phone.display}</CtaButton>
-            </Fragment>
-          )}
-        </div>
+            </div>
+          </Fragment>
+        )}
         <p class="hero-proof">
           <a href={BUSINESS.links.googleProfile} target="_blank" rel="noopener">{g.rating.toFixed(1)} on Google from {g.reviewCount} reviews</a>
         </p>
       </div>
       <div class="hero-panel">
-        {d.facts && d.facts.length > 0 && (
-          <dl class="facts">
-            {d.facts.map((f) => (
-              <div class="fact"><dt>{f.k}</dt><dd>{f.v}</dd></div>
-            ))}
-          </dl>
+        {d.checklist && (
+          <div class="checklist" id="what-to-send">
+            <h2>{d.checklist.heading}</h2>
+            <ul>{d.checklist.items.map((it) => <li>{it}</li>)}</ul>
+          </div>
         )}
-        <slot name="hero-extra" />
+        <div class="hero-facts" id={emergency ? 'service-area' : undefined}>
+          {d.facts && d.facts.length > 0 && (
+            <dl class="facts">
+              {d.facts.map((f) => (
+                <div class="fact"><dt>{f.k}</dt><dd>{f.v}</dd></div>
+              ))}
+            </dl>
+          )}
+          <slot name="hero-extra" />
+        </div>
       </div>
     </div>
   </header>
@@ -108,11 +121,11 @@ const g = BUSINESS.google;
 
   {d.related.length > 0 && (
     <section class="block block--tight" id="related">
-      <div class="container">
+      <div class="container related-layout">
         <div class="sec-head">
           <h2 class="sec-title">Related services</h2>
         </div>
-        <div class="related-grid">
+        <div class:list={['related-grid', `related-grid--${Math.min(d.related.length, 3)}`]}>
           {d.related.map((rel) => <ServiceCard slug={rel} compact />)}
         </div>
       </div>
