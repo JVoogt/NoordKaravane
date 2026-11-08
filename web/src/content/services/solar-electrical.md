@@ -5,11 +5,9 @@ h1: "Caravan electrical and solar in Pretoria North"
 lede: "Solar panels, charge controllers, lithium or AGM batteries, inverters and 12 V / 220 V wiring, sized to the way you camp. We fix electrical faults too, and the solar quote is free."
 order: 3
 whatsappText: "Hi, I'd like a quote for caravan electrical or solar work."
-ctaLabel: "Ask for a free solar quote"
+ctaLabel: "Solar quote on WhatsApp"
 schemaName: "Caravan electrical and solar"
 facts:
-  - k: "Solar quote"
-    v: "Free"
   - k: "Pricing"
     v: "Quoted for what you want to run"
 faqTitle: "Solar and electrical questions"
@@ -24,7 +22,7 @@ related:
   - repairs
 closing:
   heading: "Ask for a solar quote"
-  text: "Tell us what you run, how many nights you stay off-grid and what battery you have now. Photos of the current setup help."
+  text: "Send what you want to run and a few photos of the setup on WhatsApp. The quote costs you nothing."
 ---
 
 ## What to send for a quote

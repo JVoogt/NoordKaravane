@@ -14,7 +14,7 @@ const items = [
   { text: `Caravan workshop, ${BUSINESS.address.street}, ${BUSINESS.address.locality}`, keep: false },
   { text: `${BUSINESS.google.rating.toFixed(1)} on Google from ${BUSINESS.google.reviewCount} reviews`, keep: false },
   { text: 'Insurance-accredited recoveries', keep: false },
-  { text: `Cross-border: ${BUSINESS.crossBorder.map((c) => c.code).join(' · ')}`, keep: false },
+  { text: `Cross-border: ${BUSINESS.crossBorder.map((c) => c.code).join(', ')}`, keep: false },
   { text: formatHoursCompact(BUSINESS.hours), keep: true },
   { text: `WhatsApp ${BUSINESS.phone.display}`, keep: false },
 ];

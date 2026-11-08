@@ -14,6 +14,23 @@
   /* Brand orange fails on paper (2.78:1). For orange text and marks on paper surfaces only: 4.6:1 on the darkest paper tint. */
   --orange-on-paper: #a63d0f;
   --whatsapp:   #25D366;
+  --whatsapp-hover: #3ddb7c;
+  --whatsapp-ink:   #062e16;
+
+  /* Semantic surfaces and lines (2026-11-08 polish: every literal that lived in components.css, same values). */
+  --surface-faint:  rgba(235, 230, 221, 0.035); /* chips, pills and the Call button on ink */
+  --topbar-line:    rgba(0, 0, 0, 0.15);        /* hairline under the orange topbar */
+  --mask-solid:     #000;                       /* opaque stop of the quick-nav fade mask */
+  --shadow-float:   0 6px 0 rgba(0, 0, 0, 0.35), 0 10px 24px rgba(0, 0, 0, 0.35); /* floating WhatsApp: offset, no glow */
+  /* The paper (inspection report) section: ink at low strengths. */
+  --paper-ink-dim:  rgba(14, 15, 17, 0.68);
+  --paper-line:     rgba(14, 15, 17, 0.12);
+  --paper-line-soft: rgba(14, 15, 17, 0.10);
+  --paper-tint-1:   rgba(14, 15, 17, 0.035);
+  --paper-tint-2:   rgba(14, 15, 17, 0.055);
+  --paper-raised:   rgba(245, 242, 237, 0.72);
+  --sev-ok:         #22c55e;                    /* report row that passed */
+  --focus:          var(--orange-2);
 
   --f-display:  'Bebas Neue', 'Barlow', system-ui, sans-serif;
   --f-body:     'Barlow', system-ui, -apple-system, sans-serif;

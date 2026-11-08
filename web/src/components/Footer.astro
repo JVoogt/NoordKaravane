@@ -16,7 +16,7 @@ const year = new Date().getFullYear();
       <div class="foot-brand">
         <a href="/" class="brand">
           <span class="brand-mark"><Image src={logo} width={68} height={68} format="webp" alt="Noord Karavane" /></span>
-          <span class="brand-txt">{BUSINESS.name}<small>{BUSINESS.address.locality}</small></span>
+          <span class="brand-txt">{BUSINESS.name} <small>{BUSINESS.address.locality}</small></span>
         </a>
         <p>A small caravan and trailer workshop in {BUSINESS.address.locality}: servicing, repairs, electrical and solar, lift kits and recoveries.</p>
       </div>
@@ -30,7 +30,7 @@ const year = new Date().getFullYear();
         <div class="foot-heading">Company</div>
         <ul>
           <li><a href="/find-us/">Find us</a></li>
-          <li><a href={BUSINESS.links.kampi} target="_blank" rel="noopener">Kampi caravan rentals</a></li>
+          <li><a href={BUSINESS.links.kampi} target="_blank" rel="noopener">Kampi rentals</a></li>
           <li><a href="/shop/">Shop</a></li>
         </ul>
       </div>
@@ -40,12 +40,12 @@ const year = new Date().getFullYear();
           <li><a href={waUrl()} target="_blank" rel="noopener">WhatsApp {BUSINESS.phone.display}</a></li>
           <li><a href={`tel:${BUSINESS.phone.e164}`}>Call {BUSINESS.phone.display}</a></li>
           <li><a href="/find-us/">{BUSINESS.address.street}</a></li>
-          <li><a href="/find-us/">{formatHoursSegments(BUSINESS.hours).map((seg, i) => (<Fragment>{i > 0 && " \u00b7 "}<span class="foot-hours-seg">{seg}</span></Fragment>))}</a></li>
+          {formatHoursSegments(BUSINESS.hours).map((seg) => <li><a href="/find-us/"><span class="foot-hours-seg">{seg}</span></a></li>)}
         </ul>
       </div>
     </div>
     <div class="foot-bottom">
-      <span>&copy; {year} {BUSINESS.name} &middot; {BUSINESS.address.locality} &middot; {BUSINESS.address.country}</span>
+      <span>&copy; {year} {BUSINESS.name}, {BUSINESS.address.locality}, South Africa</span>
       <span>Road-ready from {BUSINESS.address.locality}</span>
     </div>
   </div>

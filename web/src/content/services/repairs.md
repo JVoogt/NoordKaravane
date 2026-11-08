@@ -2,14 +2,14 @@
 title: "Caravan Repairs in Pretoria North | Noord Karavane"
 description: "Caravan repairs in Pretoria North: wheel bearings, brakes, suspension, leaf springs, pumps, geysers and woodrot in floors and walls. Quoted before work starts."
 h1: "Caravan repairs in Pretoria North"
-lede: "Bearings, brakes, chassis, plumbing and woodrot. We look at the problem first, quote it in plain language, and only start once you've approved it."
+lede: "We repair bearings, brakes, chassis, plumbing and woodrot. We look at the problem first and quote it in plain language before we start."
 order: 2
 whatsappText: "Hi, I'd like help with caravan bearings, brakes or chassis work."
 ctaLabel: "Get a quote on WhatsApp"
 schemaName: "Caravan repairs"
 facts:
   - k: "Before work"
-    v: "Quote first"
+    v: "Nothing fitted until you approve it"
   - k: "Not sure what it is?"
     v: "Send a photo on WhatsApp"
 faqTitle: "Caravan repair questions"

@@ -3,9 +3,8 @@ interface Props {
   href: string;
   variant?: 'primary' | 'ghost' | 'whatsapp';
   external?: boolean;
-  arrow?: boolean;
 }
-const { href, variant = 'primary', external = false, arrow = false } = Astro.props;
+const { href, variant = 'primary', external = false } = Astro.props;
 ---
 
 <a
@@ -15,5 +14,4 @@ const { href, variant = 'primary', external = false, arrow = false } = Astro.pro
   rel={external ? 'noopener' : undefined}
 >
   <slot />
-  {arrow && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>}
 </a>
