@@ -957,7 +957,12 @@ for (const width of [390, 1440]) {
     bg: getComputedStyle(document.body).backgroundColor,
     font: getComputedStyle(document.querySelector('h1') ?? document.body).fontFamily,
     nav: !!document.querySelector('.nav a.nav-call'),
-    rel: [...document.querySelectorAll('link[rel=stylesheet],script[src]')].every((n) => (n.getAttribute('href') ?? n.getAttribute('src')).startsWith('/')),
+    // The site's own assets must be root-relative. In production Cloudflare's edge injects its Web Analytics beacon
+    // (https://static.cloudflareinsights.com/beacon.min.js/...), which is not ours: exactly that origin is exempt.
+    rel: [...document.querySelectorAll('link[rel=stylesheet],script[src]')]
+      .map((n) => n.getAttribute('href') ?? n.getAttribute('src'))
+      .filter((u) => !u.startsWith('https://static.cloudflareinsights.com/beacon.min.js'))
+      .every((u) => u.startsWith('/')),
   }));
   record('/services/nope/', width, 'missing nested URL is a 404 that renders styled', res?.status() === 404 && s.h1 === 'Page not found.' && s.bg === 'rgb(14, 15, 17)' && /bebas/i.test(s.font) && s.nav && s.rel, `status=${res?.status()} h1=${s.h1} bg=${s.bg} font=${s.font.slice(0, 20)} nav=${s.nav} rootRelative=${s.rel}`);
   await context.close();
