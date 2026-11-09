@@ -75,12 +75,12 @@ export default function Cart({ freeShipping, quoteHandles }: { freeShipping: num
         <dl class="mt-5 grid gap-2 text-[1rem]">
           <div class="flex justify-between"><dt>Subtotal</dt><dd class="typed">{zar(subtotal)}</dd></div>
           {cart!.discount_total > 0 && <div class="flex justify-between"><dt>Discount</dt><dd class="typed">&minus;{zar(cart!.discount_total)}</dd></div>}
-          <div class="flex justify-between text-muted"><dt>Delivery</dt><dd>chosen at checkout</dd></div>
+          <div class="flex justify-between text-muted"><dt>Delivery</dt><dd>{quoted.length > 0 ? 'quoted for large items' : 'chosen at checkout'}</dd></div>
         </dl>
-        <div class="mt-4" aria-live="polite">
+        {quoted.length === 0 && <div class="mt-4" aria-live="polite">
           {toFree > 0 ? <p class="text-[0.92rem]">Add <strong>{zar(toFree)}</strong> more for free delivery (parcels up to 5 kg).</p> : <p class="text-[0.92rem] font-bold text-moss-deep">You have free shipping.</p>}
           <div class="mt-2 h-2 border border-ink bg-paper" role="presentation"><div class="h-full bg-wine" style={{ width: pct + '%' }} /></div>
-        </div>
+        </div>}
         {quoted.length > 0 ? (
           <div class="mt-6 grid gap-3" role="alert">
             <p class="border-2 border-wine p-3 text-[0.95rem] font-medium">{quoted.length === 1 ? 'One item in your cart is' : `${quoted.length} items in your cart are`} quote only (large freight). Remove {quoted.length === 1 ? 'it' : 'them'} to check out the rest, or ask us for a quote.</p>
