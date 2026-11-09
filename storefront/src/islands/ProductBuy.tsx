@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { u } from '../lib/url';
+import { quoteHref } from '../lib/quote';
 
 interface V { id: string; sku: string; price: number | null; options: Record<string, string> }
 interface Opt { name: string; values: string[] }
-interface Props { handle: string; title: string; options: Opt[]; variants: V[]; freeShipping: number; live: boolean }
+interface Props { handle: string; title: string; options: Opt[]; variants: V[]; freeShipping: number; live: boolean; quote?: boolean }
 
 const zar = (n: number | null) => (n == null ? '' : 'R' + n.toLocaleString('en-ZA', { minimumFractionDigits: Number.isInteger(n) ? 0 : 2 }).replace(/ /g, ' '));
 const isColour = (n: string) => /colou?r/i.test(n);
@@ -84,6 +85,14 @@ export default function ProductBuy(p: Props) {
 
       {variant?.sku ? <p class="text-[0.82rem] text-muted">SKU {variant.sku}</p> : null}
 
+      {p.quote ? (
+        <div class="grid gap-3">
+          <a class="btn btn--lg w-full" href={quoteHref(u('/contact'), [p.title + (variant ? ' (' + Object.values(variant.options).join(' / ') + ')' : '')])}>Request a quote</a>
+          <p class="flex items-start gap-2 text-[0.95rem] text-muted">
+            <span>This is a large item, so we quote delivery for you. Or <strong class="text-ink">collect free</strong> from the workshop. Reply usually within two working days.</span>
+          </p>
+        </div>
+      ) : (
       <div>
         <button class="btn btn--lg w-full" type="submit" disabled={busy || !p.live} aria-disabled={busy || !p.live}>
           {busy ? 'Adding...' : p.live ? 'Add to cart' : 'Preview mode: shop offline'}
@@ -93,6 +102,7 @@ export default function ProductBuy(p: Props) {
           <span>Free delivery over {zar(p.freeShipping)}, or <strong class="text-ink">collect free</strong> from the workshop.</span>
         </p>
       </div>
+      )}
 
       <div role="status" aria-live="polite" class="min-h-6">
         {msg?.kind === 'ok' && (

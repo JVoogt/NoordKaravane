@@ -13,7 +13,7 @@ export interface Product {
   images: { src: string; alt: string }[];
   options: Option[]; variants: Variant[];
   price: number | null; priceMax: number | null;
-  categories: string[]; tags: string[]; shipTier: string; sourceUrl: string; updatedAt: string; source: 'medusa' | 'dev';
+  categories: string[]; tags: string[]; shipTier: string; freightQuote: boolean; sourceUrl: string; updatedAt: string; source: 'medusa' | 'dev';
 }
 export interface Catalogue { products: Product[]; categories: Category[]; error?: string; source: 'medusa' | 'dev' | 'none' }
 
@@ -56,7 +56,7 @@ function fromMedusa(p: any): Product {
     images: (p.images?.length ? p.images : p.thumbnail ? [{ url: p.thumbnail }] : []).map((i: any) => ({ src: i.url, alt: decodeEntities(p.title) })),
     options: hideDefault(options), variants,
     categories: (p.categories ?? []).map((c: any) => c.handle), tags: (p.tags ?? []).map((t: any) => t.value),
-    shipTier: p.metadata?.ship_tier || '', sourceUrl: p.metadata?.source_url || '', updatedAt: p.updated_at || '', source: 'medusa',
+    shipTier: p.metadata?.ship_tier || '', freightQuote: p.metadata?.freight_quote === true || p.metadata?.freight_quote === 'true', sourceUrl: p.metadata?.source_url || '', updatedAt: p.updated_at || '', source: 'medusa',
   });
 }
 
@@ -69,7 +69,7 @@ function fromCatalogue(c: any, handleOf: (n: string) => string): Product {
     id: `dev_${c.handle}`, handle: c.handle, title: c.title, description: c.description || '', descriptionHtml: c.description_html || '',
     images: (c.images ?? []).map((i: any) => ({ src: u(i.src), alt: i.alt || c.title })),
     options: hideDefault((c.options ?? []).map((o: any) => ({ name: o.name, values: o.values }))), variants,
-    categories: (c.categories ?? []).map(handleOf), tags: c.tags ?? [], shipTier: c.ship_tier || '', sourceUrl: c.source_url || '', updatedAt: '', source: 'dev',
+    categories: (c.categories ?? []).map(handleOf), tags: c.tags ?? [], shipTier: c.ship_tier || '', freightQuote: c.freight_quote === true, sourceUrl: c.source_url || '', updatedAt: '', source: 'dev',
   });
 }
 
@@ -125,6 +125,7 @@ export function categoryFamily(categories: Category[], handle: string): string[]
   return out;
 }
 export const inCategory = (p: Product, family: string[]) => p.categories.some((c) => family.includes(c));
+export const quoteOnlyHandles = (products: Product[]) => products.filter((p) => p.freightQuote).map((p) => p.handle);
 export const topCategories = (cats: Category[]) => cats.filter((c) => !c.parent);
 
 export async function getProduct(handle: string): Promise<{ product: Product | null; related: Product[]; categories: Category[]; error?: string }> {

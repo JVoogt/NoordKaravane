@@ -14,6 +14,6 @@ const [a, b] = p.images;
   </div>
   <div class="mt-3 flex items-baseline justify-between gap-3">
     <h3 class="frame__title">{p.title}</h3>
-    <p class="typed shrink-0 text-[1.02rem] font-bold">{p.price != null ? `${p.priceMax && p.priceMax !== p.price ? 'from ' : ''}${zar(p.price)}` : ''}</p>
+    <p class="typed shrink-0 text-[1.02rem] font-bold">{p.price != null ? `${p.priceMax && p.priceMax !== p.price ? 'from ' : ''}${zar(p.price)}` : ''}{p.freightQuote && <span class="block text-[0.78rem] font-normal text-muted">Delivery by quote</span>}</p>
   </div>
 </a>

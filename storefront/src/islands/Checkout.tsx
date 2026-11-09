@@ -2,8 +2,10 @@ import { u } from '../lib/url';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { backendAvailable, client, errMsg, ga4Items, getCart, publishCount, setCartId, type Cart } from '../scripts/cart-client';
 import { zar } from './format';
+import { quoteHref, quoteLines } from '../lib/quote';
 
 interface Props {
+  quoteHandles: string[];
   eftWindowHours: number; leadTime: string; freeShipping: number; pudoMaxWeightG: number; collectEnabled: boolean;
   workshop: { address_1: string; city: string; province: string; postal_code: string };
   bank: { account_name: string; bank_name: string };
@@ -204,6 +206,22 @@ export default function Checkout(props: Props) {
   if (!backendAvailable()) return <div class="max-w-xl border-2 border-dashed border-ink/40 p-8"><p class="soft text-3xl">Preview mode.</p><p class="mt-2 text-muted">The shop backend is not connected, so checkout is switched off.</p></div>;
   if (loadErr) return <p class="err" role="alert">{loadErr} <a href={u('/cart')}>Back to cart</a></p>;
   if (!cart || !cart.items.length) return <div class="max-w-xl"><p class="soft text-[clamp(2rem,5vw,3rem)]">Nothing to check out yet.</p><a class="btn btn--lg mt-6" href={u('/')}>Browse the shop</a></div>;
+
+  const quoted = quoteLines(cart.items, props.quoteHandles);
+  if (quoted.length) {
+    return (
+      <div class="max-w-xl" role="alert">
+        <p class="soft text-[clamp(1.8rem,5vw,2.6rem)]">Some items need a quote.</p>
+        <p class="mt-3 text-muted">These are large freight items, so we price delivery for you instead of using the standard checkout:</p>
+        <ul class="mt-3 list-disc pl-5 font-bold">{quoted.map((q) => <li>{q.product_title || q.title}</li>)}</ul>
+        <p class="mt-3 text-muted">Remove them from your cart to check out the rest, or ask for a quote.</p>
+        <div class="mt-6 flex flex-wrap gap-3">
+          <a class="btn btn--lg" href={quoteHref(u('/contact'), quoted.map((q) => q.product_title || q.title))}>Request a quote</a>
+          <a class="btn btn--ghost btn--lg" href={u('/cart')}>Back to cart</a>
+        </div>
+      </div>
+    );
+  }
 
   const err = (k: string) => errors[k];
   const Field = ({ k, label, type = 'text', auto, inputMode, placeholder, hint, className = '' }: { k: string; label: string; type?: string; auto?: string; inputMode?: any; placeholder?: string; hint?: string; className?: string }) => (
