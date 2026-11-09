@@ -2,8 +2,9 @@ import { u } from '../lib/url';
 import { useEffect, useState } from 'preact/hooks';
 import { backendAvailable, errMsg, getCart, publishCount, removeLine, updateQty, type Cart as CartT } from '../scripts/cart-client';
 import { zar } from './format';
+import { quoteHref, quoteLines } from '../lib/quote';
 
-export default function Cart({ freeShipping }: { freeShipping: number }) {
+export default function Cart({ freeShipping, quoteHandles }: { freeShipping: number; quoteHandles: string[] }) {
   const [cart, setCart] = useState<CartT | null>(null);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -33,6 +34,8 @@ export default function Cart({ freeShipping }: { freeShipping: number }) {
     );
   }
 
+  const quoted = quoteLines(items, quoteHandles);
+  const isQuote = (it: { product_handle?: string | null }) => quoted.some((q) => q === it);
   const subtotal = cart!.item_total ?? cart!.subtotal;
   const toFree = Math.max(0, freeShipping - subtotal);
   const pct = Math.min(100, Math.round((subtotal / freeShipping) * 100));
@@ -51,6 +54,7 @@ export default function Cart({ freeShipping }: { freeShipping: number }) {
                 <h2 class="font-display text-[1.15rem] font-extrabold uppercase leading-tight"><a class="no-underline hover:text-wine" href={it.product_handle ? `/shop/${it.product_handle}/` : '#'}>{it.product_title || it.title}</a></h2>
                 <p class="mt-1 text-[0.95rem] text-muted">{it.variant_title || it.variant?.options?.map((o) => o.value).join(' / ')}</p>
                 <p class="typed mt-1 text-[0.95rem]">{zar(it.unit_price)} each</p>
+                {isQuote(it) && <p class="mt-1 text-[0.9rem] font-bold text-wine-lit">Quote only: we quote delivery for this item.</p>}
                 <div class="mt-3 flex flex-wrap items-center gap-4">
                   <div class="inline-flex items-center border-[1.5px] border-ink" role="group" aria-label={`Quantity for ${it.product_title || it.title}`}>
                     <button type="button" class="qty-btn" aria-label="Decrease quantity" disabled={busyId === it.id || it.quantity <= 1} onClick={() => change(() => updateQty(cart!.id, it.id, it.quantity - 1), it.id)}>&minus;</button>
@@ -71,13 +75,20 @@ export default function Cart({ freeShipping }: { freeShipping: number }) {
         <dl class="mt-5 grid gap-2 text-[1rem]">
           <div class="flex justify-between"><dt>Subtotal</dt><dd class="typed">{zar(subtotal)}</dd></div>
           {cart!.discount_total > 0 && <div class="flex justify-between"><dt>Discount</dt><dd class="typed">&minus;{zar(cart!.discount_total)}</dd></div>}
-          <div class="flex justify-between text-muted"><dt>Delivery</dt><dd>chosen at checkout</dd></div>
+          <div class="flex justify-between text-muted"><dt>Delivery</dt><dd>{quoted.length > 0 ? 'quoted for large items' : 'chosen at checkout'}</dd></div>
         </dl>
-        <div class="mt-4" aria-live="polite">
+        {quoted.length === 0 && <div class="mt-4" aria-live="polite">
           {toFree > 0 ? <p class="text-[0.92rem]">Add <strong>{zar(toFree)}</strong> more for free delivery (parcels up to 5 kg).</p> : <p class="text-[0.92rem] font-bold text-moss-deep">You have free shipping.</p>}
           <div class="mt-2 h-2 border border-ink bg-paper" role="presentation"><div class="h-full bg-wine" style={{ width: pct + '%' }} /></div>
-        </div>
-        <a class="btn btn--lg mt-6 w-full" href={u('/checkout')}>Checkout</a>
+        </div>}
+        {quoted.length > 0 ? (
+          <div class="mt-6 grid gap-3" role="alert">
+            <p class="border-2 border-wine p-3 text-[0.95rem] font-medium">{quoted.length === 1 ? 'One item in your cart is' : `${quoted.length} items in your cart are`} quote only (large freight). Remove {quoted.length === 1 ? 'it' : 'them'} to check out the rest, or ask us for a quote.</p>
+            <a class="btn btn--lg w-full" href={quoteHref(u('/contact'), quoted.map((q) => q.product_title || q.title))}>Request a quote</a>
+          </div>
+        ) : (
+          <a class="btn btn--lg mt-6 w-full" href={u('/checkout')}>Checkout</a>
+        )}
         <p class="hint mt-3">Prices include VAT where applicable. You pay by EFT after placing the order.</p>
         <p class="mt-4"><a class="link" href={u('/')}>Keep browsing</a></p>
       </aside>

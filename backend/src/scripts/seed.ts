@@ -223,6 +223,7 @@ export default async function seed({ container }: ExecArgs) {
             source_id: d.source_id,
             source_url: d.source_url,
             ship_tier: d.ship_tier,
+            freight_quote: d.freight_quote === true, // large freight: quote-only in the storefront
             tags: d.tags,
             description_html: d.description_html,
             dropship_supplier: d.dropship_supplier ?? null,

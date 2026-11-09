@@ -4,10 +4,16 @@ import Base from '~/layouts/Base.astro';
 import TurnstileField from '~/components/TurnstileField.astro';
 import { business, whatsappNumber, isPlaceholder } from '~/lib/business';
 import { breadcrumbLd } from '~/lib/seo';
+import { quoteMessage } from '~/lib/quote';
 const b = business;
 const wa = whatsappNumber();
 const sent = Astro.url.searchParams.get('sent') === '1';
 const error = Astro.url.searchParams.get('error');
+const topics = ['order', 'product', 'quote', 'fitting', 'delivery', 'collab', 'general'];
+const topicQ = Astro.url.searchParams.get('topic') || '';
+const topicPick = topics.includes(topicQ) ? topicQ : '';
+const productQ = (Astro.url.searchParams.get('product') || '').slice(0, 200);
+const prefill = topicPick === 'quote' && productQ ? quoteMessage(productQ) : '';
 if (sent || error) Astro.response.headers.set('Cache-Control', 'no-store');
 ---
 <Base title="Contact" description="Questions about a product, an order, fitting or collection? Message Noord Karavane by form, email or WhatsApp. We reply within two working days." path={u('/contact')} jsonld={[breadcrumbLd([{ name: 'Home', path: u('/') }, { name: 'Contact', path: u('/contact') }])]}>
@@ -32,10 +38,10 @@ if (sent || error) Astro.response.headers.set('Cache-Control', 'no-store');
       <div class="field"><label for="c-email">Email</label><input id="c-email" name="email" type="email" inputmode="email" class="input" required autocomplete="email" /></div>
       <div class="grid gap-5 sm:grid-cols-2">
         <div class="field"><label for="c-topic">What is it about?</label>
-          <select id="c-topic" name="topic" class="input"><option value="order">An order</option><option value="product">A product</option><option value="fitting">Fitting at the workshop</option><option value="delivery">Delivery</option><option value="collab">A collab</option><option value="general">Something else</option></select></div>
+          <select id="c-topic" name="topic" class="input"><option value="order" selected={topicPick === 'order'}>An order</option><option value="product" selected={topicPick === 'product'}>A product</option><option value="fitting" selected={topicPick === 'fitting'}>Fitting at the workshop</option><option value="delivery" selected={topicPick === 'delivery'}>Delivery</option><option value="quote" selected={topicPick === 'quote'}>A quote</option><option value="collab" selected={topicPick === 'collab'}>A collab</option><option value="general" selected={topicPick === 'general'}>Something else</option></select></div>
         <div class="field"><label for="c-order">Order reference <span class="hint">(optional)</span></label><input id="c-order" name="order" class="input" placeholder="NK1042" /></div>
       </div>
-      <div class="field"><label for="c-msg">Message</label><textarea id="c-msg" name="message" rows="6" class="input" required></textarea></div>
+      <div class="field"><label for="c-msg">Message</label><textarea id="c-msg" name="message" rows="6" class="input" required>{prefill}</textarea></div>
       <input type="text" name="website" tabindex="-1" autocomplete="off" class="sr-only" aria-hidden="true" />
       <TurnstileField action="contact" />
       <p class="hint">We use your details only to reply. See the <a href={u('/legal/privacy')}>privacy policy</a>.</p>
