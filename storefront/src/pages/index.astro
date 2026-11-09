@@ -5,13 +5,14 @@ import { getCatalogue, topCategories, inCategory, categoryFamily } from '~/lib/p
 import { breadcrumbLd } from '~/lib/seo';
 import { business } from '~/lib/business';
 import { u, LANDING } from '~/lib/url';
+import { CATEGORY_IMAGES } from '~/lib/category-config';
 import { zar } from '~/lib/format';
 
 const { products, categories, error } = await getCatalogue();
 if (error) Astro.response.headers.set('Cache-Control', 'no-store');
 const filtered = [...Astro.url.searchParams.keys()].some((k) => ['cat', 'sort', 'q'].includes(k));
 const tops = topCategories(categories).map((c) => ({ ...c, n: products.filter((p) => inCategory(p, categoryFamily(categories, c.handle))).length })).filter((c) => c.n > 0);
-const imgFor = (h: string) => products.find((p) => inCategory(p, categoryFamily(categories, h)) && p.images[0])?.images[0];
+const imgFor = (h: string) => CATEGORY_IMAGES[h] ? { src: u(CATEGORY_IMAGES[h]), alt: '' } : products.find((p) => inCategory(p, categoryFamily(categories, h)) && p.images[0])?.images[0];
 ---
 <Base
   title="Caravan & camping gear shop"

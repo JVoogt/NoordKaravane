@@ -34,5 +34,11 @@ export const PRODUCT_REDIRECTS: Record<string, string> = {
   "lumeno-72-led-220v-led-alu-light-1200mm": "lumeno-220v-led-aluminium-light",
   "lumeno-48-led-220v-led-alu-light-850mm": "lumeno-220v-led-aluminium-light",
   "lumeno-h4-bike-headlight-led-bulb": "lumeno-led-bike-headlight-bulb",
-  "lumeno-h7-bike-headlight-led-bulb": "lumeno-led-bike-headlight-bulb"
+  "lumeno-h7-bike-headlight-led-bulb": "lumeno-led-bike-headlight-bulb",
+  "lumeno-flexi-tie-7-260mm-double-locking": "lumeno-flexi-tie-double-locking",
+  "lumeno-flexi-tie-11-340mm-double-locking": "lumeno-flexi-tie-double-locking",
+  "lumeno-flexi-tie-28-420mm-double-locking": "lumeno-flexi-tie-double-locking",
+  "lumeno-flexi-tie-28-580mm-double-locking": "lumeno-flexi-tie-double-locking",
+  "lumeno-flexi-tie-28-880mm-double-locking": "lumeno-flexi-tie-double-locking",
+  "lumeno-flexi-tie-5-in-1-set-double-locking": "lumeno-flexi-tie-double-locking"
 };

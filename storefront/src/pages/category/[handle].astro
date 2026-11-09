@@ -4,6 +4,7 @@ import ShopList from '~/components/ShopList.astro';
 import { getCatalogue } from '~/lib/products';
 import { breadcrumbLd } from '~/lib/seo';
 import { u } from '~/lib/url';
+import { CATEGORY_IMAGES } from '~/lib/category-config';
 
 const { handle } = Astro.params;
 const { products, categories, error } = await getCatalogue();
@@ -18,7 +19,10 @@ const crumbs = [{ name: 'Home', path: '/' }, { name: 'Shop', path: u('/') }, ...
   <div class="rail" aria-hidden="true"></div>
   <div class="wrap pb-6 pt-10">
     <nav aria-label="Breadcrumb" class="mb-5 text-[0.92rem]"><ol class="flex flex-wrap gap-x-2">{crumbs.slice(1).map((c, i, a) => <li>{i < a.length - 1 ? <><a href={c.path}>{c.name}</a> <span aria-hidden="true">/</span></> : <span aria-current="page" class="text-muted">{c.name}</span>}</li>)}</ol></nav>
-    <h1 class="display text-[clamp(2.8rem,9vw,6rem)]">{cat.name}</h1>
+    <div class="flex items-center gap-5">
+      {CATEGORY_IMAGES[cat.handle] && <img src={u(CATEGORY_IMAGES[cat.handle])} alt="" width="112" height="112" class="h-20 w-20 shrink-0 object-contain bg-paper-3 sm:h-28 sm:w-28" />}
+      <h1 class="display text-[clamp(2.8rem,9vw,6rem)]">{cat.name}</h1>
+    </div>
   </div>
   <div class="wrap pb-10 pt-4"><ShopList products={products} categories={categories} error={error} basePath={u(`/category/${cat.handle}/`)} lockedCategory={cat.handle} /></div>
 </Base>

@@ -21,7 +21,7 @@
     "name": "Camping Gear & Equipment",
     "parent": null,
     "parent_handle": null,
-    "count": 46
+    "count": 47
   },
   {
     "id": 1095,
@@ -29,15 +29,7 @@
     "name": "Caravan Parts",
     "parent": null,
     "parent_handle": null,
-    "count": 75
-  },
-  {
-    "id": 19,
-    "handle": "kampi-merchandise",
-    "name": "Kampi Merchandise",
-    "parent": null,
-    "parent_handle": null,
-    "count": 0
+    "count": 101
   },
   {
     "id": 20,
@@ -53,7 +45,15 @@
     "name": "Lighting",
     "parent": null,
     "parent_handle": null,
-    "count": 59
+    "count": 60
+  },
+  {
+    "id": 19,
+    "handle": "merchandise",
+    "name": "Merchandise",
+    "parent": null,
+    "parent_handle": null,
+    "count": 0
   },
   {
     "id": 1094,
@@ -61,7 +61,7 @@
     "name": "Solar & Power",
     "parent": null,
     "parent_handle": null,
-    "count": 140
+    "count": 170
   },
   {
     "id": 29,
@@ -128,14 +128,6 @@
     "count": 1
   },
   {
-    "id": 2124,
-    "handle": "awnings-side-walls",
-    "name": "Awnings & Side Walls",
-    "parent": "Camping Gear & Equipment",
-    "parent_handle": "camping-gear-equipment",
-    "count": 9
-  },
-  {
     "id": 2126,
     "handle": "bags-storage",
     "name": "Bags & Storage",
@@ -165,7 +157,7 @@
     "name": "Camping Accessories",
     "parent": "Camping Gear & Equipment",
     "parent_handle": "camping-gear-equipment",
-    "count": 4
+    "count": 5
   },
   {
     "id": 26,
@@ -182,14 +174,6 @@
     "parent": "Camping Gear & Equipment",
     "parent_handle": "camping-gear-equipment",
     "count": 0
-  },
-  {
-    "id": 2125,
-    "handle": "roof-top-tents",
-    "name": "Roof-top Tents",
-    "parent": "Camping Gear & Equipment",
-    "parent_handle": "camping-gear-equipment",
-    "count": 3
   },
   {
     "id": 1119,
@@ -213,7 +197,7 @@
     "name": "Tents, Awnings & Roof-top Tents",
     "parent": "Camping Gear & Equipment",
     "parent_handle": "camping-gear-equipment",
-    "count": 6
+    "count": 18
   },
   {
     "id": 25,
@@ -229,7 +213,7 @@
     "name": "Awning Fittings, Poles & Clips",
     "parent": "Caravan Parts",
     "parent_handle": "caravan-parts",
-    "count": 3
+    "count": 28
   },
   {
     "id": 1113,
@@ -253,7 +237,7 @@
     "name": "Electrical Fittings & Sockets",
     "parent": "Caravan Parts",
     "parent_handle": "caravan-parts",
-    "count": 36
+    "count": 39
   },
   {
     "id": 1109,
@@ -285,7 +269,7 @@
     "name": "Seals, Fasteners & Hardware",
     "parent": "Caravan Parts",
     "parent_handle": "caravan-parts",
-    "count": 9
+    "count": 7
   },
   {
     "id": 1104,
@@ -302,22 +286,6 @@
     "parent": "Caravan Parts",
     "parent_handle": "caravan-parts",
     "count": 12
-  },
-  {
-    "id": 27,
-    "handle": "camping-clothing",
-    "name": "Clothing & Apparel",
-    "parent": "Kampi Merchandise",
-    "parent_handle": "kampi-merchandise",
-    "count": 7
-  },
-  {
-    "id": 28,
-    "handle": "drinkware",
-    "name": "Drinkware",
-    "parent": "Kampi Merchandise",
-    "parent_handle": "kampi-merchandise",
-    "count": 3
   },
   {
     "id": 31,
@@ -341,7 +309,7 @@
     "name": "Caravan & Vehicle Lights",
     "parent": "Lighting",
     "parent_handle": "lighting",
-    "count": 36
+    "count": 37
   },
   {
     "id": 1115,
@@ -360,6 +328,22 @@
     "count": 19
   },
   {
+    "id": 27,
+    "handle": "camping-clothing",
+    "name": "Clothing & Apparel",
+    "parent": "Merchandise",
+    "parent_handle": "merchandise",
+    "count": 7
+  },
+  {
+    "id": 28,
+    "handle": "drinkware",
+    "name": "Drinkware",
+    "parent": "Merchandise",
+    "parent_handle": "merchandise",
+    "count": 3
+  },
+  {
     "id": 93,
     "handle": "batteries-power",
     "name": "Batteries & Power",
@@ -373,7 +357,7 @@
     "name": "Cables, Plugs & Connectors",
     "parent": "Solar & Power",
     "parent_handle": "solar-power",
-    "count": 34
+    "count": 51
   },
   {
     "id": 1100,
@@ -397,7 +381,7 @@
     "name": "Power Accessories",
     "parent": "Solar & Power",
     "parent_handle": "solar-power",
-    "count": 35
+    "count": 37
   },
   {
     "id": 1101,
@@ -405,7 +389,7 @@
     "name": "Power Boxes & Distribution",
     "parent": "Solar & Power",
     "parent_handle": "solar-power",
-    "count": 26
+    "count": 37
   },
   {
     "id": 1098,
