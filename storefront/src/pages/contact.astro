@@ -37,7 +37,7 @@ if (sent || error) Astro.response.headers.set('Cache-Control', 'no-store');
       </div>
       <div class="field"><label for="c-msg">Message</label><textarea id="c-msg" name="message" rows="6" class="input" required></textarea></div>
       <input type="text" name="website" tabindex="-1" autocomplete="off" class="sr-only" aria-hidden="true" />
-      <TurnstileField />
+      <TurnstileField action="contact" />
       <p class="hint">We use your details only to reply. See the <a href={u('/legal/privacy')}>privacy policy</a>.</p>
       <div><button class="btn btn--lg" type="submit">Send message</button></div>
       <p class="min-h-6" role="status" aria-live="polite" data-msg></p>

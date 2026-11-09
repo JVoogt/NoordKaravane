@@ -14,5 +14,5 @@ interface Window {
   nkConsent: { analytics: boolean; marketing: boolean };
   nkTrack: (event: string, data?: Record<string, unknown>) => void;
   srOpenCookieSettings: () => void;
-  turnstile?: { render: (el: Element, o: Record<string, unknown>) => void };
+  turnstile?: { render: (el: Element, o: Record<string, unknown>) => string | undefined; reset: (widgetId?: string) => void };
 }

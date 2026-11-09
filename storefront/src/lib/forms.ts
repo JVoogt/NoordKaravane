@@ -1,5 +1,6 @@
 import type { APIContext } from 'astro';
-import { env } from './env';
+import { env, siteUrl } from './env';
+import { allowedHostnames, verifyTurnstileToken, type TurnstileResult } from './turnstile';
 
 const hits = new Map<string, number[]>();
 /** Tiny in-memory limiter: n requests per window per IP. Good enough for one container; Cloudflare WAF is the real limit. */
@@ -16,23 +17,14 @@ export function rateLimited(ip: string, key: string, n = 5, windowMs = 10 * 60_0
 export const clientIp = (ctx: APIContext) =>
   ctx.request.headers.get('cf-connecting-ip') || ctx.request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || ctx.clientAddress || 'unknown';
 
-/** Cloudflare Turnstile. With no TURNSTILE_SECRET: allowed in dev, refused in production (fail closed). */
-export async function verifyTurnstile(token: string | null, ip: string): Promise<{ ok: boolean; reason?: string }> {
-  const secret = env('TURNSTILE_SECRET');
-  if (!secret) {
-    // Not configured yet: forms still have the honeypot + per-IP rate limit. Set TURNSTILE_SECRET to enforce.
-    console.warn('[turnstile] TURNSTILE_SECRET not set: skipping verification');
-    return { ok: true };
-  }
-  if (!token) return { ok: false, reason: 'Please complete the spam check and try again.' };
-  try {
-    const body = new URLSearchParams({ secret, response: token, remoteip: ip });
-    const r = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', { method: 'POST', body, signal: AbortSignal.timeout(6000) });
-    const j = (await r.json()) as { success?: boolean };
-    return j.success ? { ok: true } : { ok: false, reason: 'The spam check failed. Please try again.' };
-  } catch {
-    return { ok: false, reason: 'We could not run the spam check. Please try again.' };
-  }
+/** Cloudflare Turnstile (see ~/lib/turnstile). Fails closed in production if TURNSTILE_SECRET is missing. */
+export function verifyTurnstile(token: string | null, ip: string, action: string): Promise<TurnstileResult> {
+  const production = import.meta.env.PROD;
+  return verifyTurnstileToken(token, ip, action, {
+    secret: env('TURNSTILE_SECRET'),
+    hostnames: allowedHostnames(env('TURNSTILE_HOSTNAMES'), siteUrl(), production),
+    production,
+  });
 }
 
 export function reply(ctx: APIContext, ok: boolean, message: string, status = ok ? 200 : 400, redirectTo?: string) {

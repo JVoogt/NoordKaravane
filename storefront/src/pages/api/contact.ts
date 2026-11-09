@@ -22,7 +22,7 @@ export const POST: APIRoute = async (ctx) => {
   if (!isEmail(email)) return reply(ctx, false, 'That email address does not look right.', 400, u('/contact'));
   if (message.length < 5) return reply(ctx, false, 'Your message is a bit short. What can we help with?', 400, u('/contact'));
 
-  const ts = await verifyTurnstile(String(form.get('cf-turnstile-response') || '') || null, ip);
+  const ts = await verifyTurnstile(String(form.get('cf-turnstile-response') || '') || null, ip, 'contact');
   if (!ts.ok) return reply(ctx, false, ts.reason!, 400, u('/contact'));
 
   // From is always our authenticated sender (SPF/DKIM/DMARC); the visitor goes in Reply-To
