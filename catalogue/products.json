@@ -20386,6 +20386,477 @@
   },
   {
     "source_id": null,
+    "handle": "tent-pole-spring-clip-nylon",
+    "sku": "CRE-TPCN22-4P",
+    "title": "Tent pole spring clip, nylon",
+    "type": "simple",
+    "description": "Tent pole spring clip, nylon.",
+    "description_html": "<p>Tent pole spring clip, nylon.</p><h3>Stock and delivery</h3><p>Ordered in from the supplier for you. Need it by a certain date? Mail us and we&#8217;ll confirm stock and timing before you pay.</p>",
+    "price_zar": 39,
+    "regular_price_zar": 39,
+    "on_sale": false,
+    "categories": [
+      "Awning Fittings, Poles & Clips",
+      "Caravan Parts"
+    ],
+    "tags": [
+      "crestline"
+    ],
+    "weight_kg": 0.5,
+    "dimensions_cm": null,
+    "in_stock": true,
+    "source_url": null,
+    "dropship_supplier": null,
+    "options": [],
+    "images": [
+      {
+        "src": "/products/tent-pole-spring-clip-nylon-1.webp",
+        "alt": "Tent pole spring clip, nylon"
+      }
+    ],
+    "variants": [],
+    "ship_tier": "small",
+    "ship_tier_source": "tier",
+    "weight_g": 500,
+    "supplier": "crestline",
+    "supplier_code": "TPCN22-4P",
+    "freight_quote": false,
+    "brand": "Camp-Aid"
+  },
+  {
+    "source_id": null,
+    "handle": "hold-tight-awning-clip-with-eyelet",
+    "sku": "CRE-IFE70-2P",
+    "title": "Hold Tight awning clip with eyelet",
+    "type": "simple",
+    "description": "Hold Tight awning clip plus eyelet.",
+    "description_html": "<p>Hold Tight awning clip plus eyelet.</p><h3>Stock and delivery</h3><p>Ordered in from the supplier for you. Need it by a certain date? Mail us and we&#8217;ll confirm stock and timing before you pay.</p>",
+    "price_zar": 47,
+    "regular_price_zar": 47,
+    "on_sale": false,
+    "categories": [
+      "Awning Fittings, Poles & Clips",
+      "Caravan Parts"
+    ],
+    "tags": [
+      "crestline"
+    ],
+    "weight_kg": 0.5,
+    "dimensions_cm": null,
+    "in_stock": true,
+    "source_url": null,
+    "dropship_supplier": null,
+    "options": [],
+    "images": [
+      {
+        "src": "/products/hold-tight-awning-clip-with-eyelet-1.webp",
+        "alt": "Hold Tight awning clip with eyelet"
+      }
+    ],
+    "variants": [],
+    "ship_tier": "small",
+    "ship_tier_source": "tier",
+    "weight_g": 500,
+    "supplier": "crestline",
+    "supplier_code": "IFE70-2P",
+    "freight_quote": false,
+    "brand": "Camp-Aid"
+  },
+  {
+    "source_id": null,
+    "handle": "ezi-clip-for-fabric",
+    "sku": "CRE-EZC100-4P",
+    "title": "Ezi-clip for fabric",
+    "type": "variable",
+    "description": "Ezi-clip for fabric in black, straight or corner.",
+    "description_html": "<p>Ezi-clip for fabric in black, straight or corner.</p><h3>Stock and delivery</h3><p>Ordered in from the supplier for you. Need it by a certain date? Mail us and we&#8217;ll confirm stock and timing before you pay.</p>",
+    "price_zar": 18,
+    "regular_price_zar": 18,
+    "on_sale": false,
+    "categories": [
+      "Awning Fittings, Poles & Clips",
+      "Caravan Parts"
+    ],
+    "tags": [
+      "crestline"
+    ],
+    "weight_kg": 0.5,
+    "dimensions_cm": null,
+    "in_stock": true,
+    "source_url": null,
+    "dropship_supplier": null,
+    "options": [
+      {
+        "name": "Option",
+        "values": [
+          "Straight / 4 per pack",
+          "Corner / 4 per pack"
+        ]
+      }
+    ],
+    "images": [
+      {
+        "src": "/products/ezi-clip-for-fabric-1.webp",
+        "alt": "Ezi-clip for fabric"
+      }
+    ],
+    "variants": [
+      {
+        "sku": "CRE-EZC100-4P",
+        "price_zar": 18,
+        "in_stock": true,
+        "weight_g": 500,
+        "options": {
+          "Option": "Straight / 4 per pack"
+        }
+      },
+      {
+        "sku": "CRE-EZC101-4P",
+        "price_zar": 23,
+        "in_stock": true,
+        "weight_g": 500,
+        "options": {
+          "Option": "Corner / 4 per pack"
+        }
+      }
+    ],
+    "ship_tier": "small",
+    "ship_tier_source": "tier",
+    "weight_g": 500,
+    "supplier": "crestline",
+    "supplier_code": "EZC100-4P",
+    "freight_quote": false,
+    "brand": "Camp-Aid"
+  },
+  {
+    "source_id": null,
+    "handle": "tie-back-toggle-33mm",
+    "sku": "CRE-TBT33-6P",
+    "title": "Tie-back toggle 33mm",
+    "type": "simple",
+    "description": "Tie-back toggle, white, 33mm.",
+    "description_html": "<p>Tie-back toggle, white, 33mm.</p><h3>Stock and delivery</h3><p>Ordered in from the supplier for you. Need it by a certain date? Mail us and we&#8217;ll confirm stock and timing before you pay.</p>",
+    "price_zar": 13,
+    "regular_price_zar": 13,
+    "on_sale": false,
+    "categories": [
+      "Awning Fittings, Poles & Clips",
+      "Caravan Parts"
+    ],
+    "tags": [
+      "crestline"
+    ],
+    "weight_kg": 0.5,
+    "dimensions_cm": null,
+    "in_stock": true,
+    "source_url": null,
+    "dropship_supplier": null,
+    "options": [],
+    "images": [
+      {
+        "src": "/products/tie-back-toggle-33mm-1.webp",
+        "alt": "Tie-back toggle 33mm"
+      }
+    ],
+    "variants": [],
+    "ship_tier": "small",
+    "ship_tier_source": "tier",
+    "weight_g": 500,
+    "supplier": "crestline",
+    "supplier_code": "TBT33-6P",
+    "freight_quote": false,
+    "brand": "Camp-Aid"
+  },
+  {
+    "source_id": null,
+    "handle": "c-clips-for-fibreglass-poles",
+    "sku": "CRE-CC79P",
+    "title": "C-clips for fibreglass poles",
+    "type": "variable",
+    "description": "C-clips for fibreglass tent poles, 4 per pack, for 7.9, 8.5, 9.5, 11 and 12.7mm poles.",
+    "description_html": "<p>C-clips for fibreglass tent poles, 4 per pack, for 7.9, 8.5, 9.5, 11 and 12.7mm poles.</p><h3>Stock and delivery</h3><p>Ordered in from the supplier for you. Need it by a certain date? Mail us and we&#8217;ll confirm stock and timing before you pay.</p>",
+    "price_zar": 12,
+    "regular_price_zar": 12,
+    "on_sale": false,
+    "categories": [
+      "Awning Fittings, Poles & Clips",
+      "Caravan Parts"
+    ],
+    "tags": [
+      "crestline"
+    ],
+    "weight_kg": 0.5,
+    "dimensions_cm": null,
+    "in_stock": true,
+    "source_url": null,
+    "dropship_supplier": null,
+    "options": [
+      {
+        "name": "Option",
+        "values": [
+          "7.9mm / 4 per pack",
+          "8.5mm / 4 per pack",
+          "9.5mm / 4 per pack",
+          "11mm / 4 per pack",
+          "12.7mm / 4 per pack"
+        ]
+      }
+    ],
+    "images": [
+      {
+        "src": "/products/c-clips-for-fibreglass-poles-1.webp",
+        "alt": "C-clips for fibreglass poles"
+      }
+    ],
+    "variants": [
+      {
+        "sku": "CRE-CC79P",
+        "price_zar": 12,
+        "in_stock": true,
+        "weight_g": 500,
+        "options": {
+          "Option": "7.9mm / 4 per pack"
+        }
+      },
+      {
+        "sku": "CRE-CC85P",
+        "price_zar": 12,
+        "in_stock": true,
+        "weight_g": 500,
+        "options": {
+          "Option": "8.5mm / 4 per pack"
+        }
+      },
+      {
+        "sku": "CRE-CC95P",
+        "price_zar": 13,
+        "in_stock": true,
+        "weight_g": 500,
+        "options": {
+          "Option": "9.5mm / 4 per pack"
+        }
+      },
+      {
+        "sku": "CRE-CC11P",
+        "price_zar": 13,
+        "in_stock": true,
+        "weight_g": 500,
+        "options": {
+          "Option": "11mm / 4 per pack"
+        }
+      },
+      {
+        "sku": "CRE-CC127P",
+        "price_zar": 13,
+        "in_stock": true,
+        "weight_g": 500,
+        "options": {
+          "Option": "12.7mm / 4 per pack"
+        }
+      }
+    ],
+    "ship_tier": "small",
+    "ship_tier_source": "tier",
+    "weight_g": 500,
+    "supplier": "crestline",
+    "supplier_code": "CC79P",
+    "freight_quote": false,
+    "brand": "Camp-Aid"
+  },
+  {
+    "source_id": null,
+    "handle": "straight-tube-connector-for-fibre-poles",
+    "sku": "CRE-TCS79-2P",
+    "title": "Straight tube connector for fibre poles",
+    "type": "variable",
+    "description": "Straight tube connector for fibre poles, 2 per pack, for 7.9, 8.5, 9.5, 11 and 12.7mm poles.",
+    "description_html": "<p>Straight tube connector for fibre poles, 2 per pack, for 7.9, 8.5, 9.5, 11 and 12.7mm poles.</p><h3>Stock and delivery</h3><p>Ordered in from the supplier for you. Need it by a certain date? Mail us and we&#8217;ll confirm stock and timing before you pay.</p>",
+    "price_zar": 15,
+    "regular_price_zar": 15,
+    "on_sale": false,
+    "categories": [
+      "Awning Fittings, Poles & Clips",
+      "Caravan Parts"
+    ],
+    "tags": [
+      "crestline"
+    ],
+    "weight_kg": 0.5,
+    "dimensions_cm": null,
+    "in_stock": true,
+    "source_url": null,
+    "dropship_supplier": null,
+    "options": [
+      {
+        "name": "Option",
+        "values": [
+          "7.9mm / 2 per pack",
+          "8.5mm / 2 per pack",
+          "9.5mm / 2 per pack",
+          "11mm / 2 per pack",
+          "12.7mm / 2 per pack"
+        ]
+      }
+    ],
+    "images": [
+      {
+        "src": "/products/straight-tube-connector-for-fibre-poles-1.webp",
+        "alt": "Straight tube connector for fibre poles"
+      }
+    ],
+    "variants": [
+      {
+        "sku": "CRE-TCS79-2P",
+        "price_zar": 19,
+        "in_stock": true,
+        "weight_g": 500,
+        "options": {
+          "Option": "7.9mm / 2 per pack"
+        }
+      },
+      {
+        "sku": "CRE-TCS85-2P",
+        "price_zar": 20,
+        "in_stock": true,
+        "weight_g": 500,
+        "options": {
+          "Option": "8.5mm / 2 per pack"
+        }
+      },
+      {
+        "sku": "CRE-TCS95-2P",
+        "price_zar": 23,
+        "in_stock": true,
+        "weight_g": 500,
+        "options": {
+          "Option": "9.5mm / 2 per pack"
+        }
+      },
+      {
+        "sku": "CRE-TCS11-2P",
+        "price_zar": 15,
+        "in_stock": true,
+        "weight_g": 500,
+        "options": {
+          "Option": "11mm / 2 per pack"
+        }
+      },
+      {
+        "sku": "CRE-TCS127-2P",
+        "price_zar": 29,
+        "in_stock": true,
+        "weight_g": 500,
+        "options": {
+          "Option": "12.7mm / 2 per pack"
+        }
+      }
+    ],
+    "ship_tier": "small",
+    "ship_tier_source": "tier",
+    "weight_g": 500,
+    "supplier": "crestline",
+    "supplier_code": "TCS79-2P",
+    "freight_quote": false,
+    "brand": "Camp-Aid"
+  },
+  {
+    "source_id": null,
+    "handle": "fibre-pole-with-connector-80cm",
+    "sku": "CRE-SP8079C",
+    "title": "Fibre pole with connector, 80cm",
+    "type": "variable",
+    "description": "Single fibre pole with connector, 80cm long (83cm including connector; price list says 85mm connector). Sizes 7.9, 8.5, 9.5, 11 and 12.7mm. Minimum order 10 poles per size.",
+    "description_html": "<p>Single fibre pole with connector, 80cm long (83cm including connector; price list says 85mm connector). Sizes 7.9, 8.5, 9.5, 11 and 12.7mm. Minimum order 10 poles per size.</p><h3>Stock and delivery</h3><p>Ordered in from the supplier for you. Need it by a certain date? Mail us and we&#8217;ll confirm stock and timing before you pay.</p>",
+    "price_zar": 21,
+    "regular_price_zar": 21,
+    "on_sale": false,
+    "categories": [
+      "Awning Fittings, Poles & Clips",
+      "Caravan Parts"
+    ],
+    "tags": [
+      "crestline"
+    ],
+    "weight_kg": 0.5,
+    "dimensions_cm": null,
+    "in_stock": true,
+    "source_url": null,
+    "dropship_supplier": null,
+    "options": [
+      {
+        "name": "Option",
+        "values": [
+          "7.9mm x 80cm",
+          "8.5mm x 80cm",
+          "9.5mm x 80cm",
+          "11mm x 80cm",
+          "12.7mm x 80cm"
+        ]
+      }
+    ],
+    "images": [
+      {
+        "src": "/products/fibre-pole-with-connector-80cm-1.webp",
+        "alt": "Fibre pole with connector, 80cm"
+      }
+    ],
+    "variants": [
+      {
+        "sku": "CRE-SP8079C",
+        "price_zar": 21,
+        "in_stock": true,
+        "weight_g": 500,
+        "options": {
+          "Option": "7.9mm x 80cm"
+        }
+      },
+      {
+        "sku": "CRE-SP8085C",
+        "price_zar": 28,
+        "in_stock": true,
+        "weight_g": 500,
+        "options": {
+          "Option": "8.5mm x 80cm"
+        }
+      },
+      {
+        "sku": "CRE-SP8095C",
+        "price_zar": 34,
+        "in_stock": true,
+        "weight_g": 500,
+        "options": {
+          "Option": "9.5mm x 80cm"
+        }
+      },
+      {
+        "sku": "CRE-SP8011C",
+        "price_zar": 45,
+        "in_stock": true,
+        "weight_g": 500,
+        "options": {
+          "Option": "11mm x 80cm"
+        }
+      },
+      {
+        "sku": "CRE-SP80127C",
+        "price_zar": 57,
+        "in_stock": true,
+        "weight_g": 500,
+        "options": {
+          "Option": "12.7mm x 80cm"
+        }
+      }
+    ],
+    "ship_tier": "small",
+    "ship_tier_source": "tier",
+    "weight_g": 500,
+    "supplier": "crestline",
+    "supplier_code": "SP8079C",
+    "freight_quote": false,
+    "brand": "Camp-Aid"
+  },
+  {
+    "source_id": null,
     "handle": "double-steel-caravan-step",
     "sku": "CRE-SDS380P",
     "title": "Double steel caravan step",

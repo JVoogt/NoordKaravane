@@ -29,7 +29,7 @@
     "name": "Caravan Parts",
     "parent": null,
     "parent_handle": null,
-    "count": 101
+    "count": 108
   },
   {
     "id": 20,
@@ -132,7 +132,7 @@
     "handle": "bags-storage",
     "name": "Bags & Storage",
     "parent": "Camping Gear & Equipment",
-    "parent_handle": "camping-gear-equipment",
+    "parent_handle": "camping-gear",
     "count": 7
   },
   {
@@ -148,7 +148,7 @@
     "handle": "camp-furniture",
     "name": "Camp Furniture",
     "parent": "Camping Gear & Equipment",
-    "parent_handle": "camping-gear-equipment",
+    "parent_handle": "camping-gear",
     "count": 0
   },
   {
@@ -156,7 +156,7 @@
     "handle": "camping-accessories",
     "name": "Camping Accessories",
     "parent": "Camping Gear & Equipment",
-    "parent_handle": "camping-gear-equipment",
+    "parent_handle": "camping-gear",
     "count": 5
   },
   {
@@ -172,7 +172,7 @@
     "handle": "kitchen-tableware",
     "name": "Kitchen & Tableware",
     "parent": "Camping Gear & Equipment",
-    "parent_handle": "camping-gear-equipment",
+    "parent_handle": "camping-gear",
     "count": 0
   },
   {
@@ -180,7 +180,7 @@
     "handle": "showers-hygiene",
     "name": "Showers & Hygiene",
     "parent": "Camping Gear & Equipment",
-    "parent_handle": "camping-gear-equipment",
+    "parent_handle": "camping-gear",
     "count": 6
   },
   {
@@ -188,7 +188,7 @@
     "handle": "sleeping-bedding",
     "name": "Sleeping & Bedding",
     "parent": "Camping Gear & Equipment",
-    "parent_handle": "camping-gear-equipment",
+    "parent_handle": "camping-gear",
     "count": 0
   },
   {
@@ -196,7 +196,7 @@
     "handle": "tents-awnings-roof-top-tents",
     "name": "Tents, Awnings & Roof-top Tents",
     "parent": "Camping Gear & Equipment",
-    "parent_handle": "camping-gear-equipment",
+    "parent_handle": "camping-gear",
     "count": 18
   },
   {
@@ -213,7 +213,7 @@
     "name": "Awning Fittings, Poles & Clips",
     "parent": "Caravan Parts",
     "parent_handle": "caravan-parts",
-    "count": 28
+    "count": 35
   },
   {
     "id": 1113,
