@@ -11981,7 +11981,7 @@
         }
       },
       {
-        "sku": "LUM-STRETCH-SEAL",
+        "sku": "LUM-STRETCH-SEAL-CLEAR",
         "price_zar": 200,
         "in_stock": true,
         "weight_g": 500,
@@ -11990,7 +11990,7 @@
         }
       },
       {
-        "sku": "LUM-STRETCH-SEAL",
+        "sku": "LUM-STRETCH-SEAL-RED",
         "price_zar": 200,
         "in_stock": true,
         "weight_g": 500,
@@ -11999,7 +11999,7 @@
         }
       },
       {
-        "sku": "LUM-STRETCH-SEAL",
+        "sku": "LUM-STRETCH-SEAL-BLUE",
         "price_zar": 200,
         "in_stock": true,
         "weight_g": 500,
@@ -12008,7 +12008,7 @@
         }
       },
       {
-        "sku": "LUM-STRETCH-SEAL",
+        "sku": "LUM-STRETCH-SEAL-YELLOW",
         "price_zar": 200,
         "in_stock": true,
         "weight_g": 500,
@@ -12495,6 +12495,45 @@
   },
   {
     "source_id": null,
+    "handle": "lumeno-mobi-mist-in-line-water-filter",
+    "sku": "LUMENO-317",
+    "title": "Lumeno Mobi Mist in-line water filter",
+    "type": "simple",
+    "description": "In-line water filter.",
+    "description_html": "<p>In-line water filter.</p><h3>Stock and delivery</h3><p>Ordered in from the supplier for you. Need it by a certain date? Mail us and we&#8217;ll confirm stock and timing before you pay.</p>",
+    "price_zar": 160,
+    "regular_price_zar": 160,
+    "on_sale": false,
+    "categories": [
+      "Water & Plumbing",
+      "Caravan Parts"
+    ],
+    "tags": [
+      "lumeno"
+    ],
+    "weight_kg": 0.5,
+    "dimensions_cm": null,
+    "in_stock": true,
+    "source_url": null,
+    "dropship_supplier": null,
+    "options": [],
+    "images": [
+      {
+        "src": "/products/lumeno-mobi-mist-in-line-water-filter-1.webp",
+        "alt": "Lumeno Mobi Mist in-line water filter"
+      }
+    ],
+    "variants": [],
+    "ship_tier": "small",
+    "ship_tier_source": "tier",
+    "weight_g": 500,
+    "supplier": "lumeno",
+    "supplier_code": "LUMENO-317",
+    "freight_quote": false,
+    "brand": "Lumeno"
+  },
+  {
+    "source_id": null,
     "handle": "lumeno-mobi-mist-end-plugs",
     "sku": "LUMENO-313",
     "title": "Lumeno Mobi Mist end plugs",
@@ -12607,6 +12646,490 @@
     "weight_g": 3000,
     "supplier": "lumeno",
     "supplier_code": "LUMENO-620",
+    "freight_quote": false,
+    "brand": "Lumeno"
+  },
+  {
+    "source_id": null,
+    "handle": "lumeno-battery-box-with-mppt",
+    "sku": "LUMENO-619",
+    "title": "Lumeno Battery box with MPPT",
+    "type": "simple",
+    "description": "Battery box with 25A DC to DC charger and MPPT, solar output 1 x 50Amp connector. Suits battery size 340(L) x 175(W) x 185(H). Battery not included. Inverter compatible up to 1200W. 6 x 50Amp connector plugs, 1 x 175Amp connector, 1 x C-Type + QC3 charger, 2 x female lighter sockets, 1 x female Hella plug, 1 x C-Type + QC3 + volt meter socket, 1 x cut off switch, 1 x multi functional display.",
+    "description_html": "<p>Battery box with 25A DC to DC charger and MPPT, solar output 1 x 50Amp connector. Suits battery size 340(L) x 175(W) x 185(H). Battery not included. Inverter compatible up to 1200W. 6 x 50Amp connector plugs, 1 x 175Amp connector, 1 x C-Type + QC3 charger, 2 x female lighter sockets, 1 x female Hella plug, 1 x C-Type + QC3 + volt meter socket, 1 x cut off switch, 1 x multi functional display.</p><h3>Specifications</h3><ul><li><strong>Battery size:</strong> 340 x 175 x 235mm</li><li><strong>DC to DC charger:</strong> 25A</li><li><strong>Inverter:</strong> Compatible up to 1200W</li></ul><h3>Stock and delivery</h3><p>Ordered in from the supplier for you. Need it by a certain date? Mail us and we&#8217;ll confirm stock and timing before you pay.</p>",
+    "price_zar": 8599,
+    "regular_price_zar": 8599,
+    "on_sale": false,
+    "categories": [
+      "Power Boxes & Distribution",
+      "Solar & Power"
+    ],
+    "tags": [
+      "lumeno"
+    ],
+    "weight_kg": 3.0,
+    "dimensions_cm": null,
+    "in_stock": true,
+    "source_url": null,
+    "dropship_supplier": null,
+    "options": [],
+    "images": [
+      {
+        "src": "/products/lumeno-battery-box-with-mppt-1.webp",
+        "alt": "Lumeno Battery box with MPPT"
+      }
+    ],
+    "variants": [],
+    "ship_tier": "medium",
+    "ship_tier_source": "tier",
+    "weight_g": 3000,
+    "supplier": "lumeno",
+    "supplier_code": "LUMENO-619",
+    "freight_quote": false,
+    "brand": "Lumeno"
+  },
+  {
+    "source_id": null,
+    "handle": "lumeno-battery-box-in-line-fuse-holders",
+    "sku": "LUMENO-276",
+    "title": "Lumeno Battery box, in-line fuse holders",
+    "type": "simple",
+    "description": "Battery box with 2 x in-line fuse holders, 1 x battery indicator volt meter socket, 1 x female lighter socket, 1 x dual QC3 socket, 1 x on/off switch, 2 x square connectors. Fits up to 105Amp battery (not included).",
+    "description_html": "<p>Battery box with 2 x in-line fuse holders, 1 x battery indicator volt meter socket, 1 x female lighter socket, 1 x dual QC3 socket, 1 x on/off switch, 2 x square connectors. Fits up to 105Amp battery (not included).</p><h3>Specifications</h3><ul><li><strong>Battery:</strong> Fits up to 105Amp (not included)</li><li><strong>Battery size (page 30 diagram):</strong> 325 x 185 x 200mm</li></ul><h3>Stock and delivery</h3><p>Ordered in from the supplier for you. Need it by a certain date? Mail us and we&#8217;ll confirm stock and timing before you pay.</p>",
+    "price_zar": 1880,
+    "regular_price_zar": 1880,
+    "on_sale": false,
+    "categories": [
+      "Power Boxes & Distribution",
+      "Solar & Power"
+    ],
+    "tags": [
+      "lumeno"
+    ],
+    "weight_kg": 3.0,
+    "dimensions_cm": null,
+    "in_stock": true,
+    "source_url": null,
+    "dropship_supplier": null,
+    "options": [],
+    "images": [
+      {
+        "src": "/products/lumeno-battery-box-in-line-fuse-holders-1.webp",
+        "alt": "Lumeno Battery box, in-line fuse holders"
+      }
+    ],
+    "variants": [],
+    "ship_tier": "medium",
+    "ship_tier_source": "tier",
+    "weight_g": 3000,
+    "supplier": "lumeno",
+    "supplier_code": "LUMENO-276",
+    "freight_quote": false,
+    "brand": "Lumeno"
+  },
+  {
+    "source_id": null,
+    "handle": "lumeno-12v-electric-jack",
+    "sku": "LUMENO-668",
+    "title": "Lumeno 12V electric jack",
+    "type": "simple",
+    "description": "Electric jack: input voltage 12V DC / 24V DC, rated power 360W, current 25A/13A, fuse 30A/15A, max loading capacity 4.5T, max car weight 10.0T, lifting height range 200-520mm, working temperature -15 to 50 degrees, packing size 47.0 x 17.5 x 25.0cm, weight 11.8kg.",
+    "description_html": "<p>Electric jack: input voltage 12V DC / 24V DC, rated power 360W, current 25A/13A, fuse 30A/15A, max loading capacity 4.5T, max car weight 10.0T, lifting height range 200-520mm, working temperature -15 to 50 degrees, packing size 47.0 x 17.5 x 25.0cm, weight 11.8kg.</p><h3>Specifications</h3><ul><li><strong>Voltage:</strong> 12V DC / 24V DC</li><li><strong>Power:</strong> 360W</li><li><strong>Max load:</strong> 4.5T</li><li><strong>Lift range:</strong> 200-520mm</li><li><strong>Pack size:</strong> 47.0 x 17.5 x 25.0cm</li><li><strong>Weight:</strong> 11.8kg</li></ul><h3>Stock and delivery</h3><p>Ordered in from the supplier for you. Need it by a certain date? Mail us and we&#8217;ll confirm stock and timing before you pay.</p>",
+    "price_zar": 6150,
+    "regular_price_zar": 6150,
+    "on_sale": false,
+    "categories": [
+      "Jacks & Towing",
+      "Caravan Parts"
+    ],
+    "tags": [
+      "lumeno"
+    ],
+    "weight_kg": 11.8,
+    "dimensions_cm": null,
+    "in_stock": true,
+    "source_url": null,
+    "dropship_supplier": null,
+    "options": [],
+    "images": [
+      {
+        "src": "/products/lumeno-12v-electric-jack-1.webp",
+        "alt": "Lumeno 12V electric jack"
+      }
+    ],
+    "variants": [],
+    "ship_tier": "medium",
+    "ship_tier_source": "catalogue",
+    "weight_g": 11800,
+    "supplier": "lumeno",
+    "supplier_code": "LUMENO-668",
+    "freight_quote": false,
+    "brand": "Lumeno"
+  },
+  {
+    "source_id": null,
+    "handle": "lumeno-jack-bag-optional-extra",
+    "sku": "LUMENO-710",
+    "title": "Lumeno Jack bag (optional extra)",
+    "type": "simple",
+    "description": "Optional extra bag for the electric jack.",
+    "description_html": "<p>Optional extra bag for the electric jack.</p><h3>Stock and delivery</h3><p>Ordered in from the supplier for you. Need it by a certain date? Mail us and we&#8217;ll confirm stock and timing before you pay.</p>",
+    "price_zar": 695,
+    "regular_price_zar": 695,
+    "on_sale": false,
+    "categories": [
+      "Mirrors, Covers & Bags",
+      "Caravan Parts"
+    ],
+    "tags": [
+      "lumeno"
+    ],
+    "weight_kg": 0.5,
+    "dimensions_cm": null,
+    "in_stock": true,
+    "source_url": null,
+    "dropship_supplier": null,
+    "options": [],
+    "images": [
+      {
+        "src": "/products/lumeno-jack-bag-optional-extra-1.webp",
+        "alt": "Lumeno Jack bag (optional extra)"
+      }
+    ],
+    "variants": [],
+    "ship_tier": "small",
+    "ship_tier_source": "tier",
+    "weight_g": 500,
+    "supplier": "lumeno",
+    "supplier_code": "LUMENO-710",
+    "freight_quote": false,
+    "brand": "Lumeno"
+  },
+  {
+    "source_id": null,
+    "handle": "lumeno-led-headlight-kit-set-of-2-h4-h7-9005-9006-h15-h11-ip65",
+    "sku": "LUMENO-216",
+    "title": "Lumeno LED headlight kit set of 2 (H4 / H7 / 9005 / 9006 / H15 / H11), IP65",
+    "type": "variable",
+    "description": "LED headlight kits sold as a set of 2, IP65. Light source Philips, 30W, luminous flux 6000 lumens, beam angle 360 high and low beam, all Canbus compatible, input 12-24V DC. Canbus decoders available on request.",
+    "description_html": "<p>LED headlight kits sold as a set of 2, IP65. Light source Philips, 30W, luminous flux 6000 lumens, beam angle 360 high and low beam, all Canbus compatible, input 12-24V DC. Canbus decoders available on request.</p><h3>Specifications</h3><ul><li><strong>Light source:</strong> Philips</li><li><strong>Power:</strong> 30W</li><li><strong>Output:</strong> 6000 lumens</li><li><strong>Input:</strong> DC 12-24V</li><li><strong>Rating:</strong> IP65</li><li><strong>Canbus:</strong> Compatible</li></ul><h3>Stock and delivery</h3><p>Ordered in from the supplier for you. Need it by a certain date? Mail us and we&#8217;ll confirm stock and timing before you pay.</p>",
+    "price_zar": 2170,
+    "regular_price_zar": 2170,
+    "on_sale": false,
+    "categories": [
+      "Caravan & Vehicle Lights",
+      "Lighting"
+    ],
+    "tags": [
+      "lumeno"
+    ],
+    "weight_kg": 3.0,
+    "dimensions_cm": null,
+    "in_stock": true,
+    "source_url": null,
+    "dropship_supplier": null,
+    "options": [
+      {
+        "name": "Option",
+        "values": [
+          "H4 (bright/dim)",
+          "H7 (bright)",
+          "9005 / HB3 (bright)",
+          "9006 / HB4 (dim)",
+          "H15 pins (bright/dim)",
+          "H11 (dim)"
+        ]
+      }
+    ],
+    "images": [
+      {
+        "src": "/products/lumeno-led-headlight-kit-set-of-2-h4-h7-9005-9006-h15-h11-ip65-1.webp",
+        "alt": "Lumeno LED headlight kit set of 2 (H4 / H7 / 9005 / 9006 / H15 / H11), IP65"
+      }
+    ],
+    "variants": [
+      {
+        "sku": "LUMENO-216",
+        "price_zar": 2170,
+        "in_stock": true,
+        "weight_g": 3000,
+        "options": {
+          "Option": "H4 (bright/dim)"
+        }
+      },
+      {
+        "sku": "LUMENO-399",
+        "price_zar": 2170,
+        "in_stock": true,
+        "weight_g": 3000,
+        "options": {
+          "Option": "H7 (bright)"
+        }
+      },
+      {
+        "sku": "LUMENO-181",
+        "price_zar": 2170,
+        "in_stock": true,
+        "weight_g": 3000,
+        "options": {
+          "Option": "9005 / HB3 (bright)"
+        }
+      },
+      {
+        "sku": "LUMENO-347",
+        "price_zar": 2170,
+        "in_stock": true,
+        "weight_g": 3000,
+        "options": {
+          "Option": "9006 / HB4 (dim)"
+        }
+      },
+      {
+        "sku": "LUMENO-328",
+        "price_zar": 2170,
+        "in_stock": true,
+        "weight_g": 3000,
+        "options": {
+          "Option": "H15 pins (bright/dim)"
+        }
+      },
+      {
+        "sku": "LUMENO-180",
+        "price_zar": 2170,
+        "in_stock": true,
+        "weight_g": 3000,
+        "options": {
+          "Option": "H11 (dim)"
+        }
+      }
+    ],
+    "ship_tier": "medium",
+    "ship_tier_source": "tier",
+    "weight_g": 3000,
+    "supplier": "lumeno",
+    "supplier_code": "LUMENO-216",
+    "freight_quote": false,
+    "brand": "Lumeno"
+  },
+  {
+    "source_id": null,
+    "handle": "lumeno-h4-bike-headlight-led-bulb",
+    "sku": "LUMENO-327",
+    "title": "Lumeno H4 bike headlight LED bulb",
+    "type": "simple",
+    "description": "LED headlight bulb, 24 PCS CSP, DC 9-32V, beam angle 360 degrees, 4000 lumens. Price per globe.",
+    "description_html": "<p>LED headlight bulb, 24 PCS CSP, DC 9-32V, beam angle 360 degrees, 4000 lumens. Price per globe.</p><h3>Specifications</h3><ul><li><strong>LED:</strong> 24 PCS CSP</li><li><strong>Voltage:</strong> DC 9-32V</li><li><strong>Output:</strong> 4000 lumens</li></ul><h3>Stock and delivery</h3><p>Ordered in from the supplier for you. Need it by a certain date? Mail us and we&#8217;ll confirm stock and timing before you pay.</p>",
+    "price_zar": 640,
+    "regular_price_zar": 640,
+    "on_sale": false,
+    "categories": [
+      "Caravan & Vehicle Lights",
+      "Lighting"
+    ],
+    "tags": [
+      "lumeno"
+    ],
+    "weight_kg": 0.5,
+    "dimensions_cm": null,
+    "in_stock": true,
+    "source_url": null,
+    "dropship_supplier": null,
+    "options": [],
+    "images": [
+      {
+        "src": "/products/lumeno-h4-bike-headlight-led-bulb-1.webp",
+        "alt": "Lumeno H4 bike headlight LED bulb"
+      }
+    ],
+    "variants": [],
+    "ship_tier": "small",
+    "ship_tier_source": "tier",
+    "weight_g": 500,
+    "supplier": "lumeno",
+    "supplier_code": "LUMENO-327",
+    "freight_quote": false,
+    "brand": "Lumeno"
+  },
+  {
+    "source_id": null,
+    "handle": "lumeno-h7-bike-headlight-led-bulb",
+    "sku": "LUMENO-323",
+    "title": "Lumeno H7 bike headlight LED bulb",
+    "type": "simple",
+    "description": "LED headlight bulb, 12 PCS CSP, DC 9-32V, beam angle 360 degrees, 4000 lumens. Price per globe.",
+    "description_html": "<p>LED headlight bulb, 12 PCS CSP, DC 9-32V, beam angle 360 degrees, 4000 lumens. Price per globe.</p><h3>Specifications</h3><ul><li><strong>LED:</strong> 12 PCS CSP</li><li><strong>Voltage:</strong> DC 9-32V</li><li><strong>Output:</strong> 4000 lumens</li></ul><h3>Stock and delivery</h3><p>Ordered in from the supplier for you. Need it by a certain date? Mail us and we&#8217;ll confirm stock and timing before you pay.</p>",
+    "price_zar": 570,
+    "regular_price_zar": 570,
+    "on_sale": false,
+    "categories": [
+      "Caravan & Vehicle Lights",
+      "Lighting"
+    ],
+    "tags": [
+      "lumeno"
+    ],
+    "weight_kg": 0.5,
+    "dimensions_cm": null,
+    "in_stock": true,
+    "source_url": null,
+    "dropship_supplier": null,
+    "options": [],
+    "images": [
+      {
+        "src": "/products/lumeno-h7-bike-headlight-led-bulb-1.webp",
+        "alt": "Lumeno H7 bike headlight LED bulb"
+      }
+    ],
+    "variants": [],
+    "ship_tier": "small",
+    "ship_tier_source": "tier",
+    "weight_g": 500,
+    "supplier": "lumeno",
+    "supplier_code": "LUMENO-323",
+    "freight_quote": false,
+    "brand": "Lumeno"
+  },
+  {
+    "source_id": null,
+    "handle": "lumeno-t10-fishtail-led-bulb-t100b09-01-2-per-pack",
+    "sku": "LUMENO-B09",
+    "title": "Lumeno T10 fishtail LED bulb (T100B09-01), 2 per pack",
+    "type": "simple",
+    "description": "12V, 1W high power LED bulb, 50-60 lumens, Canbus, beam angle 130 degrees. 2 per pack.",
+    "description_html": "<p>12V, 1W high power LED bulb, 50-60 lumens, Canbus, beam angle 130 degrees. 2 per pack.</p><h3>Specifications</h3><ul><li><strong>Type:</strong> T100B09-01-FISHTAIL</li><li><strong>Voltage:</strong> 12V</li><li><strong>Power:</strong> 1W</li><li><strong>Output:</strong> 50-60 lumens</li></ul><h3>Stock and delivery</h3><p>Ordered in from the supplier for you. Need it by a certain date? Mail us and we&#8217;ll confirm stock and timing before you pay.</p>",
+    "price_zar": 130,
+    "regular_price_zar": 130,
+    "on_sale": false,
+    "categories": [
+      "Caravan & Vehicle Lights",
+      "Lighting"
+    ],
+    "tags": [
+      "lumeno"
+    ],
+    "weight_kg": 0.5,
+    "dimensions_cm": null,
+    "in_stock": true,
+    "source_url": null,
+    "dropship_supplier": null,
+    "options": [],
+    "images": [
+      {
+        "src": "/products/lumeno-t10-fishtail-led-bulb-t100b09-01-2-per-pack-1.webp",
+        "alt": "Lumeno T10 fishtail LED bulb (T100B09-01), 2 per pack"
+      }
+    ],
+    "variants": [],
+    "ship_tier": "small",
+    "ship_tier_source": "tier",
+    "weight_g": 500,
+    "supplier": "lumeno",
+    "supplier_code": "LUMENO-B09",
+    "freight_quote": false,
+    "brand": "Lumeno"
+  },
+  {
+    "source_id": null,
+    "handle": "lumeno-led-bulb-t100b24-04-2-per-pack",
+    "sku": "LUMENO-199",
+    "title": "Lumeno LED bulb T100B24-04, 2 per pack",
+    "type": "simple",
+    "description": "12V DC, 2.5W LED bulb, 55 lumens, beam angle 130 degrees. 2 per pack.",
+    "description_html": "<p>12V DC, 2.5W LED bulb, 55 lumens, beam angle 130 degrees. 2 per pack.</p><h3>Specifications</h3><ul><li><strong>Type:</strong> T100B24-04</li><li><strong>Voltage:</strong> 12V DC</li><li><strong>Power:</strong> 2.5W</li><li><strong>Output:</strong> 55 lumens</li></ul><h3>Stock and delivery</h3><p>Ordered in from the supplier for you. Need it by a certain date? Mail us and we&#8217;ll confirm stock and timing before you pay.</p>",
+    "price_zar": 280,
+    "regular_price_zar": 280,
+    "on_sale": false,
+    "categories": [
+      "Caravan & Vehicle Lights",
+      "Lighting"
+    ],
+    "tags": [
+      "lumeno"
+    ],
+    "weight_kg": 0.5,
+    "dimensions_cm": null,
+    "in_stock": true,
+    "source_url": null,
+    "dropship_supplier": null,
+    "options": [],
+    "images": [
+      {
+        "src": "/products/lumeno-led-bulb-t100b24-04-2-per-pack-1.webp",
+        "alt": "Lumeno LED bulb T100B24-04, 2 per pack"
+      }
+    ],
+    "variants": [],
+    "ship_tier": "small",
+    "ship_tier_source": "tier",
+    "weight_g": 500,
+    "supplier": "lumeno",
+    "supplier_code": "LUMENO-199",
+    "freight_quote": false,
+    "brand": "Lumeno"
+  },
+  {
+    "source_id": null,
+    "handle": "lumeno-led-bulb-t20-t200b40-60-single-double-filament",
+    "sku": "LUMENO-204",
+    "title": "Lumeno LED bulb T20-T200B40-60 (single / double filament)",
+    "type": "variable",
+    "description": "12-24V, 30W LED bulb, 720 lumens, beam angle 360 degrees. 1 pack.",
+    "description_html": "<p>12-24V, 30W LED bulb, 720 lumens, beam angle 360 degrees. 1 pack.</p><h3>Specifications</h3><ul><li><strong>Type:</strong> T20-T200B40-60</li><li><strong>Voltage:</strong> 12-24V</li><li><strong>Power:</strong> 30W</li><li><strong>Output:</strong> 720 lumens</li></ul><h3>Stock and delivery</h3><p>Ordered in from the supplier for you. Need it by a certain date? Mail us and we&#8217;ll confirm stock and timing before you pay.</p>",
+    "price_zar": 500,
+    "regular_price_zar": 500,
+    "on_sale": false,
+    "categories": [
+      "Caravan & Vehicle Lights",
+      "Lighting"
+    ],
+    "tags": [
+      "lumeno"
+    ],
+    "weight_kg": 0.5,
+    "dimensions_cm": null,
+    "in_stock": true,
+    "source_url": null,
+    "dropship_supplier": null,
+    "options": [
+      {
+        "name": "Option",
+        "values": [
+          "Single",
+          "Double"
+        ]
+      }
+    ],
+    "images": [
+      {
+        "src": "/products/lumeno-led-bulb-t20-t200b40-60-single-double-filament-1.webp",
+        "alt": "Lumeno LED bulb T20-T200B40-60 (single / double filament)"
+      }
+    ],
+    "variants": [
+      {
+        "sku": "LUMENO-204",
+        "price_zar": 500,
+        "in_stock": true,
+        "weight_g": 500,
+        "options": {
+          "Option": "Single"
+        }
+      },
+      {
+        "sku": "LUMENO-205",
+        "price_zar": 500,
+        "in_stock": true,
+        "weight_g": 500,
+        "options": {
+          "Option": "Double"
+        }
+      }
+    ],
+    "ship_tier": "small",
+    "ship_tier_source": "tier",
+    "weight_g": 500,
+    "supplier": "lumeno",
+    "supplier_code": "LUMENO-204",
     "freight_quote": false,
     "brand": "Lumeno"
   },
