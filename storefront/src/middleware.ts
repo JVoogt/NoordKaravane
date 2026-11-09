@@ -1,10 +1,19 @@
 import { defineMiddleware } from 'astro:middleware';
+import { PRODUCT_REDIRECTS } from '~/lib/redirects';
+import { CATEGORY_REDIRECTS } from '~/lib/category-config';
 
 const PRIVATE = /^\/shop\/(cart|checkout|order|api)(\/|$)/;
 const NOSTORE = /^\/shop\/(healthz)$/;
 const PUBLIC = 'public, s-maxage=600, stale-while-revalidate=86400';
 
 export const onRequest = defineMiddleware(async (ctx, next) => {
+  // merged products: old product URLs permanently redirect to the grouped product page
+  const m = ctx.url.pathname.match(/^\/shop\/([a-z0-9-]+)\/?$/);
+  const to = m && Object.hasOwn(PRODUCT_REDIRECTS, m[1]) ? PRODUCT_REDIRECTS[m[1]] : null;
+  if (to) return new Response(null, { status: 301, headers: { Location: `/shop/${to}/`, 'Cache-Control': 'public, max-age=86400' } });
+  const cm = ctx.url.pathname.match(/^\/shop\/category\/([a-z0-9-]+)\/?$/);
+  const cto = cm && Object.hasOwn(CATEGORY_REDIRECTS, cm[1]) ? CATEGORY_REDIRECTS[cm[1]] : null;
+  if (cto) return new Response(null, { status: 301, headers: { Location: `/shop/category/${cto}/`, 'Cache-Control': 'public, max-age=86400' } });
   const res = await next();
   const p = ctx.url.pathname;
   const h = res.headers;

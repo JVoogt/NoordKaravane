@@ -1,11 +1,11 @@
 [
   {
-    "id": 93,
-    "handle": "batteries-power",
-    "name": "Batteries & Power",
-    "parent": "Camping Gear & Equipment",
-    "parent_handle": "camping-gear",
-    "count": 3
+    "id": 1097,
+    "handle": "4x4-vehicle-accessories",
+    "name": "4x4 & Vehicle Accessories",
+    "parent": null,
+    "parent_handle": null,
+    "count": 22
   },
   {
     "id": 22,
@@ -13,15 +13,103 @@
     "name": "BoskampKos Camping Food",
     "parent": null,
     "parent_handle": null,
-    "count": 6
+    "count": 0
   },
   {
-    "id": 23,
-    "handle": "braai-outdoor-cooking",
-    "name": "Braai & Outdoor Cooking",
-    "parent": "Camping Gear & Equipment",
-    "parent_handle": "camping-gear",
+    "id": 18,
+    "handle": "camping-gear",
+    "name": "Camping Gear & Equipment",
+    "parent": null,
+    "parent_handle": null,
+    "count": 94
+  },
+  {
+    "id": 1095,
+    "handle": "caravan-parts",
+    "name": "Caravan Parts",
+    "parent": null,
+    "parent_handle": null,
+    "count": 205
+  },
+  {
+    "id": 20,
+    "handle": "kampihost-essentials",
+    "name": "KampiHost Essentials",
+    "parent": null,
+    "parent_handle": null,
+    "count": 11
+  },
+  {
+    "id": 1096,
+    "handle": "lighting",
+    "name": "Lighting",
+    "parent": null,
+    "parent_handle": null,
+    "count": 61
+  },
+  {
+    "id": 19,
+    "handle": "merchandise",
+    "name": "Merchandise",
+    "parent": null,
+    "parent_handle": null,
+    "count": 0
+  },
+  {
+    "id": 1094,
+    "handle": "solar-power",
+    "name": "Solar & Power",
+    "parent": null,
+    "parent_handle": null,
+    "count": 170
+  },
+  {
+    "id": 29,
+    "handle": "stickers-decals",
+    "name": "Stickers & Decals",
+    "parent": null,
+    "parent_handle": null,
+    "count": 7
+  },
+  {
+    "id": 1116,
+    "handle": "tents-awnings-roof-top-tents",
+    "name": "Tents, Awnings & Roof-top Tents",
+    "parent": null,
+    "parent_handle": null,
+    "count": 20
+  },
+  {
+    "id": 2128,
+    "handle": "awning-brackets-fitment",
+    "name": "Awning Brackets & Fitment",
+    "parent": "4x4 & Vehicle Accessories",
+    "parent_handle": "4x4-vehicle-accessories",
+    "count": 2
+  },
+  {
+    "id": 1123,
+    "handle": "cameras-vehicle-safety",
+    "name": "Cameras & Vehicle Safety",
+    "parent": "4x4 & Vehicle Accessories",
+    "parent_handle": "4x4-vehicle-accessories",
     "count": 4
+  },
+  {
+    "id": 2127,
+    "handle": "drawer-systems",
+    "name": "Drawer Systems",
+    "parent": "4x4 & Vehicle Accessories",
+    "parent_handle": "4x4-vehicle-accessories",
+    "count": 3
+  },
+  {
+    "id": 1122,
+    "handle": "tyre-inflators-gauges",
+    "name": "Tyre Inflators & Gauges",
+    "parent": "4x4 & Vehicle Accessories",
+    "parent_handle": "4x4-vehicle-accessories",
+    "count": 13
   },
   {
     "id": 32,
@@ -32,20 +120,52 @@
     "count": 3
   },
   {
-    "id": 18,
-    "handle": "camping-gear",
-    "name": "Camping Gear & Equipment",
-    "parent": null,
-    "parent_handle": null,
-    "count": 26
+    "id": 33,
+    "handle": "camping-hot-drinks",
+    "name": "Hot Beverages",
+    "parent": "BoskampKos Camping Food",
+    "parent_handle": "boskampkos",
+    "count": 2
   },
   {
-    "id": 27,
-    "handle": "camping-clothing",
-    "name": "Clothing & Apparel",
-    "parent": "Kampi Merchandise",
-    "parent_handle": "kampi-merchandise",
+    "id": 34,
+    "handle": "camping-snacks",
+    "name": "Snacks & Treats",
+    "parent": "BoskampKos Camping Food",
+    "parent_handle": "boskampkos",
+    "count": 1
+  },
+  {
+    "id": 2126,
+    "handle": "bags-storage",
+    "name": "Bags & Storage",
+    "parent": "Camping Gear & Equipment",
+    "parent_handle": "camping-gear",
     "count": 7
+  },
+  {
+    "id": 23,
+    "handle": "braai-outdoor-cooking",
+    "name": "Braai & Outdoor Cooking",
+    "parent": "Camping Gear & Equipment",
+    "parent_handle": "camping-gear",
+    "count": 13
+  },
+  {
+    "id": 1117,
+    "handle": "camp-furniture",
+    "name": "Camp Furniture",
+    "parent": "Camping Gear & Equipment",
+    "parent_handle": "camping-gear",
+    "count": 2
+  },
+  {
+    "id": 1120,
+    "handle": "camping-accessories",
+    "name": "Camping Accessories",
+    "parent": "Camping Gear & Equipment",
+    "parent_handle": "camping-gear",
+    "count": 37
   },
   {
     "id": 26,
@@ -56,12 +176,116 @@
     "count": 2
   },
   {
-    "id": 28,
-    "handle": "drinkware",
-    "name": "Drinkware",
-    "parent": "Kampi Merchandise",
-    "parent_handle": "kampi-merchandise",
+    "id": 1118,
+    "handle": "kitchen-tableware",
+    "name": "Kitchen & Tableware",
+    "parent": "Camping Gear & Equipment",
+    "parent_handle": "camping-gear",
+    "count": 13
+  },
+  {
+    "id": 1119,
+    "handle": "showers-hygiene",
+    "name": "Showers & Hygiene",
+    "parent": "Camping Gear & Equipment",
+    "parent_handle": "camping-gear",
+    "count": 14
+  },
+  {
+    "id": 1121,
+    "handle": "sleeping-bedding",
+    "name": "Sleeping & Bedding",
+    "parent": "Camping Gear & Equipment",
+    "parent_handle": "camping-gear",
+    "count": 2
+  },
+  {
+    "id": 25,
+    "handle": "water-pumps",
+    "name": "Water & Transfer Pumps",
+    "parent": "Camping Gear & Equipment",
+    "parent_handle": "camping-gear",
     "count": 3
+  },
+  {
+    "id": 1106,
+    "handle": "awning-fittings-poles-clips",
+    "name": "Awning Fittings, Poles & Clips",
+    "parent": "Caravan Parts",
+    "parent_handle": "caravan-parts",
+    "count": 61
+  },
+  {
+    "id": 1113,
+    "handle": "body-trim",
+    "name": "Body & Trim",
+    "parent": "Caravan Parts",
+    "parent_handle": "caravan-parts",
+    "count": 10
+  },
+  {
+    "id": 1107,
+    "handle": "doors-locks-windows",
+    "name": "Doors, Locks & Windows",
+    "parent": "Caravan Parts",
+    "parent_handle": "caravan-parts",
+    "count": 19
+  },
+  {
+    "id": 1110,
+    "handle": "electrical-fittings-sockets",
+    "name": "Electrical Fittings & Sockets",
+    "parent": "Caravan Parts",
+    "parent_handle": "caravan-parts",
+    "count": 40
+  },
+  {
+    "id": 1109,
+    "handle": "gas-fittings",
+    "name": "Gas Fittings",
+    "parent": "Caravan Parts",
+    "parent_handle": "caravan-parts",
+    "count": 2
+  },
+  {
+    "id": 1105,
+    "handle": "jacks-towing",
+    "name": "Jacks & Towing",
+    "parent": "Caravan Parts",
+    "parent_handle": "caravan-parts",
+    "count": 17
+  },
+  {
+    "id": 1111,
+    "handle": "mirrors-covers-bags",
+    "name": "Mirrors, Covers & Bags",
+    "parent": "Caravan Parts",
+    "parent_handle": "caravan-parts",
+    "count": 11
+  },
+  {
+    "id": 1112,
+    "handle": "seals-fasteners-hardware",
+    "name": "Seals, Fasteners & Hardware",
+    "parent": "Caravan Parts",
+    "parent_handle": "caravan-parts",
+    "count": 18
+  },
+  {
+    "id": 1104,
+    "handle": "steps-stabilisers",
+    "name": "Steps & Stabilisers",
+    "parent": "Caravan Parts",
+    "parent_handle": "caravan-parts",
+    "count": 5
+  },
+  {
+    "id": 1108,
+    "handle": "water-plumbing",
+    "name": "Water & Plumbing",
+    "parent": "Caravan Parts",
+    "parent_handle": "caravan-parts",
+    "count": 22
   },
   {
     "id": 31,
@@ -80,59 +304,99 @@
     "count": 3
   },
   {
-    "id": 33,
-    "handle": "camping-hot-drinks",
-    "name": "Hot Beverages",
-    "parent": "BoskampKos Camping Food",
-    "parent_handle": "boskampkos",
-    "count": 2
+    "id": 1114,
+    "handle": "caravan-vehicle-lights",
+    "name": "Caravan & Vehicle Lights",
+    "parent": "Lighting",
+    "parent_handle": "lighting",
+    "count": 37
   },
   {
-    "id": 19,
-    "handle": "kampi-merchandise",
-    "name": "Kampi Merchandise",
-    "parent": null,
-    "parent_handle": null,
-    "count": 10
-  },
-  {
-    "id": 20,
-    "handle": "kampihost-essentials",
-    "name": "KampiHost Essentials",
-    "parent": null,
-    "parent_handle": null,
-    "count": 15
+    "id": 1115,
+    "handle": "led-strips-accessories",
+    "name": "LED Strips & Accessories",
+    "parent": "Lighting",
+    "parent_handle": "lighting",
+    "count": 4
   },
   {
     "id": 24,
     "handle": "camping-lighting",
     "name": "Lighting & Headlamps",
-    "parent": "Camping Gear & Equipment",
-    "parent_handle": "camping-gear",
+    "parent": "Lighting",
+    "parent_handle": "lighting",
+    "count": 20
+  },
+  {
+    "id": 27,
+    "handle": "camping-clothing",
+    "name": "Clothing & Apparel",
+    "parent": "Merchandise",
+    "parent_handle": "merchandise",
     "count": 7
   },
   {
-    "id": 34,
-    "handle": "camping-snacks",
-    "name": "Snacks & Treats",
-    "parent": "BoskampKos Camping Food",
-    "parent_handle": "boskampkos",
-    "count": 1
-  },
-  {
-    "id": 29,
-    "handle": "stickers-decals",
-    "name": "Stickers & Decals",
-    "parent": null,
-    "parent_handle": null,
-    "count": 7
-  },
-  {
-    "id": 25,
-    "handle": "water-pumps",
-    "name": "Water & Transfer Pumps",
-    "parent": "Camping Gear & Equipment",
-    "parent_handle": "camping-gear",
+    "id": 28,
+    "handle": "drinkware",
+    "name": "Drinkware",
+    "parent": "Merchandise",
+    "parent_handle": "merchandise",
     "count": 3
+  },
+  {
+    "id": 93,
+    "handle": "batteries-power",
+    "name": "Batteries & Power",
+    "parent": "Solar & Power",
+    "parent_handle": "solar-power",
+    "count": 8
+  },
+  {
+    "id": 1102,
+    "handle": "cables-plugs-connectors",
+    "name": "Cables, Plugs & Connectors",
+    "parent": "Solar & Power",
+    "parent_handle": "solar-power",
+    "count": 51
+  },
+  {
+    "id": 1100,
+    "handle": "charge-controllers-monitoring",
+    "name": "Charge Controllers & Monitoring",
+    "parent": "Solar & Power",
+    "parent_handle": "solar-power",
+    "count": 15
+  },
+  {
+    "id": 1099,
+    "handle": "inverters-chargers",
+    "name": "Inverters & Chargers",
+    "parent": "Solar & Power",
+    "parent_handle": "solar-power",
+    "count": 10
+  },
+  {
+    "id": 1103,
+    "handle": "power-accessories",
+    "name": "Power Accessories",
+    "parent": "Solar & Power",
+    "parent_handle": "solar-power",
+    "count": 37
+  },
+  {
+    "id": 1101,
+    "handle": "power-boxes-distribution",
+    "name": "Power Boxes & Distribution",
+    "parent": "Solar & Power",
+    "parent_handle": "solar-power",
+    "count": 37
+  },
+  {
+    "id": 1098,
+    "handle": "solar-panels",
+    "name": "Solar Panels",
+    "parent": "Solar & Power",
+    "parent_handle": "solar-power",
+    "count": 12
   }
 ]
