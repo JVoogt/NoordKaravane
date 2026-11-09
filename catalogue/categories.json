@@ -56,12 +56,20 @@
     "count": 0
   },
   {
+    "id": 3129,
+    "handle": "renogy",
+    "name": "Renogy",
+    "parent": null,
+    "parent_handle": null,
+    "count": 30
+  },
+  {
     "id": 1094,
     "handle": "solar-power",
     "name": "Solar & Power",
     "parent": null,
     "parent_handle": null,
-    "count": 170
+    "count": 319
   },
   {
     "id": 29,
@@ -78,6 +86,14 @@
     "parent": null,
     "parent_handle": null,
     "count": 20
+  },
+  {
+    "id": 4135,
+    "handle": "victron-energy",
+    "name": "Victron Energy",
+    "parent": null,
+    "parent_handle": null,
+    "count": 149
   },
   {
     "id": 2128,
@@ -344,12 +360,52 @@
     "count": 3
   },
   {
+    "id": 3130,
+    "handle": "renogy-batteries",
+    "name": "Renogy Batteries",
+    "parent": "Renogy",
+    "parent_handle": "renogy",
+    "count": 5
+  },
+  {
+    "id": 3131,
+    "handle": "renogy-controllers-monitoring",
+    "name": "Renogy Controllers & Monitoring",
+    "parent": "Renogy",
+    "parent_handle": "renogy",
+    "count": 6
+  },
+  {
+    "id": 3132,
+    "handle": "renogy-inverters-chargers",
+    "name": "Renogy Inverters & Chargers",
+    "parent": "Renogy",
+    "parent_handle": "renogy",
+    "count": 6
+  },
+  {
+    "id": 3133,
+    "handle": "renogy-power-boxes-distribution",
+    "name": "Renogy Power Boxes & Distribution",
+    "parent": "Renogy",
+    "parent_handle": "renogy",
+    "count": 2
+  },
+  {
+    "id": 3134,
+    "handle": "renogy-solar-panels",
+    "name": "Renogy Solar Panels",
+    "parent": "Renogy",
+    "parent_handle": "renogy",
+    "count": 11
+  },
+  {
     "id": 93,
     "handle": "batteries-power",
     "name": "Batteries & Power",
     "parent": "Solar & Power",
     "parent_handle": "solar-power",
-    "count": 8
+    "count": 19
   },
   {
     "id": 1102,
@@ -365,7 +421,7 @@
     "name": "Charge Controllers & Monitoring",
     "parent": "Solar & Power",
     "parent_handle": "solar-power",
-    "count": 15
+    "count": 68
   },
   {
     "id": 1099,
@@ -373,7 +429,7 @@
     "name": "Inverters & Chargers",
     "parent": "Solar & Power",
     "parent_handle": "solar-power",
-    "count": 10
+    "count": 49
   },
   {
     "id": 1103,
@@ -381,7 +437,7 @@
     "name": "Power Accessories",
     "parent": "Solar & Power",
     "parent_handle": "solar-power",
-    "count": 37
+    "count": 81
   },
   {
     "id": 1101,
@@ -397,6 +453,86 @@
     "name": "Solar Panels",
     "parent": "Solar & Power",
     "parent_handle": "solar-power",
-    "count": 12
+    "count": 14
+  },
+  {
+    "id": 4136,
+    "handle": "victron-batteries-energy-storage",
+    "name": "Victron Batteries & Energy Storage",
+    "parent": "Victron Energy",
+    "parent_handle": "victron-energy",
+    "count": 11
+  },
+  {
+    "id": 4137,
+    "handle": "victron-battery-chargers",
+    "name": "Victron Battery Chargers",
+    "parent": "Victron Energy",
+    "parent_handle": "victron-energy",
+    "count": 9
+  },
+  {
+    "id": 4138,
+    "handle": "victron-cables-fuses-accessories",
+    "name": "Victron Cables, Fuses & Accessories",
+    "parent": "Victron Energy",
+    "parent_handle": "victron-energy",
+    "count": 42
+  },
+  {
+    "id": 4139,
+    "handle": "victron-dc-dc-converters",
+    "name": "Victron DC-DC Converters",
+    "parent": "Victron Energy",
+    "parent_handle": "victron-energy",
+    "count": 11
+  },
+  {
+    "id": 4140,
+    "handle": "victron-ev-charging",
+    "name": "Victron EV Charging",
+    "parent": "Victron Energy",
+    "parent_handle": "victron-energy",
+    "count": 2
+  },
+  {
+    "id": 4141,
+    "handle": "victron-inverter-chargers",
+    "name": "Victron Inverter/Chargers",
+    "parent": "Victron Energy",
+    "parent_handle": "victron-energy",
+    "count": 11
+  },
+  {
+    "id": 4142,
+    "handle": "victron-inverters",
+    "name": "Victron Inverters",
+    "parent": "Victron Energy",
+    "parent_handle": "victron-energy",
+    "count": 8
+  },
+  {
+    "id": 4143,
+    "handle": "victron-monitoring-gx",
+    "name": "Victron Monitoring & GX",
+    "parent": "Victron Energy",
+    "parent_handle": "victron-energy",
+    "count": 37
+  },
+  {
+    "id": 4144,
+    "handle": "victron-solar-charge-controllers",
+    "name": "Victron Solar Charge Controllers",
+    "parent": "Victron Energy",
+    "parent_handle": "victron-energy",
+    "count": 16
+  },
+  {
+    "id": 4145,
+    "handle": "victron-solar-panels",
+    "name": "Victron Solar Panels",
+    "parent": "Victron Energy",
+    "parent_handle": "victron-energy",
+    "count": 2
   }
 ]
