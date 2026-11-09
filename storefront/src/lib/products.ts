@@ -31,7 +31,7 @@ async function getRegionId(): Promise<string | undefined> {
   return regionId ?? undefined;
 }
 
-const FIELDS = '*variants.calculated_price,*variants.options,+variants.weight,+variants.sku,*options,*options.values,*images,*categories,*tags';
+const FIELDS = '+metadata,*variants.calculated_price,*variants.options,+variants.weight,+variants.sku,*options,*options.values,*images,*categories,*tags';
 
 /** Simple products are stored with a single "Default" option in Medusa; hide it everywhere in the UI. */
 const hideDefault = (o: Option[]) => o.filter((x) => !(x.name === 'Default' && x.values.length === 1 && x.values[0] === 'Default'));
