@@ -15,7 +15,7 @@ export const POST: APIRoute = async (ctx) => {
   if (!isEmail(email)) return reply(ctx, false, 'That email address does not look right.', 400, '/#newsletter');
   if (!form.get('consent')) return reply(ctx, false, 'Please tick the box so we know you want our emails.', 400, '/#newsletter');
 
-  const ts = await verifyTurnstile(String(form.get('cf-turnstile-response') || '') || null, ip);
+  const ts = await verifyTurnstile(String(form.get('cf-turnstile-response') || '') || null, ip, 'newsletter');
   if (!ts.ok) return reply(ctx, false, ts.reason!, 400, '/#newsletter');
 
   // POPIA s69: explicit opt-in (checkbox above); keep when and from where consent was given

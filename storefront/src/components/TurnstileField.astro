@@ -1,5 +1,7 @@
 ---
 import { env } from '~/lib/env';
+interface Props { action: string }
+const { action } = Astro.props;
 const key = env('PUBLIC_TURNSTILE_SITE_KEY');
 ---
-{key && <div class="cf-turnstile-slot min-h-[65px]" data-sitekey={key} data-theme="auto"></div>}
+{key && <div class="cf-turnstile-slot min-h-[65px]" data-sitekey={key} data-action={action} data-theme="auto"></div>}

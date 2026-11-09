@@ -15,6 +15,6 @@ import { u } from '~/lib/url';
     <span>Yes, send me marketing emails. I can unsubscribe any time. See the <a href={u("/legal/privacy")}>privacy policy</a>.</span>
   </label>
   <input type="text" name="website" tabindex="-1" autocomplete="off" class="sr-only" aria-hidden="true" />
-  <TurnstileField />
+  <TurnstileField action="newsletter" />
   <p class="hint min-h-6" role="status" aria-live="polite" data-msg></p>
 </form>

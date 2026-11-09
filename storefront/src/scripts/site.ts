@@ -39,7 +39,12 @@ async function mountTurnstile(form: HTMLFormElement) {
   if (!slot || slot.dataset.mounted) return;
   slot.dataset.mounted = '1';
   await loadTurnstile();
-  window.turnstile?.render(slot, { sitekey: slot.dataset.sitekey, theme: slot.dataset.theme || 'auto' });
+  const id = window.turnstile?.render(slot, { sitekey: slot.dataset.sitekey, action: slot.dataset.action, theme: slot.dataset.theme || 'auto' });
+  if (id) slot.dataset.widgetId = id;
+}
+function resetTurnstile(form: HTMLFormElement) {
+  const id = form.querySelector<HTMLElement>('.cf-turnstile-slot')?.dataset.widgetId;
+  if (id) window.turnstile?.reset(id);
 }
 document.querySelectorAll<HTMLFormElement>('form[data-enhance]').forEach((f) => {
   f.addEventListener('focusin', () => mountTurnstile(f), { once: true });
@@ -60,9 +65,10 @@ document.querySelectorAll<HTMLFormElement>('form[data-enhance]').forEach((form) 
       const j = await res.json().catch(() => ({ ok: false, message: 'Unexpected response.' }));
       if (msg) { msg.textContent = j.message || (j.ok ? 'Done.' : 'Something went wrong.'); msg.classList.toggle('err', !j.ok); }
       if (j.ok) form.reset();
-      else (window as any).turnstile?.reset?.();
+      resetTurnstile(form); // tokens are single-use: always get a fresh one before the next submit
     } catch {
       if (msg) { msg.textContent = 'We could not send that. Please try again.'; msg.classList.add('err'); }
+      resetTurnstile(form);
     } finally { if (btn) btn.disabled = false; }
   });
 });
