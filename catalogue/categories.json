@@ -5,7 +5,7 @@
     "name": "4x4 & Vehicle Accessories",
     "parent": null,
     "parent_handle": null,
-    "count": 17
+    "count": 22
   },
   {
     "id": 22,
@@ -21,7 +21,7 @@
     "name": "Camping Gear & Equipment",
     "parent": null,
     "parent_handle": null,
-    "count": 21
+    "count": 46
   },
   {
     "id": 1095,
@@ -29,7 +29,7 @@
     "name": "Caravan Parts",
     "parent": null,
     "parent_handle": null,
-    "count": 48
+    "count": 75
   },
   {
     "id": 19,
@@ -53,7 +53,7 @@
     "name": "Lighting",
     "parent": null,
     "parent_handle": null,
-    "count": 60
+    "count": 59
   },
   {
     "id": 1094,
@@ -61,7 +61,7 @@
     "name": "Solar & Power",
     "parent": null,
     "parent_handle": null,
-    "count": 72
+    "count": 140
   },
   {
     "id": 29,
@@ -72,12 +72,28 @@
     "count": 7
   },
   {
+    "id": 2128,
+    "handle": "awning-brackets-fitment",
+    "name": "Awning Brackets & Fitment",
+    "parent": "4x4 & Vehicle Accessories",
+    "parent_handle": "4x4-vehicle-accessories",
+    "count": 2
+  },
+  {
     "id": 1123,
     "handle": "cameras-vehicle-safety",
     "name": "Cameras & Vehicle Safety",
     "parent": "4x4 & Vehicle Accessories",
     "parent_handle": "4x4-vehicle-accessories",
     "count": 4
+  },
+  {
+    "id": 2127,
+    "handle": "drawer-systems",
+    "name": "Drawer Systems",
+    "parent": "4x4 & Vehicle Accessories",
+    "parent_handle": "4x4-vehicle-accessories",
+    "count": 3
   },
   {
     "id": 1122,
@@ -112,12 +128,28 @@
     "count": 1
   },
   {
+    "id": 2124,
+    "handle": "awnings-side-walls",
+    "name": "Awnings & Side Walls",
+    "parent": "Camping Gear & Equipment",
+    "parent_handle": "camping-gear-equipment",
+    "count": 9
+  },
+  {
+    "id": 2126,
+    "handle": "bags-storage",
+    "name": "Bags & Storage",
+    "parent": "Camping Gear & Equipment",
+    "parent_handle": "camping-gear-equipment",
+    "count": 7
+  },
+  {
     "id": 23,
     "handle": "braai-outdoor-cooking",
     "name": "Braai & Outdoor Cooking",
     "parent": "Camping Gear & Equipment",
     "parent_handle": "camping-gear",
-    "count": 4
+    "count": 5
   },
   {
     "id": 1117,
@@ -133,7 +165,7 @@
     "name": "Camping Accessories",
     "parent": "Camping Gear & Equipment",
     "parent_handle": "camping-gear-equipment",
-    "count": 3
+    "count": 4
   },
   {
     "id": 26,
@@ -152,12 +184,20 @@
     "count": 0
   },
   {
+    "id": 2125,
+    "handle": "roof-top-tents",
+    "name": "Roof-top Tents",
+    "parent": "Camping Gear & Equipment",
+    "parent_handle": "camping-gear-equipment",
+    "count": 3
+  },
+  {
     "id": 1119,
     "handle": "showers-hygiene",
     "name": "Showers & Hygiene",
     "parent": "Camping Gear & Equipment",
     "parent_handle": "camping-gear-equipment",
-    "count": 2
+    "count": 6
   },
   {
     "id": 1121,
@@ -189,7 +229,7 @@
     "name": "Awning Fittings, Poles & Clips",
     "parent": "Caravan Parts",
     "parent_handle": "caravan-parts",
-    "count": 2
+    "count": 3
   },
   {
     "id": 1113,
@@ -213,7 +253,7 @@
     "name": "Electrical Fittings & Sockets",
     "parent": "Caravan Parts",
     "parent_handle": "caravan-parts",
-    "count": 11
+    "count": 36
   },
   {
     "id": 1109,
@@ -245,7 +285,7 @@
     "name": "Seals, Fasteners & Hardware",
     "parent": "Caravan Parts",
     "parent_handle": "caravan-parts",
-    "count": 8
+    "count": 9
   },
   {
     "id": 1104,
@@ -301,7 +341,7 @@
     "name": "Caravan & Vehicle Lights",
     "parent": "Lighting",
     "parent_handle": "lighting",
-    "count": 28
+    "count": 36
   },
   {
     "id": 1115,
@@ -309,7 +349,7 @@
     "name": "LED Strips & Accessories",
     "parent": "Lighting",
     "parent_handle": "lighting",
-    "count": 14
+    "count": 4
   },
   {
     "id": 24,
@@ -317,7 +357,7 @@
     "name": "Lighting & Headlamps",
     "parent": "Lighting",
     "parent_handle": "lighting",
-    "count": 18
+    "count": 19
   },
   {
     "id": 93,
@@ -333,7 +373,7 @@
     "name": "Cables, Plugs & Connectors",
     "parent": "Solar & Power",
     "parent_handle": "solar-power",
-    "count": 10
+    "count": 34
   },
   {
     "id": 1100,
@@ -341,7 +381,7 @@
     "name": "Charge Controllers & Monitoring",
     "parent": "Solar & Power",
     "parent_handle": "solar-power",
-    "count": 6
+    "count": 15
   },
   {
     "id": 1099,
@@ -349,7 +389,7 @@
     "name": "Inverters & Chargers",
     "parent": "Solar & Power",
     "parent_handle": "solar-power",
-    "count": 19
+    "count": 10
   },
   {
     "id": 1103,
@@ -357,7 +397,7 @@
     "name": "Power Accessories",
     "parent": "Solar & Power",
     "parent_handle": "solar-power",
-    "count": 12
+    "count": 35
   },
   {
     "id": 1101,
@@ -365,7 +405,7 @@
     "name": "Power Boxes & Distribution",
     "parent": "Solar & Power",
     "parent_handle": "solar-power",
-    "count": 5
+    "count": 26
   },
   {
     "id": 1098,
