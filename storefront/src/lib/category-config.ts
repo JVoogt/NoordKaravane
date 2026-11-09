@@ -10,5 +10,7 @@ export const CATEGORY_IMAGES: Record<string, string> = {
   'showers-hygiene': '/products/agv-portable-shower-floor-1.webp',
   'tents-awnings-roof-top-tents': '/products/agv-270-degree-awning-std-1.webp',
   'camping-gear': '/products/lumeno-outdoor-camping-chair-1.webp',
+  'victron-energy': '/products/victron-multiplus-230v-1.webp',
+  'renogy': '/products/renogy-pure-sine-wave-inverter-1.webp',
   'solar-power': '/products/renogy-200w-flexible-monocrystalline-solar-panel-1.webp',
 };
