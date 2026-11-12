@@ -52,13 +52,20 @@ class SmtpNotificationProviderService extends AbstractNotificationProviderServic
       this.logger_.warn(`[smtp] SMTP_HOST not set; not sending "${subject}" to ${notification.to}`)
       return { id: `dry-run-${Date.now()}` }
     }
+    // Staff alerts pass reply_to (the customer's email) so staff can reply straight to the customer.
+    const replyTo = (notification.data as Record<string, any> | undefined)?.reply_to
     const info = await this.transporter_.sendMail({
       from,
       to: notification.to,
       subject,
       html,
       text,
-      replyTo: getBusinessConfig().email_general.includes("{{") ? undefined : getBusinessConfig().email_general,
+      replyTo:
+        typeof replyTo === "string" && replyTo.includes("@")
+          ? replyTo
+          : getBusinessConfig().email_general.includes("{{")
+            ? undefined
+            : getBusinessConfig().email_general,
     })
     return { id: info.messageId }
   }

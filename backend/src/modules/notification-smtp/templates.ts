@@ -9,7 +9,7 @@ const C = { black: "#0e0f11", cream: "#ebe6dd", moss: "#ff7a3b", earth: "#5f594d
 const SERIF = "'Bebas Neue', Impact, 'Arial Narrow', sans-serif"
 const SANS = "'Barlow', Helvetica, Arial, sans-serif"
 
-export type EmailItem = { title: string; quantity: number; variant?: string; total?: string }
+export type EmailItem = { title: string; quantity: number; variant?: string; total?: string; sku?: string }
 export type EmailData = {
   display_id?: string | number
   reference?: string
@@ -28,12 +28,31 @@ export type EmailData = {
   supplier_items?: { title: string; variant?: string; sku?: string; quantity: number }[]
   order_url?: string
   reset_url?: string
+  // staff alerts only
+  customer_email?: string
+  customer_phone?: string
+  ship_to_lines?: string[]
+  payment_method?: string
+  payment_captured?: boolean
+  collect_from_workshop?: boolean
+  admin_order_url?: string
+  dropship_items?: { supplier: string; title: string; variant?: string; sku?: string; quantity: number }[]
+  /** Lines matching a dropship supplier whose email is unusable: the supplier was NOT emailed. */
+  dropship_unnotified?: { supplier: string; title: string; variant?: string; sku?: string; quantity: number }[]
+  /** Reply-To override for the SMTP provider (staff alerts reply to the customer). */
+  reply_to?: string
+  // staff-payment-no-order only
+  payment_id?: string
+  payment_amount?: string
+  payment_provider?: string
+  admin_url?: string
 }
 
 const esc = (s: unknown) =>
   String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")
 
-function shell(preheader: string, heading: string, bodyHtml: string): string {
+/** footerHtml replaces the customer "Questions? Reply to this email" line (staff alerts use their own). */
+function shell(preheader: string, heading: string, bodyHtml: string, footerHtml?: string): string {
   const b = getBusinessConfig()
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(heading)}</title></head>
@@ -51,7 +70,7 @@ function shell(preheader: string, heading: string, bodyHtml: string): string {
       ${bodyHtml}
     </td></tr>
     <tr><td style="padding:24px 28px 32px 28px;font-family:${SANS};font-size:12px;line-height:18px;color:${C.earth};border-top:1px solid ${C.earth};">
-      Questions? Reply to this email or write to <a href="mailto:${esc(b.email_general)}" style="color:${C.wine};">${esc(b.email_general)}</a>.<br>
+      ${footerHtml ?? `Questions? Reply to this email or write to <a href="mailto:${esc(b.email_general)}" style="color:${C.wine};">${esc(b.email_general)}</a>.`}<br>
       Noord Karavane &middot; <a href="${esc(siteUrl())}" style="color:${C.wine};">${esc(b.domain)}</a> &middot; caravan specialists, Pretoria North.
     </td></tr>
   </table>
@@ -60,12 +79,13 @@ function shell(preheader: string, heading: string, bodyHtml: string): string {
 
 const p = (html: string) => `<p style="margin:0 0 16px 0;">${html}</p>`
 
-function itemsTable(d: EmailData): string {
+/** withSku: staff alerts show the SKU under each line; customer emails never do. */
+function itemsTable(d: EmailData, withSku = false): string {
   if (!d.items?.length) return ""
   const rows = d.items
     .map(
       (i) => `<tr>
-<td style="padding:8px 0;border-bottom:1px solid #d9d1bd;font-family:${SANS};font-size:15px;">${esc(i.title)}${i.variant ? `<br><span style="color:${C.earth};font-size:13px;">${esc(i.variant)}</span>` : ""}</td>
+<td style="padding:8px 0;border-bottom:1px solid #d9d1bd;font-family:${SANS};font-size:15px;">${esc(i.title)}${i.variant ? `<br><span style="color:${C.earth};font-size:13px;">${esc(i.variant)}</span>` : ""}${withSku && i.sku ? `<br><span style="color:${C.earth};font-size:13px;">SKU ${esc(i.sku)}</span>` : ""}</td>
 <td align="center" style="padding:8px 8px;border-bottom:1px solid #d9d1bd;font-family:${SANS};font-size:15px;">&times;${i.quantity}</td>
 <td align="right" style="padding:8px 0;border-bottom:1px solid #d9d1bd;font-family:${SANS};font-size:15px;">${esc(i.total ?? "")}</td></tr>`
     )
@@ -77,8 +97,10 @@ function itemsTable(d: EmailData): string {
 <tr><td colspan="2" style="padding:10px 0;font-weight:bold;font-size:16px;">Total (incl. VAT where applicable)</td><td align="right" style="padding:10px 0;font-weight:bold;font-size:16px;">${esc(d.total ?? "")}</td></tr></table>`
 }
 
-function itemsText(d: EmailData): string {
-  const lines = (d.items ?? []).map((i) => `- ${i.title}${i.variant ? ` (${i.variant})` : ""} x${i.quantity}  ${i.total ?? ""}`)
+function itemsText(d: EmailData, withSku = false): string {
+  const lines = (d.items ?? []).map(
+    (i) => `- ${i.title}${i.variant ? ` (${i.variant})` : ""}${withSku && i.sku ? ` [${i.sku}]` : ""} x${i.quantity}  ${i.total ?? ""}`
+  )
   if (d.shipping_total) lines.push(`Shipping${d.shipping_method ? ` (${d.shipping_method})` : ""}: ${d.shipping_total}`)
   lines.push(`Total: ${d.total ?? ""}`)
   return lines.join("\n")
@@ -100,6 +122,53 @@ ${row("Account name", b.account_name)}${row("Bank", b.bank_name)}${row("Account 
   const text = `Account name: ${b.account_name}\nBank: ${b.bank_name}\nAccount number: ${b.account_number}\nBranch code: ${b.branch_code}\nAccount type: ${b.account_type}\nPayment reference: ${ref}`
   return { html, text }
 }
+
+/** Payment line and subject tag for staff alerts. Paid means a payment has captured_at set. */
+function staffPayment(d: EmailData, ref: string): { line: string; tag: string } {
+  const paid = !!d.payment_captured
+  if (d.payment_method === "EFT")
+    return paid
+      ? { line: "EFT payment received.", tag: "paid by EFT" }
+      : { line: `Awaiting EFT payment. Check the bank for reference ${ref} before packing.`, tag: "awaiting EFT payment" }
+  if (d.payment_method === "PayFast")
+    return paid
+      ? { line: "Paid online by PayFast.", tag: "paid by PayFast" }
+      : { line: "Card payment pending. Wait for the paid alert before packing.", tag: "card payment pending" }
+  const method = d.payment_method || "unknown method"
+  return paid ? { line: `Paid (${method}).`, tag: "paid" } : { line: `Payment pending (${method}).`, tag: "payment pending" }
+}
+
+/** Order detail block shared by the staff alerts: items with SKU, delivery, ship-to, contact, admin link. */
+function staffDetail(d: EmailData, ref: string): { html: string; text: string } {
+  const ship = d.ship_to_lines ?? []
+  const delivery = d.collect_from_workshop ? "Collect from workshop" : d.shipping_method || "Not set"
+  const html =
+    itemsTable(d, true) +
+    p(`Delivery: <strong>${esc(delivery)}</strong>` + (d.pudo_locker ? `<br>Pudo locker: <strong>${esc(d.pudo_locker)}</strong>` : "")) +
+    p(`Ship to:<br>${ship.length ? ship.map(esc).join("<br>") : "No address given"}`) +
+    p(
+      `Phone: ${d.customer_phone ? `<a href="tel:${esc(d.customer_phone)}" style="color:${C.wine};">${esc(d.customer_phone)}</a>` : "not given"}<br>` +
+        `Email: ${d.customer_email ? `<a href="mailto:${esc(d.customer_email)}" style="color:${C.wine};">${esc(d.customer_email)}</a>` : "not given"}`
+    ) +
+    (d.admin_order_url ? button(d.admin_order_url, `Open ${ref} in admin`) : "")
+  const text = [
+    itemsText(d, true),
+    "",
+    `Delivery: ${delivery}`,
+    ...(d.pudo_locker ? [`Pudo locker: ${d.pudo_locker}`] : []),
+    "",
+    "Ship to:",
+    ...(ship.length ? ship : ["No address given"]),
+    "",
+    `Phone: ${d.customer_phone || "not given"}`,
+    `Email: ${d.customer_email || "not given"}`,
+    ...(d.admin_order_url ? ["", `Admin: ${d.admin_order_url}`] : []),
+  ].join("\n")
+  return { html, text }
+}
+
+const staffFooter = (d: EmailData) =>
+  `Staff alert from the Noord Karavane shop.${d.reply_to ? " Replying to this email goes to the customer." : ""}`
 
 export function renderEmail(template: string, d: EmailData): { subject: string; html: string; text: string } {
   const b = getBusinessConfig()
@@ -195,6 +264,99 @@ export function renderEmail(template: string, d: EmailData): { subject: string; 
       )
       const text = `Hi ${d.supplier ?? "there"},\n\nOrder ${ref} has been paid. Please fulfil and ship directly to the customer:\n\n${lines.join("\n")}\n\nShip to: ${d.ship_to ?? ""}\nShipping method chosen: ${d.shipping_method ?? ""}\n\nPlease reply with the tracking number once it is on its way.\n\nNoord Karavane`
       return { subject: `New paid order ${ref} to fulfil`, html, text }
+    }
+    case "staff-new-order": {
+      const pay = staffPayment(d, ref)
+      const detail = staffDetail(d, ref)
+      const html = shell(
+        `New order ${ref}: ${pay.tag} (${d.total ?? ""})`,
+        `New order ${ref}`,
+        p(`<strong>${esc(pay.line)}</strong>`) + detail.html,
+        staffFooter(d)
+      )
+      const text = `New order ${ref}\n\n${pay.line}\n\n${detail.text}\n\nNoord Karavane shop`
+      return { subject: `New order ${ref}: ${pay.tag} (${d.total ?? ""})`, html, text }
+    }
+    case "staff-order-paid": {
+      const dispatch = d.collect_from_workshop
+        ? "Prepare the order for collection at the workshop and let the customer know it is ready."
+        : d.pudo_locker
+          ? `Book the Pudo shipment to the customer's locker: ${d.pudo_locker}.`
+          : `Book the courier for ${d.shipping_method || "the chosen shipping method"}.`
+      const group = (list: EmailData["dropship_items"]) => {
+        const m = new Map<string, string[]>()
+        for (const i of list ?? []) {
+          const line = `${i.quantity} x ${i.title}${i.variant ? ` (${i.variant})` : ""}${i.sku ? ` [${i.sku}]` : ""}`
+          m.set(i.supplier, [...(m.get(i.supplier) ?? []), line])
+        }
+        return m
+      }
+      const bySupplier = group(d.dropship_items)
+      const names = [...bySupplier.keys()]
+      // Each dropship line maps to one order line, so equal counts mean the suppliers ship everything.
+      // Sent before notifyDropshipSuppliers runs, so the copy says we are emailing them (present tense), not that they ship.
+      const allDropship = !!d.items?.length && (d.dropship_items ?? []).length === d.items.length
+      const steps = allDropship
+        ? [
+            `We are emailing ${names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}` : names[0]} to ship everything on this order. Nothing to pack here.`,
+            `Watch for the tracking ${names.length > 1 ? "numbers from the suppliers" : "number from the supplier"}. If none arrives, check with them.`,
+            "In the admin, create the fulfilment and mark it shipped with the tracking number. That emails the customer.",
+          ]
+        : [
+            "Pack the items.",
+            dispatch,
+            "In the admin, create the fulfilment and mark it shipped with the tracking number. That emails the customer.",
+          ]
+      const drop = [
+        ...[...bySupplier].map(([supplier, lines]) => ({
+          head: `We are emailing ${supplier} to ship these lines directly. Do not pack them. If no tracking number arrives, check with them:`,
+          lines,
+        })),
+        ...[...group(d.dropship_unnotified)].map(([supplier, lines]) => ({
+          head: `${supplier} has no valid email in the shop config, so they were NOT notified. Order these lines from them yourself or pack them:`,
+          lines,
+        })),
+      ]
+      const detail = staffDetail(d, ref)
+      // payment.captured fired but no payment on the order shows captured: do not claim the order is paid.
+      const paid = !!d.payment_captured
+      const subject = paid ? `Paid: order ${ref} ready to ship (${d.total ?? ""})` : `Payment captured: order ${ref} not fully paid yet (${d.total ?? ""})`
+      const intro = paid
+        ? { html: `Payment is in for order <strong>${esc(ref)}</strong>. Next steps:`, text: `Payment is in for order ${ref}. Next steps:` }
+        : {
+            html: `A payment was captured for order <strong>${esc(ref)}</strong> but the order is not fully paid yet. Check the admin before packing. Once it is paid:`,
+            text: `A payment was captured for order ${ref} but the order is not fully paid yet. Check the admin before packing. Once it is paid:`,
+          }
+      const html = shell(
+        subject,
+        paid ? `Paid: ${ref} ready to ship` : `${ref}: not fully paid yet`,
+        p(intro.html) +
+          `<ol style="margin:0 0 16px 0;padding-left:20px;">${steps.map((s) => `<li style="margin:0 0 6px 0;">${esc(s)}</li>`).join("")}</ol>` +
+          drop.map((g) => p(`<strong>${esc(g.head)}</strong><br>${g.lines.map(esc).join("<br>")}`)).join("") +
+          detail.html,
+        staffFooter(d)
+      )
+      const text = `${intro.text}\n\n${steps.map((s, n) => `${n + 1}. ${s}`).join("\n")}\n${drop
+        .map((g) => `\n${g.head}\n${g.lines.join("\n")}\n`)
+        .join("")}\n${detail.text}\n\nNoord Karavane shop`
+      return { subject, html, text }
+    }
+    case "staff-payment-no-order": {
+      const pid = d.payment_id || "unknown"
+      const subject = `Payment ${pid} captured with no order: check it`
+      const ordersUrl = `${d.admin_url ?? ""}/app/orders`
+      const facts = [`Payment: ${pid}`, `Amount: ${d.payment_amount || "unknown"}`, `Provider: ${d.payment_provider || "unknown"}`]
+      const why =
+        "A payment was captured but no order is linked to it. The customer may have paid while the order was not created. " +
+        "Check the payment with the provider and find the cart or customer in the admin before contacting them."
+      const html = shell(
+        subject,
+        "Payment with no order",
+        p(`<strong>${esc(why)}</strong>`) + p(facts.map(esc).join("<br>")) + (d.admin_url ? button(ordersUrl, "Open orders in admin") : ""),
+        staffFooter(d)
+      )
+      const text = `${why}\n\n${facts.join("\n")}\n${d.admin_url ? `\nAdmin: ${ordersUrl}\n` : ""}\nNoord Karavane shop`
+      return { subject, html, text }
     }
     case "password-reset": {
       const html = shell(
