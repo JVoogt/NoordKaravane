@@ -61,3 +61,82 @@ Hostnames: `api.noordkaravane.co.za` (Medusa store API, `/feeds`, `/hooks`), `ad
 - Content: `src/content/{pages,legal}/*.md`, placeholders filled from `config/business.json` at render time. Legal text is ADAPTED from Soft Rebellion's drafts and is **not lawyer reviewed**.
 - Reserved first path segments (never product handles): see `RESERVED_HANDLES` in `src/lib/format.ts`.
 - Not done yet (go-live checklist): link the shop from the landing page nav, add `Sitemap: https://noordkaravane.co.za/shop/sitemap.xml` **and the `/shop/...` Disallow lines** (cart, checkout, order, api, filter params) to the ROOT `site/robots.txt` (crawlers ignore `/shop/robots.txt`), add the shop to the root sitemap, Cloudflare rules for `/shop*`, and a first run against a real Medusa + Postgres (seed, EFT order, emails, dropship, Pudo weight guard with real cart data).
+
+## Vouchers (single-use discount codes issued by a signed hook)
+Code: `backend/src/lib/vouchers/*` (logic), `backend/src/api/hooks/vouchers/` (routes), `backend/src/workflows/hooks/vouchers.ts` (order lifecycle), `backend/src/scripts/import-vouchers.ts`, `backend/src/scripts/voucher-probe.ts`. Real terms, caps and the secret live only on the Pi (`config/business.json`, `infra/.env`), never in git.
+
+### Endpoints
+- `POST /hooks/vouchers`: issue. Body (JSON, strict, unknown keys rejected): `{"program": "<name>", "ref": "<ref>", "email": "<email>"}`. `program` matches `^[a-z0-9-]{1,40}$`, `ref` matches `^[A-Za-z0-9-]{1,40}$` (no underscore), `email` is a valid address of at most 254 chars. The body can never carry terms.
+- `GET /hooks/vouchers/report?program=<name>&month=<YYYY-MM>`: report. The program does not need to be in config (so `import-woo` works).
+- Both answer **404** while `VOUCHER_HOOK_SECRET` is unset or empty.
+- Auth headers: `x-nk-timestamp` (unix seconds, decimal string) and `x-nk-signature` (lowercase hex HMAC-SHA256, 64 chars, key `VOUCHER_HOOK_SECRET`).
+  - Signing string for POST: `${timestamp}.${rawBody}` (the exact bytes sent).
+  - Signing string for GET: `${timestamp}.${originalUrl}` (path plus query exactly as sent, for example `/hooks/vouchers/report?program=kampi-review&month=2031-07`; never rebuilt).
+  - Window: plus or minus 300 s. A replay inside the window is harmless (issuing is idempotent, the report is read-only).
+
+| Status | Body | When |
+|---|---|---|
+| 201 | `{code, expires_at, value, min_spend, currency: "zar", used}` | created |
+| 200 | the same shape | the code already exists for this `(program, ref)` (including a concurrent request that won) |
+| 400 | `{"message": ..., "type": "invalid_data"}` | **pre-route**: malformed JSON sent as `application/json` is answered by Medusa's own body parser before the route runs, before the signature check and even with the secret unset. Callers must not expect `{error}` for it. Nothing is written |
+| 400 | `{"error": "invalid_body"}` | a raw body that is not JSON (for example `text/plain`), or a body that fails the strict schema |
+| 400 | `{"error": "unknown_program"}` | program missing, disabled or invalid in config |
+| 400 | `{"error": "program_ended"}` | a fixed `ends_at` program whose end is not later than now (nothing is created) |
+| 401 | `{"error": "unauthorized"}` | missing headers, bad or stale signature, no raw body |
+| 409 | `{"error": "revoked"}` | the derived code exists but was deleted in admin or is not `active`. Deleting or deactivating a code revokes it; it is never re-minted |
+| 429 | `{"error": "cap_reached"}` | the program's cohort campaign already holds `monthly_cap` codes |
+| 500 | `{"error": "internal"}` | anything else (logged with program and ref, never the email) |
+| report 200 | `{issued, redeemed, discount_value_zar}` | |
+| report 400 / 401 | `{"error": "invalid_query"}` / `{"error": "unauthorized"}` | |
+
+- `expires_at` is the cohort campaign's `ends_at`; `value` and `min_spend` are the terms stored at issue time; `used` is `promotion.used >= limit`.
+- Logging: `vouchers.issue {"program","ref","result"}` with result `created | existing | cap | revoked | ended | error`; auth failures log `vouchers.auth rejected: <reason>`. The body and the email are never logged; the promotion stores only `metadata.email_hash` (sha256 of the trimmed, lowercased email).
+
+### Config (`business.json` -> `voucher_programs`)
+`{ "<name>": { value_zar, min_spend_zar, validity_days | ends_at, code_prefix, monthly_cap, enabled } }`. Name `^[a-z0-9-]{1,40}$`; `value_zar` and `min_spend_zar` positive integers (rand, VAT inclusive); exactly one of `validity_days` (integer 1 to 365) or `ends_at` (ISO datetime **with offset**); `code_prefix` `^[A-Z0-9]{1,8}$`; `monthly_cap` integer of at least 1; `enabled` boolean. An invalid entry is dropped and logged (`[vouchers] voucher_programs entry dropped: ...`); it never takes the shop down. Keys starting with `_` are ignored. `config/business.example.json` holds disabled placeholders only. The config is cached per process: **restart the Medusa server and the worker after editing `voucher_programs`**.
+
+### Codes, campaigns, promotions
+- Code: `${code_prefix}-${REF}-${S}`, all uppercase. `REF` is the ref uppercased; `S` is the first 7 Crockford base32 chars (`0123456789ABCDEFGHJKMNPQRSTVWXYZ`) of `HMAC-SHA256(VOUCHER_HOOK_SECRET, program + ":" + ref)`, with the ref's case kept inside the HMAC (`abc` and `ABC` give different codes). Every code matches `^[A-Z0-9-]+$`.
+- Cohort campaign per program and **issue month in Africa/Johannesburg time** (UTC+2, no DST): identifier and name `${program}-${YYYY-MM}`, `starts_at` null, `ends_at` = the fixed program `ends_at` if set, else the first instant of the next SAST month plus `validity_days` days minus 1 ms. So every code lives at least `validity_days`.
+- Promotion: `type standard`, `status active`, `is_automatic false`, `is_tax_inclusive true`, `limit 1`, a fixed `order`-level discount (`allocation across`, `currency_code zar`) of `value_zar`, one rule `MIN_SPEND_ATTRIBUTE gte min_spend_zar`, and `metadata {program, ref, email_hash, value_zar, min_spend_zar, source: "hook" | "import"}`. The hook and the import share one creator.
+- **`MIN_SPEND_ATTRIBUTE = "original_item_total"`**, measured on Medusa 2.22.2 + Postgres by the probe: it is the VAT-inclusive, pre-discount shelf total, with or without a tax region, and it survives cart refreshes. `item_total` is post-discount (a minimum on it cancels itself on the next refresh); `item_subtotal` and `original_item_subtotal` are ex VAT once a tax rate exists (a cart exactly at the minimum would fail).
+- Staff minting a code in admin (for example a competition prize) must type it in **UPPERCASE**: Medusa matches codes exactly and the storefront uppercases what the shopper types.
+
+### Report semantics
+- Campaigns are selected by identifier **prefix** `${program}-${month}`, so for `import-woo` campaigns (`import-woo-YYYY-MM-DD`) the month is the **expiry** month.
+- `issued` = promotions in those campaigns (deleted ones excluded).
+- A redemption is one `order_promotion` link from one of those promotions to an order whose `status` is not `canceled` **and** which carries a line-item or shipping-method adjustment with that code. `redeemed` counts redemptions; `discount_value_zar` sums `metadata.value_zar` (fallback `application_method.value`). `promotion.used` is never read, so a cancelled order never counts and a redeem, cancel, redeem sequence counts once.
+
+### Store behaviour (measured, Medusa 2.22.2)
+- Unknown code on `POST /store/carts/:id/promotions`: `400 {"type": "invalid_data", "message": "The promotion code <CODE> is invalid"}`.
+- An existing code that does not apply (below the minimum, campaign ended, already used): **200**, and the code is simply **absent** from `cart.promotions` (discount 0). Medusa does not say why. A code present in `cart.promotions` with no adjustment ("inactive") was not observed but is handled.
+- Totals with a code applied: `original_item_total` and line `original_total` are pre-discount; `item_total` and line `total` are **post-discount**; `subtotal` and line `subtotal` are pre-discount (ex VAT once a tax rate exists). **STOREFRONT MUST** show the pre-discount amount as the subtotal before subtracting `discount_total`, never `item_total`, or the discount is counted twice.
+- Two carts holding the same unused code that complete concurrently: one order is created, the other completion fails with `Promotion usage exceeds the limit.`.
+- A cart update that refreshes the cart (the checkout's `cart.update` with email and addresses) keeps the code but **re-prices shipping**: the courier's free-shipping basis is `item_total`, which is post-discount, so a discount that takes it below the free-shipping threshold turns free delivery into paid delivery and the total goes up. **STOREFRONT MUST** compare the total after that update with the total the shopper saw and stop before payment when it moved.
+
+### Order lifecycle (workflow hooks in `backend/src/workflows/hooks/vouchers.ts`)
+- **A cancel gives the code back.** `cancelOrderWorkflow.hooks.orderCanceled` reverts promotion usage for every code that carries an adjustment on the cancelled order (hook-issued, imported or admin-minted), one action per code. A code linked to the order without an adjustment is never reverted (no usage was registered for it). Medusa 2.22.2 does not revert usage on cancel by itself. Covers the EFT unpaid auto-cancel job, admin cancels and scripts. Logs `vouchers.revert {"order_id","codes"}`; a failure logs `vouchers.revert failed {...}` at error level and never fails the cancel. A cancel after the campaign ended or after the code was revoked changes nothing (Medusa only reverts active promotions); the report still excludes the order.
+- **One code per order.** A cart holds at most one non-automatic code. Message, verbatim: `Only one discount code can be used per order.` (HTTP 400, `type invalid_data`).
+  - The `updateCartPromotionsWorkflow` validate hook refuses a change that would grow the count past one, on all three store routes that accept `promo_codes`: `POST /store/carts/:id/promotions`, `POST /store/carts/:id` and `POST /store/carts` (measured: all three answer 400 with the message, and no two-code cart is created). Refreshes (add item, quantity, the checkout update) and removals are never refused; re-adding the same code passes.
+  - Backstop: the `completeCartWorkflow` validate hook refuses to complete a cart holding more than one non-automatic code (measured with a forged second link: refused, no order, no usage).
+  - **STOREFRONT MUST** uppercase codes, derive promo state from `cart.promotions` on every cart object, allow at most one code (automatic promotions, `is_automatic: true`, are not counted) and match the backend refusal with `/one discount code/i`.
+- **One handler per hook.** Each Medusa workflow hook takes exactly one handler; a second one anywhere throws `Cannot define multiple hook handlers for the <name> hook` at boot. Any later logic on `cancelOrderWorkflow.hooks.orderCanceled`, the `updateCartPromotionsWorkflow` validate hook or the `completeCartWorkflow` validate hook goes in `backend/src/workflows/hooks/vouchers.ts`.
+- **Upgrade check.** After any Medusa upgrade, `grep -n "revertUsage\|promotion" backend/node_modules/@medusajs/core-flows/dist/order/workflows/cancel-order.js` must still print nothing. If Medusa starts reverting usage on cancel itself, remove our revert hook (probe Part A can no longer tell, because our hook is loaded). Then rerun the probe.
+
+### Import (cutover, `import-vouchers.ts`)
+- `VOUCHERS_IMPORT_FILE=<rows.json> [VOUCHERS_IMPORT_DRY_RUN=1] npx medusa exec ./src/scripts/import-vouchers.ts`. The dry run prints the plan, rejections and campaign extensions and writes nothing. Prints `VOUCHERS_IMPORT_SUMMARY {dry_run, created, planned, skipped_existing, skipped_expired, campaigns_extended}`. Never commit an import file.
+- Rows (a JSON array), prepared from the Woo REST coupon export: `amount` -> `value_zar`, `minimum_amount` -> `min_spend_zar`, `date_expires_gmt` + `Z` -> `ends_at`, plus `program` (for example `import-woo`); keep `code`, `discount_type`, `usage_limit`, `usage_limit_per_user`, `usage_count`, `product_ids`, `excluded_product_ids`, `product_categories`, `excluded_product_categories`, `email_restrictions`, `free_shipping`, `exclude_sale_items`, `maximum_amount`, `limit_usage_to_x_items` under their Woo names. Keep **only** these keys (any other key rejects the row). Copy `amount`, `minimum_amount` and `maximum_amount` **as exported** (decimal strings such as `"50.00"` and `"0.00"` are fine) and keep **every** row, used and expired ones included: the importer decides.
+- Fixed order per row: (1) a missing code, or an `ends_at` that is missing, unparseable or without an offset, is rejected; (2) a used coupon (`usage_count` not the integer 0) is rejected **whatever its expiry**; (3) an expired row is skipped (logged) and no other check runs on it; (4) every live row must be a single-use fixed-cart coupon with a minimum spend: `discount_type` `fixed_cart`, `usage_limit` 1, `usage_limit_per_user` null or 1, a whole-rand `value_zar` of at least 1 and `min_spend_zar` of at least 1 (an integer or a zero-fraction decimal string; `"50.50"` is rejected), no product, category or email restriction, `free_shipping` and `exclude_sale_items` false, `maximum_amount` no cap, `limit_usage_to_x_items` null or 0. Duplicate live codes (after uppercasing) are rejected.
+- Any rejected row aborts the run: every rejection is printed with its index and reason, the exit code is non-zero and **nothing is written**. Rows are never coerced (a percentage, multi-use or per-product coupon is not translated).
+- Codes are uppercased. Codes that already exist (including deleted ones) are skipped, so a rerun is safe. One campaign per program and **SAST date** of `ends_at` (`import-woo-YYYY-MM-DD`), ending at the latest row `ends_at` in that group; a rerun extends an existing campaign's end to a later row, never shortens it.
+
+### Accepted drawbacks
+- Cap overshoot: counting then creating is not atomic, so concurrent issues at the cap can overshoot by at most (concurrent requests - 1).
+- Secret rotation changes every derived code: a repeat `(program, ref)` after a rotation creates a second promotion (it counts against the cap). **Kampi v2 MUST store the codes it was issued and MUST NOT re-request them after a rotation.**
+
+### Probe (real Medusa check; rerun after any Medusa upgrade)
+Never against production. It refuses to run unless `VOUCHER_PROBE=1` and the `DATABASE_URL` database name contains `probe` or `staging`. On a throwaway stack (fresh DB, `npx medusa db:migrate && npm run seed`, `BUSINESS_CONFIG_PATH` pointing at a scratch config with enabled test programs `kampi-review` and `probe-cap2` with `monthly_cap` 2):
+- Part A (before the hooks file exists, or knowing it records with hooks loaded): `VOUCHER_PROBE=1 VOUCHER_PROBE_PART=attributes VOUCHER_PROBE_MIN=<min> VOUCHER_PROBE_VALUE=<value> npx medusa exec ./src/scripts/voucher-probe.ts`. Needs a fresh DB; deletes the tax region it creates.
+- Part B: `VOUCHER_PROBE_PART=service` (service, report, cancel revert, completion backstop).
+- Part C, last: `VOUCHER_PROBE_PART=lifecycle` with a scratch config whose `eft_payment_window_hours` and `eft_reminder_after_hours` are 0, passed only to that process (it runs the EFT job, which cancels every unpaid EFT order in the DB).
+- Each part prints `VOUCHER_PROBE_SUMMARY {json}` and exits non-zero when a check fails.
