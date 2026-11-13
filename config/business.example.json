@@ -13,6 +13,7 @@
   "whatsapp": "REPLACE_ME",
   "email_general": "REPLACE_ME",
   "email_orders": "REPLACE_ME",
+  "staff_order_alerts": ["REPLACE_ME"],
   "email_privacy": "REPLACE_ME",
   "information_officer": "REPLACE_ME",
   "instagram": "",

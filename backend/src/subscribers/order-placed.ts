@@ -1,18 +1,22 @@
 import type { SubscriberArgs, SubscriberConfig } from "@medusajs/framework"
 import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
-import { getOrder, isEftOrder, orderEmailData, sendEmail } from "../lib/orders"
+import { getOrder, isEftOrder, notifyStaff, orderEmailData, sendEmail } from "../lib/orders"
 import { sendPurchase } from "../lib/meta-capi"
 import { shopUrl } from "../lib/business"
 
-/** order.placed: EFT instructions email, plus Meta CAPI Purchase (marketing consent only). */
+/** order.placed: EFT instructions email, then the staff new-order alert, plus Meta CAPI Purchase (marketing consent only). */
 export default async function orderPlacedHandler({ event: { data }, container }: SubscriberArgs<{ id: string }>) {
   const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
   const order = await getOrder(container, data.id)
-  if (!order) return
+  if (!order) {
+    logger.error(`[order-placed] order ${data.id} not found; no order emails sent`)
+    return
+  }
 
   if (isEftOrder(order)) {
     await sendEmail(container, order.email, "order-placed-eft", orderEmailData(order))
   }
+  await notifyStaff(container, order, "staff-new-order")
 
   const md = (order.metadata ?? {}) as Record<string, any>
   const consent = md.marketing_consent === true || md.marketing_consent === "true"
