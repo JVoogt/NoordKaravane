@@ -12,18 +12,37 @@ type P = { id: string; code: string; is_automatic?: boolean; used?: number }
 
 /**
  * Fake container. `query.graph` answers per entity, like the real one: `order` returns the order, `order_cart` the
- * link complete-cart creates (present unless `cartLink: false`). `revertUsage` decrements `used` like Medusa, except
- * for codes listed in `notReverted` (Medusa skips a promotion that is not active or whose campaign ended).
+ * link complete-cart creates (present unless `cartLink: false`), `cart` the cart the order was completed from. By
+ * default that cart mirrors the order (a normal checkout order: same adjustments, email and customer); `cart` overrides
+ * it, for an order whose adjustments changed after completion (an order edit). `revertUsage` decrements `used` like
+ * Medusa, except for codes listed in `notReverted` (Medusa skips a promotion that is not active or whose campaign
+ * ended). `listPromotionsErrorOnCall` makes that call (1-based) of `listPromotions` reject; `cartLinkError` makes the
+ * order_cart query reject.
  */
-function fake(opts: { promotions?: P[]; order?: any; revertError?: Error; cartLink?: boolean; notReverted?: string[] } = {}) {
+function fake(
+  opts: {
+    promotions?: P[]
+    order?: any
+    cart?: any
+    cartMissing?: boolean
+    revertError?: Error
+    cartLink?: boolean
+    cartLinkError?: Error
+    notReverted?: string[]
+    listPromotionsErrorOnCall?: number
+  } = {}
+) {
   const promotions = (opts.promotions ?? []).map((p) => ({ ...p }))
   const logger = { info: jest.fn(), warn: jest.fn(), error: jest.fn() }
+  let listCalls = 0
   const promotion = {
-    listPromotions: jest.fn(async (filters: any) =>
-      promotions
+    listPromotions: jest.fn(async (filters: any) => {
+      listCalls += 1
+      if (opts.listPromotionsErrorOnCall === listCalls) throw new Error("read failed")
+      return promotions
         .filter((p) => (filters.code ? filters.code.includes(p.code) : true) && (filters.id ? filters.id.includes(p.id) : true))
         .map((p) => ({ ...p }))
-    ),
+    }),
     revertUsage: jest.fn(async (actions: { code: string }[]) => {
       if (opts.revertError) throw opts.revertError
       for (const a of actions) {
@@ -35,8 +54,16 @@ function fake(opts: { promotions?: P[]; order?: any; revertError?: Error; cartLi
   const query = {
     graph: jest.fn(async (args: any) => {
       if (args.entity === "order") return { data: opts.order ? [opts.order] : [] }
-      if (args.entity === "order_cart")
-        return { data: opts.order && opts.cartLink !== false && args.filters?.order_id === opts.order.id ? [{ order_id: opts.order.id, cart_id: "cart_1" }] : [] }
+      if (args.entity === "order_cart") {
+        if (opts.cartLinkError) throw opts.cartLinkError
+        const ids = [args.filters?.order_id].flat()
+        return { data: opts.order && opts.cartLink !== false && ids.includes(opts.order.id) ? [{ order_id: opts.order.id, cart_id: "cart_1" }] : [] }
+      }
+      if (args.entity === "cart") {
+        const o = opts.order ?? {}
+        const cart = { id: "cart_1", email: o.email, customer_id: o.customer_id, items: o.items, shipping_methods: o.shipping_methods, ...(opts.cart ?? {}) }
+        return { data: opts.order && !opts.cartMissing && [args.filters?.id].flat().includes("cart_1") ? [cart] : [] }
+      }
       throw new Error(`unexpected entity ${args.entity}`)
     }),
   }
@@ -174,13 +201,15 @@ describe("revertOrderVoucherUsage", () => {
     expect(f.logger.info).not.toHaveBeenCalled()
   })
 
-  it("does not request promotions.code from the order", async () => {
-    const f = fake({ order: order() })
+  it("reads the revert list and customer context from the originating cart, and never requests promotions", async () => {
+    const f = fake({ promotions: usedA, order: order({ items: [{ adjustments: [{ code: "A", amount: 5 }] }] }) })
     await revertOrderVoucherUsage(f.container, "order_1")
-    const call = (f.query.graph.mock.calls[0] as any[])[0]
-    expect(call.entity).toBe("order")
-    expect(call.filters).toEqual({ id: "order_1" })
-    expect(call.fields).toEqual(
+    const calls = f.query.graph.mock.calls.map((c: any[]) => c[0])
+    const orderCall = calls.find((a: any) => a.entity === "order")
+    expect(orderCall.filters).toEqual({ id: "order_1" })
+    const cartCall = calls.find((a: any) => a.entity === "cart")
+    expect(cartCall.filters).toEqual({ id: ["cart_1"] })
+    expect(cartCall.fields).toEqual(
       expect.arrayContaining([
         "id",
         "email",
@@ -191,7 +220,14 @@ describe("revertOrderVoucherUsage", () => {
         "shipping_methods.adjustments.amount",
       ])
     )
-    expect(call.fields.some((f: string) => f.startsWith("promotions"))).toBe(false)
+    for (const c of calls) expect(c.fields.some((x: string) => x.startsWith("promotions"))).toBe(false)
+  })
+
+  it("reverts nothing and warns when the order_cart link points at a cart that cannot be read", async () => {
+    const f = fake({ promotions: usedA, cartMissing: true, order: order({ items: [{ adjustments: [{ code: "A", amount: 5 }] }] }) })
+    expect(await revertOrderVoucherUsage(f.container, "order_1")).toEqual({ reverted: [], skipped: [] })
+    expect(f.promotion.revertUsage).not.toHaveBeenCalled()
+    expect(f.logger.warn).toHaveBeenCalledWith("vouchers.revert skipped (cart not found) " + JSON.stringify({ order_id: "order_1", cart_id: "cart_1" }))
   })
 
   it("is a no-op without adjustment codes (no call, no log)", async () => {
@@ -208,6 +244,41 @@ describe("revertOrderVoucherUsage", () => {
     expect(JSON.stringify(f.logger.info.mock.calls)).not.toContain("@")
   })
 
+  it("RD6: never reverts a code that is on the order's adjustments but not on its originating cart's (order edit with carry_over_promotions)", async () => {
+    const f = fake({
+      promotions: [
+        { id: "pA", code: "A", used: 1 },
+        { id: "pX", code: "X", used: 1 },
+      ],
+      order: order({ items: [{ adjustments: [{ code: "A", amount: 40 }, { code: "X", amount: 7 }] }, { adjustments: [{ code: "X", amount: 3 }] }] }),
+      cart: { items: [{ adjustments: [{ code: "A", amount: 40 }] }], shipping_methods: [] },
+    })
+    expect(await revertOrderVoucherUsage(f.container, "order_1")).toEqual({ reverted: ["A"], skipped: [] })
+    expect(f.promotion.revertUsage).toHaveBeenCalledWith([{ code: "A", amount: 40 }], { customer_id: "cus_1", customer_email: "jan@example.com" })
+    expect(f.promotions.find((p) => p.code === "X")?.used).toBe(1)
+  })
+
+  it("RD6: reverts nothing when only the order (not its cart) carries an adjustment", async () => {
+    const f = fake({
+      promotions: [{ id: "pX", code: "X", used: 1 }],
+      order: order({ items: [{ adjustments: [{ code: "X", amount: 7 }] }] }),
+      cart: { items: [{ adjustments: [] }], shipping_methods: [] },
+    })
+    expect(await revertOrderVoucherUsage(f.container, "order_1")).toEqual({ reverted: [], skipped: [] })
+    expect(f.promotion.revertUsage).not.toHaveBeenCalled()
+    expect(f.promotions[0].used).toBe(1)
+  })
+
+  it("RD6: reverts a cart code even when an order edit removed it from the order, with the cart's customer context", async () => {
+    const f = fake({
+      promotions: usedA,
+      order: order({ email: "edited@example.com", customer_id: "cus_2", items: [{ adjustments: [] }] }),
+      cart: { email: "jan@example.com", customer_id: "cus_1", items: [{ adjustments: [{ code: "A", amount: 25 }] }], shipping_methods: [{ adjustments: [{ code: "A", amount: 5 }] }] },
+    })
+    expect(await revertOrderVoucherUsage(f.container, "order_1")).toEqual({ reverted: ["A"], skipped: [] })
+    expect(f.promotion.revertUsage).toHaveBeenCalledWith([{ code: "A", amount: 30 }], { customer_id: "cus_1", customer_email: "jan@example.com" })
+  })
+
   it("H1: reverts nothing for an order with coded adjustments but no order_cart link (draft or other non-cart order)", async () => {
     const f = fake({ promotions: usedA, cartLink: false, order: order({ items: [{ adjustments: [{ code: "A", amount: 50 }] }] }) })
     expect(await revertOrderVoucherUsage(f.container, "order_1")).toEqual({ reverted: [], skipped: ["A"] })
@@ -215,7 +286,7 @@ describe("revertOrderVoucherUsage", () => {
     expect(f.promotions[0].used).toBe(1)
     expect(f.logger.info).toHaveBeenCalledWith("vouchers.revert skipped (not a cart order) " + JSON.stringify({ order_id: "order_1", codes: ["A"] }))
     const linkCall = f.query.graph.mock.calls.map((c: any[]) => c[0]).find((a: any) => a.entity === "order_cart")
-    expect(linkCall.filters).toEqual({ order_id: "order_1" })
+    expect(linkCall.filters).toEqual({ order_id: ["order_1"] })
   })
 
   it("M4: logs a code Medusa did not revert (ended campaign, inactive) as skipped, not reverted", async () => {
@@ -248,6 +319,33 @@ describe("onOrderCanceled", () => {
     })
     await expect(onOrderCanceled(f.container, "order_1")).resolves.toBeUndefined()
     expect(f.logger.error).toHaveBeenCalledWith("vouchers.revert failed " + JSON.stringify({ order_id: "order_1", message: "db down" }))
+  })
+
+  it("fails safe when the order_cart query rejects: logs vouchers.revert failed, reverts nothing, resolves", async () => {
+    const f = fake({
+      promotions: [{ id: "pA", code: "A", used: 1 }],
+      order: { id: "order_1", email: null, customer_id: null, items: [{ adjustments: [{ code: "A", amount: 50 }] }], shipping_methods: [] },
+      cartLinkError: new Error("link read failed"),
+    })
+    await expect(onOrderCanceled(f.container, "order_1")).resolves.toBeUndefined()
+    expect(f.promotion.revertUsage).not.toHaveBeenCalled()
+    expect(f.promotions[0].used).toBe(1)
+    expect(f.logger.error).toHaveBeenCalledWith("vouchers.revert failed " + JSON.stringify({ order_id: "order_1", message: "link read failed" }))
+  })
+
+  it("a failed read after a successful revert logs 'vouchers.revert done, verification read failed' at warn, never 'vouchers.revert failed'", async () => {
+    const f = fake({
+      promotions: [{ id: "pA", code: "A", used: 1 }],
+      order: { id: "order_1", email: null, customer_id: null, items: [{ adjustments: [{ code: "A", amount: 50 }] }], shipping_methods: [] },
+      listPromotionsErrorOnCall: 2,
+    })
+    await expect(onOrderCanceled(f.container, "order_1")).resolves.toBeUndefined()
+    expect(f.promotion.revertUsage).toHaveBeenCalledTimes(1)
+    expect(f.promotions[0].used).toBe(0)
+    expect(f.logger.error).not.toHaveBeenCalled()
+    expect(f.logger.warn).toHaveBeenCalledWith(
+      "vouchers.revert done, verification read failed " + JSON.stringify({ order_id: "order_1", codes: ["A"], message: "read failed" })
+    )
   })
 
   it("runs the revert on success", async () => {

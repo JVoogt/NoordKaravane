@@ -100,6 +100,14 @@ describe("getVoucherProgram", () => {
     expect(errSpy.mock.calls.filter((c) => String(c[0]).includes("once-bad"))).toHaveLength(1)
   })
 
+  it("says plainly that the dropped program is off, why, and what to do", () => {
+    fixture = { voucher_programs: { "clear-bad": { ...good, code_prefix: "lower" } } }
+    getVoucherProgram("clear-bad")
+    expect(errSpy).toHaveBeenCalledWith(
+      expect.stringMatching(/^\[vouchers\] voucher_programs entry dropped, program "clear-bad" is OFF until fixed \(fix business\.json, then restart the server and the worker\): clear-bad: code_prefix /)
+    )
+  })
+
   it("returns null when voucher_programs is absent", () => {
     fixture = {}
     expect(getVoucherProgram("test-prog")).toBeNull()

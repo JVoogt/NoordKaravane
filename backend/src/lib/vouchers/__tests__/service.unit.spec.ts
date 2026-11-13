@@ -8,6 +8,7 @@ jest.mock("@medusajs/medusa/core-flows", () => ({
 }))
 
 import {
+  CampaignEndedError,
   CapReachedError,
   ExpiryUnknownError,
   MIN_SPEND_ATTRIBUTE,
@@ -75,6 +76,18 @@ function fake(init: { promotions?: Promo[]; campaigns?: Camp[]; links?: any[]; o
       if (args.entity === "order_promotion")
         return { data: (init.links ?? []).filter((l) => match(l.promotion_id, args.filters?.promotion_id)) }
       if (args.entity === "order") return { data: (init.orders ?? []).filter((o) => match(o.id, args.filters?.id)) }
+      // An order's originating cart mirrors the order (a checkout order) unless `cart` overrides it; `cart: null` means
+      // no order_cart link (a draft order, converted or not).
+      if (args.entity === "order_cart")
+        return {
+          data: (init.orders ?? []).filter((o) => o.cart !== null && match(o.id, args.filters?.order_id)).map((o) => ({ order_id: o.id, cart_id: `cart_${o.id}` })),
+        }
+      if (args.entity === "cart")
+        return {
+          data: (init.orders ?? [])
+            .filter((o) => o.cart !== null && match(`cart_${o.id}`, args.filters?.id))
+            .map((o) => ({ id: `cart_${o.id}`, items: o.items, shipping_methods: o.shipping_methods, ...(o.cart ?? {}) })),
+        }
       return { data: [] }
     }),
   }
@@ -285,12 +298,15 @@ describe("issueVoucher", () => {
     expect(createPromotionsRun).not.toHaveBeenCalled()
   })
 
-  it("throws ProgramEndedError when the existing cohort campaign already ended (M3), creating nothing", async () => {
+  it("throws CampaignEndedError (not ProgramEndedError) with the campaign identifier when this month's cohort campaign already ended while the program is live (M3), creating nothing", async () => {
     const f = fake({ campaigns: [{ id: "camp_1", campaign_identifier: "test-prog-2026-11", ends_at: new Date("2026-11-12T07:59:59Z") }] })
     wireCreates(f)
-    await expect(issueVoucher(f.container, args)).rejects.toBeInstanceOf(ProgramEndedError)
+    const err = await issueVoucher(f.container, args).catch((e) => e)
+    expect(err).toBeInstanceOf(CampaignEndedError)
+    expect(err).not.toBeInstanceOf(ProgramEndedError)
+    expect(err.campaign_identifier).toBe("test-prog-2026-11")
     const g = fake({ campaigns: [{ id: "camp_1", campaign_identifier: "test-prog-2026-11", ends_at: now }] })
-    await expect(issueVoucher(g.container, args)).rejects.toBeInstanceOf(ProgramEndedError)
+    await expect(issueVoucher(g.container, args)).rejects.toBeInstanceOf(CampaignEndedError)
     expect(createPromotionsRun).not.toHaveBeenCalled()
     expect(createCampaignsRun).not.toHaveBeenCalled()
   })
@@ -440,6 +456,32 @@ describe("voucherReport", () => {
     expect(await voucherReport(f.container, { program: "test-prog", month: "2026-11" })).toEqual({ issued: 1, redeemed: 1, discount_value_zar: 50 })
     const orderCall = f.graphCalls.find((c) => c.entity === "order")
     expect(orderCall.fields).toEqual(expect.arrayContaining(["id", "status", "is_draft_order"]))
+  })
+
+  it("counts a code once for a converted draft (no order_cart link) plus a checkout redemption of the same code", async () => {
+    const f = fake({
+      campaigns: camps,
+      promotions: [{ id: "p1", code: "A", campaign_id: "c_nov", metadata: { value_zar: 50 } }],
+      links: [
+        { order_id: "o_converted", promotion_id: "p1" },
+        { order_id: "o_checkout", promotion_id: "p1" },
+      ],
+      orders: [
+        { id: "o_converted", status: "pending", is_draft_order: false, cart: null, ...adj("A") },
+        { id: "o_checkout", status: "pending", is_draft_order: false, ...adj("A") },
+      ],
+    })
+    expect(await voucherReport(f.container, { program: "test-prog", month: "2026-11" })).toEqual({ issued: 1, redeemed: 1, discount_value_zar: 50 })
+  })
+
+  it("counts from the originating cart's adjustments: a code added to the order later (order edit) does not count", async () => {
+    const f = fake({
+      campaigns: camps,
+      promotions: [{ id: "p1", code: "A", campaign_id: "c_nov", metadata: { value_zar: 50 } }],
+      links: [{ order_id: "o1", promotion_id: "p1" }],
+      orders: [{ id: "o1", status: "pending", ...adj("A"), cart: { items: [{ adjustments: [] }], shipping_methods: [] } }],
+    })
+    expect((await voucherReport(f.container, { program: "test-prog", month: "2026-11" })).redeemed).toBe(0)
   })
 
   it("counts redemptions of a soft-deleted code but not the code in issued (R-M1)", async () => {

@@ -1,10 +1,12 @@
 import type { MedusaContainer } from "@medusajs/framework/types"
 import { ContainerRegistrationKeys, MedusaError, Modules } from "@medusajs/framework/utils"
+import { originatingCarts } from "./origin"
 
 /**
  * Order lifecycle rules for discount codes (DD13). Registered as workflow hooks in src/workflows/hooks/vouchers.ts.
- * - A cancelled cart order gives back every code that carries an adjustment on it (AD-CANCEL); a non-cart order
- *   (draft order) registered no usage and gives back nothing.
+ * - A cancelled cart order gives back every code that carried an adjustment on its originating cart at completion
+ *   (AD-CANCEL, RD6), never a code added to the order later; a non-cart order (draft order) registered no usage and
+ *   gives back nothing.
  * - A cart holds at most one non-automatic code (AD-ONECODE), refused when it would grow past one, and at completion.
  */
 export const ONE_CODE_MESSAGE = "Only one discount code can be used per order."
@@ -55,30 +57,24 @@ export async function assertOneCodeAtCompletion(
   if (found.filter((p) => !p.is_automatic).length > 1) throw oneCodeError()
 }
 
-type Adjusted = { adjustments?: ({ code?: string | null; amount?: unknown } | null)[] | null } | null
+type Adjusted = { adjustments?: ({ code?: string | null } | null)[] | null } | null
 
 /**
- * Revert promotion usage for a cancelled order (H1). Only complete-cart registers usage, and it links the order to its
- * cart (`order_cart`) in the same step, so an order without that link (a draft order, converted or not) registered
- * none and reverts nothing. The list mirrors what complete-cart gave registerUsage: the codes of the order's line-item
- * and shipping-method adjustments, deduplicated, amounts summed. Never built from the order_promotion links, which can
- * hold a code that registered no usage. `reverted` are the codes whose `used` went down; `skipped` the rest (Medusa
- * reverts only active promotions in a running campaign with a limit, M4).
+ * Revert promotion usage for a cancelled order (H1, RD6). Usage is given back only for what complete-cart registered:
+ * the codes of the ORIGINATING CART's line-item and shipping-method adjustments (reached through the `order_cart`
+ * link), deduplicated, amounts summed, with the cart's customer and email, exactly as complete-cart passed them to
+ * registerUsage (see origin.ts). A code that appears only on the order's adjustments (added later by an order edit,
+ * claim or exchange with carry_over_promotions) registered no usage and is never reverted; neither is a code linked to
+ * the order without an adjustment. An order without the link (a draft order, converted or not) reverts nothing.
+ * `reverted` are the codes whose `used` went down; `skipped` the rest (Medusa reverts only active promotions in a
+ * running campaign with a limit, M4).
  */
 export async function revertOrderVoucherUsage(container: MedusaContainer, orderId: string): Promise<{ reverted: string[]; skipped: string[] }> {
   const query = container.resolve(ContainerRegistrationKeys.QUERY) as any
   const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
   const { data } = await query.graph({
     entity: "order",
-    fields: [
-      "id",
-      "email",
-      "customer_id",
-      "items.adjustments.code",
-      "items.adjustments.amount",
-      "shipping_methods.adjustments.code",
-      "shipping_methods.adjustments.amount",
-    ],
+    fields: ["id", "items.adjustments.code", "shipping_methods.adjustments.code"],
     filters: { id: orderId },
   })
   const order = (data as any[])[0]
@@ -86,28 +82,39 @@ export async function revertOrderVoucherUsage(container: MedusaContainer, orderI
     logger.warn("vouchers.revert skipped (order not found) " + JSON.stringify({ order_id: orderId }))
     return { reverted: [], skipped: [] }
   }
-  const amounts = new Map<string, number>()
-  for (const holder of [...((order.items ?? []) as Adjusted[]), ...((order.shipping_methods ?? []) as Adjusted[])])
-    for (const a of holder?.adjustments ?? []) {
-      if (!a?.code) continue
-      amounts.set(a.code, (amounts.get(a.code) ?? 0) + Number(a.amount ?? 0))
-    }
-  if (!amounts.size) return { reverted: [], skipped: [] }
-  const codes = [...amounts.keys()]
 
-  const { data: cartLinks } = await query.graph({ entity: "order_cart", fields: ["order_id", "cart_id"], filters: { order_id: orderId } })
-  if (!(cartLinks as any[]).length) {
-    logger.info("vouchers.revert skipped (not a cart order) " + JSON.stringify({ order_id: orderId, codes }))
+  const { carts, missing } = await originatingCarts(query, [orderId])
+  const origin = carts.get(orderId)
+  if (!origin) {
+    if (missing.length) {
+      logger.warn("vouchers.revert skipped (cart not found) " + JSON.stringify(missing[0]))
+      return { reverted: [], skipped: [] }
+    }
+    // Not a cart order: nothing was registered. The order's own codes are logged only to explain the skip.
+    const orderCodes = new Set<string>()
+    for (const holder of [...((order.items ?? []) as Adjusted[]), ...((order.shipping_methods ?? []) as Adjusted[])])
+      for (const a of holder?.adjustments ?? []) if (a?.code) orderCodes.add(a.code)
+    const codes = [...orderCodes]
+    if (codes.length) logger.info("vouchers.revert skipped (not a cart order) " + JSON.stringify({ order_id: orderId, codes }))
     return { reverted: [], skipped: codes }
   }
+  if (!origin.amounts.size) return { reverted: [], skipped: [] }
+  const codes = [...origin.amounts.keys()]
 
   const promotionModule = container.resolve(Modules.PROMOTION) as any
   const usedByCode = async () =>
     new Map(((await promotionModule.listPromotions({ code: codes }, { select: ["code", "used"] })) as any[]).map((p) => [String(p.code), Number(p.used ?? 0)]))
   const before = await usedByCode()
-  const actions = [...amounts].map(([code, amount]) => ({ code, amount }))
-  await promotionModule.revertUsage(actions, { customer_id: order.customer_id ?? null, customer_email: order.email ?? null })
-  const after = await usedByCode()
+  const actions = [...origin.amounts].map(([code, amount]) => ({ code, amount }))
+  await promotionModule.revertUsage(actions, { customer_id: origin.customer_id, customer_email: origin.email })
+  let after: Map<string, number>
+  try {
+    after = await usedByCode()
+  } catch (e: any) {
+    // The revert itself went through; only the read that tells reverted from skipped failed.
+    logger.warn("vouchers.revert done, verification read failed " + JSON.stringify({ order_id: orderId, codes, message: String(e?.message ?? e) }))
+    return { reverted: [], skipped: [] }
+  }
   const reverted = codes.filter((c) => before.has(c) && (after.get(c) ?? 0) < (before.get(c) ?? 0))
   const skipped = codes.filter((c) => !reverted.includes(c))
   logger.info("vouchers.revert " + JSON.stringify({ order_id: orderId, reverted, skipped }))

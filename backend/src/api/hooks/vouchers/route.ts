@@ -2,7 +2,14 @@ import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
 import { z } from "@medusajs/framework/zod"
 import { getVoucherProgram } from "../../../lib/vouchers/config"
-import { CapReachedError, ExpiryUnknownError, ProgramEndedError, VoucherRevokedError, issueVoucher } from "../../../lib/vouchers/service"
+import {
+  CampaignEndedError,
+  CapReachedError,
+  ExpiryUnknownError,
+  ProgramEndedError,
+  VoucherRevokedError,
+  issueVoucher,
+} from "../../../lib/vouchers/service"
 import { authorized } from "../../../lib/vouchers/signature"
 
 const PROGRAM = /^[a-z0-9-]{1,40}$/
@@ -33,7 +40,9 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
 
   const rawBuf: Buffer | undefined = (req as any).rawBody
   if (!rawBuf) {
-    // The body parser keeps raw bytes only for the content types it parses (JSON, text); anything else has none to verify.
+    // The body parser keeps raw bytes only for the content types it parses (JSON, text, urlencoded); anything else, or an
+    // empty body, has none to verify. A urlencoded body does reach the signature check: 401 unless correctly signed,
+    // then 400 invalid_body because it is not JSON.
     logger.warn("vouchers.issue rejected: unsupported_content_type")
     return res.status(415).json({ error: "unsupported_content_type" })
   }
@@ -71,6 +80,11 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     if (e instanceof ProgramEndedError) {
       log("ended")
       return res.status(400).json({ error: "program_ended" })
+    }
+    if (e instanceof CampaignEndedError) {
+      // The program is live but this month's cohort campaign ended (its end was moved in admin): staff must act.
+      logger.warn("vouchers.issue " + JSON.stringify({ program: name, ref, result: "campaign_ended", campaign: e.campaign_identifier }))
+      return res.status(400).json({ error: "campaign_ended" })
     }
     if (e instanceof VoucherRevokedError) {
       log("revoked")

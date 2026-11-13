@@ -56,6 +56,8 @@ beforeEach(() => {
   dir = fs.mkdtempSync(path.join(os.tmpdir(), "nkv-import-"))
   delete process.env.VOUCHERS_IMPORT_DRY_RUN
   for (const f of [logger.info, logger.warn, logger.error, updateCampaignsRun, findOrCreateCampaign, createVoucherPromotion]) f.mockReset()
+  promotion.listCampaigns.mockReset()
+  promotion.listCampaigns.mockResolvedValue([])
   logSpy = jest.spyOn(console, "log").mockImplementation(() => undefined)
 })
 afterEach(() => {
@@ -74,6 +76,28 @@ describe("import-vouchers script", () => {
     expect(summary()).toEqual(expect.objectContaining({ created: 1, campaigns_extended: [] }))
   })
 
+  it("warns, and lists in the summary, dated rows that join an existing open-ended campaign (real run)", async () => {
+    writeRows([row("testwoo1")])
+    findOrCreateCampaign.mockResolvedValue({ id: "camp_open", ends_at: null })
+    createVoucherPromotion.mockResolvedValue({ id: "p1", code: "TESTWOO1" })
+    await importVouchers({ container } as any)
+    expect(logger.warn).toHaveBeenCalledWith(
+      "vouchers.import warning: dated rows join an open-ended campaign, so they never expire " +
+        JSON.stringify({ campaign: "import-woo-2031-07-15", rows_ends_at: "2031-07-15T21:30:00.000Z", codes: ["TESTWOO1"] })
+    )
+    expect(summary()).toEqual(expect.objectContaining({ campaigns_open_ended: ["import-woo-2031-07-15"] }))
+  })
+
+  it("warns about an open-ended campaign in the dry run too, writing nothing", async () => {
+    writeRows([row("testwoo1")])
+    process.env.VOUCHERS_IMPORT_DRY_RUN = "1"
+    promotion.listCampaigns.mockResolvedValueOnce([{ id: "camp_open", ends_at: null }] as any)
+    await importVouchers({ container } as any)
+    expect(createVoucherPromotion).not.toHaveBeenCalled()
+    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining("vouchers.import warning: dated rows join an open-ended campaign"))
+    expect(summary()).toEqual(expect.objectContaining({ dry_run: true, campaigns_open_ended: ["import-woo-2031-07-15"], campaigns_extended: [] }))
+  })
+
   it("still extends a campaign whose end is earlier than the latest row", async () => {
     writeRows([row("testwoo1")])
     findOrCreateCampaign.mockResolvedValue({ id: "camp_1", ends_at: new Date("2031-07-15T10:00:00Z") })
@@ -84,12 +108,20 @@ describe("import-vouchers script", () => {
 
   it("M5: a write failure mid-loop logs the created count and the failing code, then rethrows", async () => {
     writeRows([row("testwoo1"), row("testwoo2"), row("testwoo3")])
-    findOrCreateCampaign.mockResolvedValue({ id: "camp_1", ends_at: new Date("2031-07-15T21:30:00Z") })
+    findOrCreateCampaign.mockResolvedValue({ id: "camp_1", ends_at: new Date("2031-07-15T10:00:00Z") })
     createVoucherPromotion.mockResolvedValueOnce({ id: "p1", code: "TESTWOO1" }).mockRejectedValueOnce(new Error("db down"))
     await expect(importVouchers({ container } as any)).rejects.toThrow("db down")
     expect(createVoucherPromotion).toHaveBeenCalledTimes(2)
     expect(logger.error).toHaveBeenCalledWith(
-      "vouchers.import failed " + JSON.stringify({ created: 1, planned: 3, failed_campaign: "import-woo-2031-07-15", failed_code: "TESTWOO2", message: "db down" })
+      "vouchers.import failed " +
+        JSON.stringify({
+          created: 1,
+          planned: 3,
+          failed_campaign: "import-woo-2031-07-15",
+          failed_code: "TESTWOO2",
+          campaigns_extended: ["import-woo-2031-07-15"],
+          message: "db down",
+        })
     )
   })
 })

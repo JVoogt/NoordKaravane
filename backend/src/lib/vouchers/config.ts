@@ -66,13 +66,19 @@ export function parseVoucherPrograms(raw: unknown): { programs: Record<string, V
 /** Dropped-entry reasons already logged by this process (the config is cached per process, so once is enough). */
 const loggedErrors = new Set<string>()
 
-/** The enabled, valid program by name, else null (each invalid entry is logged once). Does not judge ends_at (RD3 is the service's). */
+/**
+ * The enabled, valid program by name, else null. Every invalid entry is logged once per process, on the first call
+ * (the first issue request after boot), whatever name was asked for. Does not judge ends_at (RD3 is the service's).
+ */
 export function getVoucherProgram(name: string): VoucherProgram | null {
   const { programs, errors } = parseVoucherPrograms(getBusinessConfig().voucher_programs)
   for (const e of errors) {
     if (loggedErrors.has(e)) continue
     loggedErrors.add(e)
-    console.error(`[vouchers] voucher_programs entry dropped: ${e}`)
+    const name = e.slice(0, e.indexOf(":"))
+    console.error(
+      `[vouchers] voucher_programs entry dropped, program "${name}" is OFF until fixed (fix business.json, then restart the server and the worker): ${e}`
+    )
   }
   const p = programs[name]
   return p && p.enabled ? p : null

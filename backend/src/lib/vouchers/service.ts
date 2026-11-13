@@ -5,6 +5,7 @@ import { createCampaignsWorkflow, createPromotionsWorkflow } from "@medusajs/med
 import { codeFor } from "./code"
 import { cohortFor } from "./cohort"
 import type { VoucherProgram } from "./config"
+import { originatingCarts } from "./origin"
 
 /**
  * The cart attribute the min-spend rule reads (DD8). Measured on a real Medusa 2.22.2 + Postgres by
@@ -20,6 +21,15 @@ export type IssueResult = { status: "created" | "existing"; voucher: VoucherView
 
 export class CapReachedError extends Error {}
 export class ProgramEndedError extends Error {}
+/**
+ * The program is live but this month's cohort campaign already ended (for example its end was moved in admin). Not a
+ * ProgramEndedError: the program itself has not ended. Nothing is created; the campaign is never extended (M3).
+ */
+export class CampaignEndedError extends Error {
+  constructor(readonly campaign_identifier: string) {
+    super(`campaign ${campaign_identifier} has ended`)
+  }
+}
 export class VoucherRevokedError extends Error {}
 /** The code's campaign is missing or has no end, so no `expires_at` can be given (M6). Nothing is created. */
 export class ExpiryUnknownError extends Error {}
@@ -107,8 +117,9 @@ export async function createVoucherPromotion(
 
 /**
  * Find-or-create the single-use code for (program, ref). Throws VoucherRevokedError (RD2), ProgramEndedError (RD3,
- * also when the existing cohort campaign already ended, M3), CapReachedError, or ExpiryUnknownError (the campaign is
- * missing or has no end, M6); anything else is unexpected and rethrown. Never stores or logs the raw email.
+ * the program's fixed end passed), CampaignEndedError (the program is live but this month's cohort campaign already
+ * ended, M3), CapReachedError, or ExpiryUnknownError (the campaign is missing or has no end, M6); anything else is
+ * unexpected and rethrown. Never stores or logs the raw email.
  */
 export async function issueVoucher(
   container: MedusaContainer,
@@ -131,8 +142,7 @@ export async function issueVoucher(
   if (existingCampaign) {
     // Refuse rather than extend: extending would also move the expiry of every code already issued in the cohort.
     if (!existingCampaign.ends_at) throw new ExpiryUnknownError(`campaign ${existingCampaign.campaign_identifier} has no end`)
-    if (new Date(existingCampaign.ends_at).getTime() <= now.getTime())
-      throw new ProgramEndedError(`campaign ${existingCampaign.campaign_identifier} has ended`)
+    if (new Date(existingCampaign.ends_at).getTime() <= now.getTime()) throw new CampaignEndedError(String(existingCampaign.campaign_identifier))
     const promotionModule = container.resolve(Modules.PROMOTION) as any
     const inCampaign = (await promotionModule.listPromotions({ campaign_id: existingCampaign.id }, { select: ["id"] })) as any[]
     if (inCampaign.length >= program.monthly_cap) throw new CapReachedError(`program ${program.name} reached its monthly cap`)
@@ -176,19 +186,12 @@ export async function issueVoucher(
   }
 }
 
-type Adjusted = { adjustments?: ({ code?: string | null } | null)[] | null } | null
-
-function adjustmentCodes(order: any): Set<string> {
-  const out = new Set<string>()
-  for (const holder of [...((order.items ?? []) as Adjusted[]), ...((order.shipping_methods ?? []) as Adjusted[])])
-    for (const a of holder?.adjustments ?? []) if (a?.code) out.add(String(a.code).toUpperCase())
-  return out
-}
-
 /**
  * DD9. Campaigns whose identifier starts with `${program}-${month}`; issued = their non-deleted promotion count; a
  * redemption is an order_promotion link from any of their promotions (soft-deleted included, R-M1) to an order that is
- * not canceled, not a draft (H2) AND carries an adjustment with the promotion's code. Never reads promotion.used (G19).
+ * not canceled, not a draft (H2), has an `order_cart` link (so a converted draft never counts) AND whose originating
+ * cart carried an adjustment with the promotion's code at completion (the same source as the cancel revert, RD6; a
+ * code added to the order later never counts). Never reads promotion.used (G19).
  */
 export async function voucherReport(
   container: MedusaContainer,
@@ -217,20 +220,21 @@ export async function voucherReport(
   if (orderIds.length) {
     const { data } = await query.graph({
       entity: "order",
-      fields: ["id", "status", "is_draft_order", "items.adjustments.code", "shipping_methods.adjustments.code"],
+      fields: ["id", "status", "is_draft_order"],
       filters: { id: orderIds },
     })
-    for (const o of data as any[]) orders.set(o.id, o)
+    for (const o of data as any[]) if (o.status !== "canceled" && o.status !== "draft" && !o.is_draft_order) orders.set(o.id, o)
   }
+  const { carts } = await originatingCarts(query, [...orders.keys()])
+  const cartCodes = new Map([...carts].map(([orderId, c]) => [orderId, new Set([...c.amounts.keys()].map((k) => k.toUpperCase()))]))
 
   const byId = new Map(promotions.map((p) => [p.id, p]))
   let redeemed = 0
   let discount = 0
   for (const l of links as any[]) {
     const p = byId.get(l.promotion_id)
-    const o = orders.get(l.order_id)
-    if (!p || !o || o.status === "canceled" || o.status === "draft" || o.is_draft_order) continue
-    if (!adjustmentCodes(o).has(String(p.code).toUpperCase())) continue
+    if (!p || !orders.has(l.order_id)) continue
+    if (!cartCodes.get(l.order_id)?.has(String(p.code).toUpperCase())) continue
     redeemed += 1
     discount += Number(p.metadata?.value_zar ?? p.application_method?.value ?? 0)
   }

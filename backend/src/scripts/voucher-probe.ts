@@ -7,9 +7,12 @@ import {
   addShippingMethodToCartWorkflow,
   addToCartWorkflow,
   beginDraftOrderEditWorkflow,
+  beginOrderEditOrderWorkflow,
+  cancelBeginOrderEditWorkflow,
   cancelOrderWorkflow,
   completeCartWorkflow,
   confirmDraftOrderEditWorkflow,
+  confirmOrderEditRequestWorkflow,
   convertDraftOrderWorkflow,
   createCampaignsWorkflow,
   createCartWorkflow,
@@ -22,10 +25,13 @@ import {
   deleteLineItemsWorkflow,
   deletePromotionsWorkflow,
   deleteTaxRegionsWorkflow,
+  orderEditAddNewItemWorkflow,
+  requestOrderEditRequestWorkflow,
   updateCampaignsWorkflow,
   updateCartPromotionsWorkflow,
   updateCartWorkflow,
   updateLineItemInCartWorkflow,
+  updateOrderChangeWorkflow,
 } from "@medusajs/medusa/core-flows"
 import eftUnpaidOrders from "../jobs/eft-unpaid-orders"
 import { sastMonth } from "../lib/vouchers/cohort"
@@ -521,6 +527,142 @@ async function orderAdjustmentCodes(env: ProbeEnv, orderId: string): Promise<str
   return [...(o.items ?? []), ...(o.shipping_methods ?? [])].flatMap((h: any) => (h?.adjustments ?? []).map((a: any) => a?.code)).filter(Boolean)
 }
 
+/** The codes on a cart's line-item and shipping-method adjustments (also after completion). */
+async function cartAdjustmentCodes(env: ProbeEnv, cartId: string): Promise<string[]> {
+  const { data } = await env.query.graph({
+    entity: "cart",
+    fields: ["id", "completed_at", "items.adjustments.code", "shipping_methods.adjustments.code"],
+    filters: { id: cartId },
+  })
+  const c = (data as any[])[0] ?? {}
+  return [...(c.items ?? []), ...(c.shipping_methods ?? [])].flatMap((h: any) => (h?.adjustments ?? []).map((a: any) => a?.code)).filter(Boolean)
+}
+
+/** A single-use admin-minted code that an order edit can carry over (fixed, allocation `each`), in its own campaign. */
+async function makeCarryableCode(env: ProbeEnv, code: string, campaignId: string): Promise<void> {
+  await createPromotionsWorkflow(env.container).run({
+    input: {
+      promotionsData: [
+        {
+          code,
+          type: "standard",
+          status: "active",
+          is_automatic: false,
+          is_tax_inclusive: true,
+          limit: 1,
+          campaign_id: campaignId,
+          application_method: { type: "fixed", target_type: "items", allocation: "each", max_quantity: 5, value: 7, currency_code: "zar" },
+          metadata: { source: "probe" },
+        },
+      ],
+    } as any,
+  })
+}
+
+/** begin, add one item, carry promotions over, request, confirm. Returns the error message of the first failing step. */
+async function carryOverEdit(env: ProbeEnv, orderId: string): Promise<{ error: string | null; step: string | null }> {
+  let step = "begin"
+  try {
+    await beginOrderEditOrderWorkflow(env.container).run({ input: { order_id: orderId, created_by: "voucher-probe" } as any })
+    step = "add_item"
+    await orderEditAddNewItemWorkflow(env.container).run({ input: { order_id: orderId, items: [{ variant_id: env.variants.min, quantity: 1 }] } as any })
+    step = "carry_over"
+    const { data: changes } = await env.query.graph({
+      entity: "order_change",
+      fields: ["id", "status", "change_type"],
+      filters: { order_id: orderId, status: ["created", "pending", "requested"] },
+    })
+    const change = (changes as any[]).find((c) => !c.change_type || c.change_type === "edit") ?? (changes as any[])[0]
+    await updateOrderChangeWorkflow(env.container).run({ input: { id: change.id, carry_over_promotions: true } as any })
+    step = "request"
+    await requestOrderEditRequestWorkflow(env.container).run({ input: { order_id: orderId, requested_by: "voucher-probe" } as any })
+    step = "confirm"
+    await confirmOrderEditRequestWorkflow(env.container).run({ input: { order_id: orderId, confirmed_by: "voucher-probe" } as any })
+    return { error: null, step: null }
+  } catch (e: any) {
+    return { error: String(e?.message ?? e), step }
+  }
+}
+
+/**
+ * S-B14 steps 10-12 (RD6, order-edit half). A cart order O1 redeems carryable code E (used 1). Code X is linked to O1
+ * afterwards (forged `order_promotion` link, standing in for a code that sat on the cart without an adjustment, so no
+ * usage was registered for it), and an order edit with `carry_over_promotions` puts X on O1's adjustments. X is then
+ * redeemed by its own cart order (used 1). Cancelling O1 must give back E and must leave X used. Step 12: an order
+ * holding a DD7-shaped code (fixed, `across`) cannot carry promotions over at all. All codes are `PROBE-` codes in their
+ * own future campaign, so no report baseline and no Part C count moves.
+ */
+async function orderEditSteps(env: ProbeEnv, summary: Record<string, any>, checks: Checks) {
+  const campaignId = await makeCampaign(env, "probe-edit-2031-06", new Date("2031-08-01T00:00:00Z"))
+  const E = "PROBE-EDITE"
+  const X = "PROBE-EDITX"
+  const D = "PROBE-EDITD"
+  await makeCarryableCode(env, E, campaignId)
+  await makeCarryableCode(env, X, campaignId)
+  await makePromotion(env, D, campaignId, MIN_SPEND_ATTRIBUTE)
+  const out: Record<string, any> = { codes: { E, X, D } }
+
+  const o1Cart = await newCart(env, [{ variant_id: env.variants.min, quantity: 1 }])
+  out.apply_e = await applyCodes(env, o1Cart, [E])
+  out.o1 = await completeWithEft(env, o1Cart)
+  out.used_e_after_checkout = await promotionUsed(env, E)
+  const o1 = out.o1.order_id as string | null
+  if (o1) {
+    const link = env.container.resolve(ContainerRegistrationKeys.LINK) as any
+    const pX = await promotionByCode(env, X)
+    await link.create({ [Modules.ORDER]: { order_id: o1 }, [Modules.PROMOTION]: { promotion_id: pX.id } })
+    out.edit = await carryOverEdit(env, o1)
+    out.o1_order_codes_after_edit = await orderAdjustmentCodes(env, o1)
+    out.o1_cart_codes_after_edit = await cartAdjustmentCodes(env, o1Cart)
+  }
+  const xCart = await newCart(env, [{ variant_id: env.variants.min, quantity: 1 }])
+  await applyCodes(env, xCart, [X])
+  out.x_order = await completeWithEft(env, xCart)
+  out.used_x_before_cancel = await promotionUsed(env, X)
+  if (o1) {
+    try {
+      await cancelOrderWorkflow(env.container).run({ input: { order_id: o1 } as any })
+    } catch (e: any) {
+      out.cancel_error = String(e?.message ?? e)
+    }
+  }
+  out.used_e_after_cancel = await promotionUsed(env, E)
+  out.used_x_after_cancel = await promotionUsed(env, X)
+
+  // Step 12: carry-over on an order holding a DD7-shaped code is refused by Medusa.
+  const dCart = await newCart(env, [{ variant_id: env.variants.min, quantity: 1 }])
+  await applyCodes(env, dCart, [D])
+  out.d_order = await completeWithEft(env, dCart)
+  if (out.d_order.order_id) {
+    out.d_edit = await carryOverEdit(env, out.d_order.order_id)
+    try {
+      await cancelBeginOrderEditWorkflow(env.container).run({ input: { order_id: out.d_order.order_id } as any })
+    } catch (e: any) {
+      out.d_edit_cleanup_error = String(e?.message ?? e)
+    }
+  }
+  summary.SB14_edit = out
+  const orderCodes: string[] = out.o1_order_codes_after_edit ?? []
+  check(
+    checks,
+    "S-B14.10 the edit put X on the order's adjustments, never on the completed cart's",
+    Boolean(o1) && !out.edit?.error && orderCodes.includes(X) && orderCodes.includes(E) && !(out.o1_cart_codes_after_edit ?? []).includes(X) && (out.o1_cart_codes_after_edit ?? []).includes(E),
+    out
+  )
+  check(
+    checks,
+    "S-B14.11 cancel gives back the cart's code only, never the edit's (RD6)",
+    out.used_e_after_checkout === 1 && Boolean(out.x_order.order_id) && out.used_x_before_cancel === 1 && !out.cancel_error && out.used_e_after_cancel === 0 && out.used_x_after_cancel === 1,
+    out
+  )
+  check(
+    checks,
+    "S-B14.12 carry_over_promotions is refused on an order holding a DD7-shaped code (fixed, across)",
+    Boolean(out.d_order.order_id) && out.d_edit?.step === "carry_over" && /invalid allocation/i.test(String(out.d_edit?.error)),
+    out
+  )
+}
+
 /**
  * S-B14 steps 6-9 (H1, H2, R-M1): a code on a non-cart order. An admin draft order (draft-order workflows, as the admin
  * routes run them) gets the code while it is unused, so its adjustment registered no usage. A cart order then redeems
@@ -756,14 +898,19 @@ async function partB(env: ProbeEnv, summary: Record<string, any>, checks: Checks
   const o1Cart = await minCart()
   await applyCodes(env, o1Cart, [C])
   const o1 = await completeWithEft(env, o1Cart)
-  const s1 = { order: o1, used: await promotionUsed(env, C), report: await voucherReport(env.container, { program: "kampi-review", month }) }
+  const s1 = {
+    order: o1,
+    used: await promotionUsed(env, C),
+    report: await voucherReport(env.container, { program: "kampi-review", month }),
+    cart_codes: await cartAdjustmentCodes(env, o1Cart),
+  }
   let cancelErr: string | null = null
   try {
     await cancelOrderWorkflow(env.container).run({ input: { order_id: o1.order_id } as any })
   } catch (e: any) {
     cancelErr = String(e?.message ?? e)
   }
-  const s2 = { cancel_error: cancelErr, used: await promotionUsed(env, C) }
+  const s2 = { cancel_error: cancelErr, used: await promotionUsed(env, C), cart_codes: await cartAdjustmentCodes(env, o1Cart) }
   const again = await minCart()
   const ra = await applyCodes(env, again, [C])
   const s3 = { error: ra.error, ...snapshot(await getCart(env, again)) }
@@ -773,10 +920,12 @@ async function partB(env: ProbeEnv, summary: Record<string, any>, checks: Checks
   summary.SB14 = { code: C, r0, step1: s1, step2: s2, step3: s3, step4: s4, step5: s5 }
   check(checks, "S-B14.1 redeem", Boolean(o1.order_id) && s1.used === 1 && s1.report.redeemed === r0.redeemed + 1, s1)
   check(checks, "S-B14.2 cancel reverts", !cancelErr && s2.used === 0, s2)
+  check(checks, "S-B14.2b the completed cart keeps its adjustments, before and after the cancel", s1.cart_codes.includes(C) && s2.cart_codes.includes(C), { s1: s1.cart_codes, s2: s2.cart_codes })
   check(checks, "S-B14.3 applies again", s3.codes.includes(C) && s3.discount_total === review.value_zar, s3)
   check(checks, "S-B14.4 report excludes the cancelled order", s4.redeemed === r0.redeemed && s4.discount_value_zar === r0.discount_value_zar, s4)
   check(checks, "S-B14.5 re-redeem counts once", Boolean(o2.order_id) && s5.used === 1 && s5.report.redeemed === r0.redeemed + 1, s5)
   await draftOrderSteps(env, summary, checks)
+  await orderEditSteps(env, summary, checks)
 
   // S-B15 step 8: forged second cart_promotion link, then completeCartWorkflow
   const c1 = (await issue(env, review, "PROBE15X")).voucher.code

@@ -11,7 +11,7 @@ jest.mock("../config", () => ({ ...jest.requireActual("../config"), getVoucherPr
 
 import { POST } from "../../../api/hooks/vouchers/route"
 import { GET } from "../../../api/hooks/vouchers/report/route"
-import { CapReachedError, ExpiryUnknownError, ProgramEndedError, VoucherRevokedError } from "../service"
+import { CampaignEndedError, CapReachedError, ExpiryUnknownError, ProgramEndedError, VoucherRevokedError } from "../service"
 import { signVoucherRequest } from "../signature"
 import type { VoucherProgram } from "../config"
 
@@ -178,6 +178,17 @@ describe("POST /hooks/vouchers", () => {
     expect(res.statusCode).toBe(status)
     expect(res.body).toEqual({ error: key })
     expect(logger.info).toHaveBeenCalledWith("vouchers.issue " + JSON.stringify({ program: "test-prog", ref: "abc", result }))
+  })
+
+  it("400 campaign_ended, logged at warn with the campaign identifier, when this month's cohort campaign ended while the program is live", async () => {
+    issueVoucher.mockRejectedValue(new CampaignEndedError("test-prog-2031-04"))
+    const res = fakeRes()
+    await POST(postReq(good), res)
+    expect(res.statusCode).toBe(400)
+    expect(res.body).toEqual({ error: "campaign_ended" })
+    expect(logger.warn).toHaveBeenCalledWith(
+      "vouchers.issue " + JSON.stringify({ program: "test-prog", ref: "abc", result: "campaign_ended", campaign: "test-prog-2031-04" })
+    )
   })
 
   it("logs a 500 with program and ref and never the email", async () => {

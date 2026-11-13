@@ -44,6 +44,15 @@ export default async function importVouchers({ container }: ExecArgs) {
   for (const code of plan.skipped_existing) logger.info(`vouchers.import skipped existing ${code}`)
 
   const campaignsExtended: string[] = []
+  const campaignsOpenEnded: string[] = []
+  // Dated rows joining an existing campaign without an end never expire; the campaign is left as is (L1), so say so.
+  const warnOpenEnded = (group: (typeof plan.campaigns)[number]) => {
+    campaignsOpenEnded.push(group.campaign_identifier)
+    logger.warn(
+      "vouchers.import warning: dated rows join an open-ended campaign, so they never expire " +
+        JSON.stringify({ campaign: group.campaign_identifier, rows_ends_at: group.ends_at.toISOString(), codes: group.rows.map((r) => r.code) })
+    )
+  }
   const planned = plan.campaigns.reduce((n, g) => n + g.rows.length, 0)
   let created = 0
   let failedCampaign: string | null = null
@@ -55,6 +64,7 @@ export default async function importVouchers({ container }: ExecArgs) {
       if (dryRun) {
         const [c] = await promotionModule.listCampaigns({ campaign_identifier: group.campaign_identifier }, { select: ["id", "ends_at"] })
         if (c && c.ends_at && campaignEndsAtUpdate(new Date(c.ends_at), group.ends_at)) campaignsExtended.push(group.campaign_identifier)
+        if (c && !c.ends_at) warnOpenEnded(group)
         logger.info(
           `vouchers.import plan ${JSON.stringify({ campaign: group.campaign_identifier, ends_at: group.ends_at.toISOString(), exists: Boolean(c), codes: group.rows.map((r) => r.code) })}`
         )
@@ -63,6 +73,7 @@ export default async function importVouchers({ container }: ExecArgs) {
       const campaign = await findOrCreateCampaign(container, { campaign_identifier: group.campaign_identifier, ends_at: group.ends_at })
       // An open-ended campaign (ends_at null) is never "extended", matching the dry run.
       const newEnd = campaign.ends_at ? campaignEndsAtUpdate(campaign.ends_at, group.ends_at) : null
+      if (!campaign.ends_at) warnOpenEnded(group)
       if (newEnd) {
         await updateCampaignsWorkflow(container).run({ input: { campaignsData: [{ id: campaign.id, ends_at: newEnd }] } } as any)
         campaignsExtended.push(group.campaign_identifier)
@@ -83,7 +94,14 @@ export default async function importVouchers({ container }: ExecArgs) {
     // A write failed mid-run: say how far it got, then fail the run. A rerun skips the codes already created.
     logger.error(
       "vouchers.import failed " +
-        JSON.stringify({ created, planned, failed_campaign: failedCampaign, failed_code: failedCode, message: String(e?.message ?? e) })
+        JSON.stringify({
+          created,
+          planned,
+          failed_campaign: failedCampaign,
+          failed_code: failedCode,
+          campaigns_extended: campaignsExtended,
+          message: String(e?.message ?? e),
+        })
     )
     throw e
   }
@@ -94,6 +112,7 @@ export default async function importVouchers({ container }: ExecArgs) {
     skipped_existing: plan.skipped_existing.length,
     skipped_expired: plan.skipped_expired.length,
     campaigns_extended: campaignsExtended,
+    campaigns_open_ended: campaignsOpenEnded,
   }
   console.log("VOUCHERS_IMPORT_SUMMARY " + JSON.stringify(summary))
 }
