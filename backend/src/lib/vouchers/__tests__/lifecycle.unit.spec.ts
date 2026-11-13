@@ -160,7 +160,7 @@ describe("revertOrderVoucherUsage", () => {
   const order = (over: any = {}) => ({ id: "order_1", email: "jan@example.com", customer_id: "cus_1", items: [], shipping_methods: [], ...over })
   const usedA = [{ id: "pA", code: "A", used: 1 }]
 
-  it("reverts one code with the summed amount and the order's customer context", async () => {
+  it("reverts one code with the summed amount and the originating cart's customer context", async () => {
     const f = fake({
       promotions: usedA,
       order: order({ items: [{ adjustments: [{ code: "A", amount: 30 }] }, { adjustments: [{ code: "A", amount: 20 }] }] }),
@@ -242,6 +242,16 @@ describe("revertOrderVoucherUsage", () => {
     await revertOrderVoucherUsage(f.container, "order_1")
     expect(f.logger.info).toHaveBeenCalledWith("vouchers.revert " + JSON.stringify({ order_id: "order_1", reverted: ["A"], skipped: [] }))
     expect(JSON.stringify(f.logger.info.mock.calls)).not.toContain("@")
+  })
+
+  it("RD6: a normal cart order (cart and order carry the same adjustments) reverts exactly as before", async () => {
+    const adjusted = { items: [{ adjustments: [{ code: "A", amount: 30 }] }, { adjustments: [{ code: "A", amount: 20 }] }], shipping_methods: [] }
+    const f = fake({ promotions: usedA, order: order(adjusted), cart: { ...adjusted, email: "jan@example.com", customer_id: "cus_1" } })
+    expect(await revertOrderVoucherUsage(f.container, "order_1")).toEqual({ reverted: ["A"], skipped: [] })
+    expect(f.promotion.revertUsage).toHaveBeenCalledTimes(1)
+    expect(f.promotion.revertUsage).toHaveBeenCalledWith([{ code: "A", amount: 50 }], { customer_id: "cus_1", customer_email: "jan@example.com" })
+    expect(f.promotions[0].used).toBe(0)
+    expect(f.logger.info).toHaveBeenCalledWith("vouchers.revert " + JSON.stringify({ order_id: "order_1", reverted: ["A"], skipped: [] }))
   })
 
   it("RD6: never reverts a code that is on the order's adjustments but not on its originating cart's (order edit with carry_over_promotions)", async () => {
