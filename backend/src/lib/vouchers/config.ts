@@ -63,10 +63,17 @@ export function parseVoucherPrograms(raw: unknown): { programs: Record<string, V
   return { programs, errors }
 }
 
-/** The enabled, valid program by name, else null (invalid entries are logged). Does not judge ends_at (RD3 is the service's). */
+/** Dropped-entry reasons already logged by this process (the config is cached per process, so once is enough). */
+const loggedErrors = new Set<string>()
+
+/** The enabled, valid program by name, else null (each invalid entry is logged once). Does not judge ends_at (RD3 is the service's). */
 export function getVoucherProgram(name: string): VoucherProgram | null {
   const { programs, errors } = parseVoucherPrograms(getBusinessConfig().voucher_programs)
-  for (const e of errors) console.error(`[vouchers] voucher_programs entry dropped: ${e}`)
+  for (const e of errors) {
+    if (loggedErrors.has(e)) continue
+    loggedErrors.add(e)
+    console.error(`[vouchers] voucher_programs entry dropped: ${e}`)
+  }
   const p = programs[name]
   return p && p.enabled ? p : null
 }

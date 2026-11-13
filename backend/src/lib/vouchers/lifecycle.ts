@@ -3,7 +3,8 @@ import { ContainerRegistrationKeys, MedusaError, Modules } from "@medusajs/frame
 
 /**
  * Order lifecycle rules for discount codes (DD13). Registered as workflow hooks in src/workflows/hooks/vouchers.ts.
- * - A cancelled order gives back every code that carries an adjustment on it (AD-CANCEL).
+ * - A cancelled cart order gives back every code that carries an adjustment on it (AD-CANCEL); a non-cart order
+ *   (draft order) registered no usage and gives back nothing.
  * - A cart holds at most one non-automatic code (AD-ONECODE), refused when it would grow past one, and at completion.
  */
 export const ONE_CODE_MESSAGE = "Only one discount code can be used per order."
@@ -57,12 +58,16 @@ export async function assertOneCodeAtCompletion(
 type Adjusted = { adjustments?: ({ code?: string | null; amount?: unknown } | null)[] | null } | null
 
 /**
- * Revert promotion usage for a cancelled order. The list mirrors what complete-cart gave registerUsage: the codes of
- * the order's line-item and shipping-method adjustments, deduplicated, amounts summed. Never built from the
- * order_promotion links, which can hold a code that registered no usage.
+ * Revert promotion usage for a cancelled order (H1). Only complete-cart registers usage, and it links the order to its
+ * cart (`order_cart`) in the same step, so an order without that link (a draft order, converted or not) registered
+ * none and reverts nothing. The list mirrors what complete-cart gave registerUsage: the codes of the order's line-item
+ * and shipping-method adjustments, deduplicated, amounts summed. Never built from the order_promotion links, which can
+ * hold a code that registered no usage. `reverted` are the codes whose `used` went down; `skipped` the rest (Medusa
+ * reverts only active promotions in a running campaign with a limit, M4).
  */
-export async function revertOrderVoucherUsage(container: MedusaContainer, orderId: string): Promise<{ reverted: string[] }> {
+export async function revertOrderVoucherUsage(container: MedusaContainer, orderId: string): Promise<{ reverted: string[]; skipped: string[] }> {
   const query = container.resolve(ContainerRegistrationKeys.QUERY) as any
+  const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
   const { data } = await query.graph({
     entity: "order",
     fields: [
@@ -77,20 +82,36 @@ export async function revertOrderVoucherUsage(container: MedusaContainer, orderI
     filters: { id: orderId },
   })
   const order = (data as any[])[0]
-  if (!order) return { reverted: [] }
+  if (!order) {
+    logger.warn("vouchers.revert skipped (order not found) " + JSON.stringify({ order_id: orderId }))
+    return { reverted: [], skipped: [] }
+  }
   const amounts = new Map<string, number>()
   for (const holder of [...((order.items ?? []) as Adjusted[]), ...((order.shipping_methods ?? []) as Adjusted[])])
     for (const a of holder?.adjustments ?? []) {
       if (!a?.code) continue
       amounts.set(a.code, (amounts.get(a.code) ?? 0) + Number(a.amount ?? 0))
     }
-  if (!amounts.size) return { reverted: [] }
-  const actions = [...amounts].map(([code, amount]) => ({ code, amount }))
+  if (!amounts.size) return { reverted: [], skipped: [] }
+  const codes = [...amounts.keys()]
+
+  const { data: cartLinks } = await query.graph({ entity: "order_cart", fields: ["order_id", "cart_id"], filters: { order_id: orderId } })
+  if (!(cartLinks as any[]).length) {
+    logger.info("vouchers.revert skipped (not a cart order) " + JSON.stringify({ order_id: orderId, codes }))
+    return { reverted: [], skipped: codes }
+  }
+
   const promotionModule = container.resolve(Modules.PROMOTION) as any
+  const usedByCode = async () =>
+    new Map(((await promotionModule.listPromotions({ code: codes }, { select: ["code", "used"] })) as any[]).map((p) => [String(p.code), Number(p.used ?? 0)]))
+  const before = await usedByCode()
+  const actions = [...amounts].map(([code, amount]) => ({ code, amount }))
   await promotionModule.revertUsage(actions, { customer_id: order.customer_id ?? null, customer_email: order.email ?? null })
-  const codes = actions.map((a) => a.code)
-  container.resolve(ContainerRegistrationKeys.LOGGER).info("vouchers.revert " + JSON.stringify({ order_id: orderId, codes }))
-  return { reverted: codes }
+  const after = await usedByCode()
+  const reverted = codes.filter((c) => before.has(c) && (after.get(c) ?? 0) < (before.get(c) ?? 0))
+  const skipped = codes.filter((c) => !reverted.includes(c))
+  logger.info("vouchers.revert " + JSON.stringify({ order_id: orderId, reverted, skipped }))
+  return { reverted, skipped }
 }
 
 /** cancelOrderWorkflow orderCanceled hook body. Never rethrows: a voucher failure must not fail or roll back a cancel. */

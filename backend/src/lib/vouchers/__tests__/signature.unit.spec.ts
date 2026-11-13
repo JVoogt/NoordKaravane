@@ -1,4 +1,4 @@
-import { SIGNATURE_WINDOW_S, signVoucherRequest, verifyVoucherRequest } from "../signature"
+import { SIGNATURE_WINDOW_S, authorized, signVoucherRequest, voucherRequestFailure, verifyVoucherRequest } from "../signature"
 
 const secret = "test-secret"
 const ts = "1900000000"
@@ -69,5 +69,55 @@ describe("voucher request signature", () => {
   it("rejects with an empty secret", () => {
     const sig = signVoucherRequest("", ts, body)
     expect(verifyVoucherRequest({ secret: "", timestamp: ts, signature: sig, payload: body, nowS: now })).toBe(false)
+  })
+})
+
+describe("voucherRequestFailure (reason codes, M2)", () => {
+  const sig = () => signVoucherRequest(secret, ts, body)
+  it.each([
+    ["a valid request", () => ({ timestamp: ts, signature: sig() }), null],
+    ["missing timestamp", () => ({ timestamp: undefined, signature: sig() }), "missing_headers"],
+    ["missing signature", () => ({ timestamp: ts, signature: undefined }), "missing_headers"],
+    ["a non-decimal timestamp", () => ({ timestamp: "19e8", signature: sig() }), "malformed"],
+    ["a non-hex signature", () => ({ timestamp: ts, signature: "z".repeat(64) }), "malformed"],
+    ["an uppercase signature", () => ({ timestamp: ts, signature: sig().toUpperCase() }), "malformed"],
+    ["a stale timestamp", () => ({ timestamp: String(now - 301), signature: signVoucherRequest(secret, String(now - 301), body) }), "stale_timestamp"],
+    ["a wrong key", () => ({ timestamp: ts, signature: signVoucherRequest("other", ts, body) }), "bad_signature"],
+  ] as const)("%s -> %p", (_label, make, expected) => {
+    expect(voucherRequestFailure({ secret, payload: body, nowS: now, ...make() })).toBe(expected)
+  })
+})
+
+describe("authorized (shared by both voucher routes, L2)", () => {
+  const logger = () => ({ warn: jest.fn() })
+  const nowTs = () => String(Math.floor(Date.now() / 1000))
+  const req = (headers: Record<string, string>) => ({ headers })
+
+  it("returns true for a valid request and logs nothing", () => {
+    const t = nowTs()
+    const l = logger()
+    expect(authorized(req({ "x-nk-timestamp": t, "x-nk-signature": signVoucherRequest(secret, t, body) }), secret, body, l)).toBe(true)
+    expect(l.warn).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ["stale_timestamp", () => {
+      const t = String(Math.floor(Date.now() / 1000) - 400)
+      return { "x-nk-timestamp": t, "x-nk-signature": signVoucherRequest(secret, t, body) }
+    }],
+    ["bad_signature", () => {
+      const t = String(Math.floor(Date.now() / 1000))
+      return { "x-nk-timestamp": t, "x-nk-signature": signVoucherRequest("other", t, body) }
+    }],
+    ["malformed", () => ({ "x-nk-timestamp": "abc", "x-nk-signature": "nothex" })],
+    ["missing_headers", () => ({})],
+  ])("logs the reason code %s and never the signature or the secret", (reason, headers) => {
+    const h = headers() as Record<string, string>
+    const l = logger()
+    expect(authorized(req(h), secret, body, l)).toBe(false)
+    expect(l.warn).toHaveBeenCalledWith(`vouchers.auth rejected: ${reason}`)
+    const logged = JSON.stringify(l.warn.mock.calls)
+    expect(logged).not.toContain(secret)
+    if (h["x-nk-signature"]) expect(logged).not.toContain(h["x-nk-signature"])
   })
 })

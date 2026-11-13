@@ -9,9 +9,11 @@ jest.mock("@medusajs/medusa/core-flows", () => ({
 
 import {
   CapReachedError,
+  ExpiryUnknownError,
   MIN_SPEND_ATTRIBUTE,
   ProgramEndedError,
   VoucherRevokedError,
+  findOrCreateCampaign,
   issueVoucher,
   voucherReport,
 } from "../service"
@@ -283,6 +285,30 @@ describe("issueVoucher", () => {
     expect(createPromotionsRun).not.toHaveBeenCalled()
   })
 
+  it("throws ProgramEndedError when the existing cohort campaign already ended (M3), creating nothing", async () => {
+    const f = fake({ campaigns: [{ id: "camp_1", campaign_identifier: "test-prog-2026-11", ends_at: new Date("2026-11-12T07:59:59Z") }] })
+    wireCreates(f)
+    await expect(issueVoucher(f.container, args)).rejects.toBeInstanceOf(ProgramEndedError)
+    const g = fake({ campaigns: [{ id: "camp_1", campaign_identifier: "test-prog-2026-11", ends_at: now }] })
+    await expect(issueVoucher(g.container, args)).rejects.toBeInstanceOf(ProgramEndedError)
+    expect(createPromotionsRun).not.toHaveBeenCalled()
+    expect(createCampaignsRun).not.toHaveBeenCalled()
+  })
+
+  it("throws ExpiryUnknownError for an existing cohort campaign without an end, creating nothing", async () => {
+    const f = fake({ campaigns: [{ id: "camp_1", campaign_identifier: "test-prog-2026-11", ends_at: null }] })
+    wireCreates(f)
+    await expect(issueVoucher(f.container, args)).rejects.toBeInstanceOf(ExpiryUnknownError)
+    expect(createPromotionsRun).not.toHaveBeenCalled()
+  })
+
+  it("throws ExpiryUnknownError (never an empty expires_at) for an existing code whose campaign is missing (M6)", async () => {
+    const f = fake({ promotions: [{ id: "promo_1", code: CODE, status: "active", used: 0, limit: 1, metadata: { value_zar: 50, min_spend_zar: 250 } }] })
+    wireCreates(f)
+    await expect(issueVoucher(f.container, args)).rejects.toBeInstanceOf(ExpiryUnknownError)
+    expect(createPromotionsRun).not.toHaveBeenCalled()
+  })
+
   it("uses the fixed program end for the campaign", async () => {
     const fixed = { ...program, validity_days: undefined, ends_at: "2031-07-15T23:59:59+02:00" }
     const f = fake()
@@ -290,6 +316,15 @@ describe("issueVoucher", () => {
     const r = await issueVoucher(f.container, { ...args, program: fixed })
     expect(createCampaignsRun.mock.calls[0][0].input.campaignsData[0].ends_at.toISOString()).toBe("2031-07-15T21:59:59.000Z")
     expect(r.voucher.expires_at).toBe("2031-07-15T21:59:59.000Z")
+  })
+})
+
+describe("findOrCreateCampaign", () => {
+  it("returns ends_at null (never the epoch) for an existing open-ended campaign (L1)", async () => {
+    const f = fake({ campaigns: [{ id: "camp_open", campaign_identifier: "import-woo-2031-07-15", ends_at: null }] })
+    const r = await findOrCreateCampaign(f.container, { campaign_identifier: "import-woo-2031-07-15", ends_at: new Date("2031-07-15T21:30:00Z") })
+    expect(r).toEqual({ id: "camp_open", ends_at: null })
+    expect(createCampaignsRun).not.toHaveBeenCalled()
   })
 })
 
@@ -385,6 +420,42 @@ describe("voucherReport", () => {
       orders: [{ id: "o1", status: "pending", ...adj("a") }],
     })
     expect(await voucherReport(f.container, { program: "test-prog", month: "2026-11" })).toEqual({ issued: 1, redeemed: 1, discount_value_zar: 50 })
+  })
+
+  it("skips draft orders (H2): status draft or is_draft_order, and asks for is_draft_order", async () => {
+    const f = fake({
+      campaigns: camps,
+      promotions: [{ id: "p1", code: "A", campaign_id: "c_nov", metadata: { value_zar: 50 } }],
+      links: [
+        { order_id: "o_draft", promotion_id: "p1" },
+        { order_id: "o_flag", promotion_id: "p1" },
+        { order_id: "o_real", promotion_id: "p1" },
+      ],
+      orders: [
+        { id: "o_draft", status: "draft", is_draft_order: true, ...adj("A") },
+        { id: "o_flag", status: "pending", is_draft_order: true, ...adj("A") },
+        { id: "o_real", status: "pending", is_draft_order: false, ...adj("A") },
+      ],
+    })
+    expect(await voucherReport(f.container, { program: "test-prog", month: "2026-11" })).toEqual({ issued: 1, redeemed: 1, discount_value_zar: 50 })
+    const orderCall = f.graphCalls.find((c) => c.entity === "order")
+    expect(orderCall.fields).toEqual(expect.arrayContaining(["id", "status", "is_draft_order"]))
+  })
+
+  it("counts redemptions of a soft-deleted code but not the code in issued (R-M1)", async () => {
+    const f = fake({
+      campaigns: camps,
+      promotions: [
+        { id: "p1", code: "A", campaign_id: "c_nov", metadata: { value_zar: 50 } },
+        { id: "p2", code: "B", campaign_id: "c_nov", deleted_at: new Date("2026-11-10T00:00:00Z"), metadata: { value_zar: 50 } },
+      ],
+      links: [{ order_id: "o1", promotion_id: "p2" }],
+      orders: [{ id: "o1", status: "pending", ...adj("B") }],
+    })
+    expect(await voucherReport(f.container, { program: "test-prog", month: "2026-11" })).toEqual({ issued: 1, redeemed: 1, discount_value_zar: 50 })
+    const reportCall = f.promotion.listPromotions.mock.calls.find((c: any[]) => c[0]?.campaign_id) as any[]
+    expect(reportCall[1]).toEqual(expect.objectContaining({ withDeleted: true }))
+    expect(reportCall[1].select).toEqual(expect.arrayContaining(["deleted_at"]))
   })
 
   it("returns zeros without querying links when no campaign matches", async () => {

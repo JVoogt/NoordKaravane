@@ -2,7 +2,7 @@ import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
 import { z } from "@medusajs/framework/zod"
 import { voucherReport } from "../../../../lib/vouchers/service"
-import { authorized } from "../route"
+import { authorized } from "../../../../lib/vouchers/signature"
 
 const reportQuery = z
   .object({

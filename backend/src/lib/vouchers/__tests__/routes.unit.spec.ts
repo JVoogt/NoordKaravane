@@ -11,7 +11,7 @@ jest.mock("../config", () => ({ ...jest.requireActual("../config"), getVoucherPr
 
 import { POST } from "../../../api/hooks/vouchers/route"
 import { GET } from "../../../api/hooks/vouchers/report/route"
-import { CapReachedError, ProgramEndedError, VoucherRevokedError } from "../service"
+import { CapReachedError, ExpiryUnknownError, ProgramEndedError, VoucherRevokedError } from "../service"
 import { signVoucherRequest } from "../signature"
 import type { VoucherProgram } from "../config"
 
@@ -96,11 +96,48 @@ describe("POST /hooks/vouchers", () => {
     expect(issueVoucher).not.toHaveBeenCalled()
   })
 
-  it("401 when the raw body is missing", async () => {
+  it("415 unsupported_content_type when the raw body is missing (a content type the parser did not keep)", async () => {
     const res = fakeRes()
     await POST(postReq(undefined), res)
-    expect(res.statusCode).toBe(401)
+    expect(res.statusCode).toBe(415)
+    expect(res.body).toEqual({ error: "unsupported_content_type" })
+    expect(logger.warn).toHaveBeenCalledWith("vouchers.issue rejected: unsupported_content_type")
     expect(issueVoucher).not.toHaveBeenCalled()
+  })
+
+  it("logs the auth reason code: stale_timestamp vs bad_signature", async () => {
+    await POST(postReq(good, { ts: String(Math.floor(Date.now() / 1000) - 301) }), fakeRes())
+    expect(logger.warn).toHaveBeenCalledWith("vouchers.auth rejected: stale_timestamp")
+    await POST(postReq(good, { signWith: "wrong" }), fakeRes())
+    expect(logger.warn).toHaveBeenCalledWith("vouchers.auth rejected: bad_signature")
+  })
+
+  it("logs vouchers.issue invalid_body with the schema-valid program and ref only, never the email", async () => {
+    let res = fakeRes()
+    await POST(postReq(JSON.stringify({ program: "test-prog", ref: "abc", email: "not-an-email" })), res)
+    expect(res.body).toEqual({ error: "invalid_body" })
+    expect(logger.info).toHaveBeenCalledWith("vouchers.issue " + JSON.stringify({ program: "test-prog", ref: "abc", result: "invalid_body" }))
+
+    logger.info.mockReset()
+    res = fakeRes()
+    await POST(postReq(JSON.stringify({ program: "Bad Prog", ref: "jan@example.com", email: "jan@example.com" })), res)
+    expect(res.body).toEqual({ error: "invalid_body" })
+    expect(logger.info).toHaveBeenCalledWith("vouchers.issue " + JSON.stringify({ program: null, ref: null, result: "invalid_body" }))
+
+    logger.info.mockReset()
+    res = fakeRes()
+    await POST(postReq("not json{"), res)
+    expect(logger.info).toHaveBeenCalledWith("vouchers.issue " + JSON.stringify({ program: null, ref: null, result: "invalid_body" }))
+    const all = JSON.stringify([logger.info.mock.calls, logger.warn.mock.calls, logger.error.mock.calls])
+    expect(all).not.toContain("@")
+  })
+
+  it("logs vouchers.issue unknown_program", async () => {
+    const res = fakeRes()
+    await POST(postReq(JSON.stringify({ program: "nope", ref: "abc", email: "jan@example.com" })), res)
+    expect(res.body).toEqual({ error: "unknown_program" })
+    expect(logger.info).toHaveBeenCalledWith("vouchers.issue " + JSON.stringify({ program: "nope", ref: "abc", result: "unknown_program" }))
+    expect(JSON.stringify(logger.info.mock.calls)).not.toContain("@")
   })
 
   it.each([
@@ -132,6 +169,7 @@ describe("POST /hooks/vouchers", () => {
     [new ProgramEndedError("x"), 400, "program_ended", "ended"],
     [new VoucherRevokedError("x"), 409, "revoked", "revoked"],
     [new CapReachedError("x"), 429, "cap_reached", "cap"],
+    [new ExpiryUnknownError("x"), 500, "expiry_unknown", "expiry_unknown"],
     [new Error("db down"), 500, "internal", "error"],
   ])("maps %p to %p %p", async (err, status, key, result) => {
     issueVoucher.mockRejectedValue(err)

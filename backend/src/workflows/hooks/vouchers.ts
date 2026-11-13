@@ -7,7 +7,7 @@ import { assertOneCodeAtCompletion, assertOneCodePerCart, onOrderCanceled } from
  * "Cannot define multiple hook handlers" at boot. Add any further logic for these three hooks HERE.
  */
 
-// A cancelled order (EFT unpaid job, admin or script) gives its code back. Never fails the cancel.
+// A cancelled cart order (EFT unpaid job, admin or script) gives its code back; a draft order gives nothing back. Never fails the cancel.
 cancelOrderWorkflow.hooks.orderCanceled(async ({ order }, { container }) => {
   await onOrderCanceled(container, order.id)
 })

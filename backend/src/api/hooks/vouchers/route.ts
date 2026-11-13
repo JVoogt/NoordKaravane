@@ -2,35 +2,24 @@ import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
 import { z } from "@medusajs/framework/zod"
 import { getVoucherProgram } from "../../../lib/vouchers/config"
-import { CapReachedError, ProgramEndedError, VoucherRevokedError, issueVoucher } from "../../../lib/vouchers/service"
-import { verifyVoucherRequest } from "../../../lib/vouchers/signature"
+import { CapReachedError, ExpiryUnknownError, ProgramEndedError, VoucherRevokedError, issueVoucher } from "../../../lib/vouchers/service"
+import { authorized } from "../../../lib/vouchers/signature"
+
+const PROGRAM = /^[a-z0-9-]{1,40}$/
+const REF = /^[A-Za-z0-9-]{1,40}$/
 
 const issueBody = z
   .object({
-    program: z.string().regex(/^[a-z0-9-]{1,40}$/),
-    ref: z.string().regex(/^[A-Za-z0-9-]{1,40}$/),
+    program: z.string().regex(PROGRAM),
+    ref: z.string().regex(REF),
     email: z.string().email().max(254),
   })
   .strict()
 
-function header(req: MedusaRequest, name: string): string | undefined {
-  const v = req.headers[name]
-  return typeof v === "string" ? v : undefined
-}
-
-/** DD3 auth for both voucher routes. Logs the reason on rejection, never the payload. */
-export function authorized(req: MedusaRequest, secret: string, payload: string, logger: { warn: (m: string) => void }): boolean {
-  const timestamp = header(req, "x-nk-timestamp")
-  const signature = header(req, "x-nk-signature")
-  if (!timestamp || !signature) {
-    logger.warn("vouchers.auth rejected: missing signature headers")
-    return false
-  }
-  if (!verifyVoucherRequest({ secret, timestamp, signature, payload })) {
-    logger.warn("vouchers.auth rejected: invalid or stale signature")
-    return false
-  }
-  return true
+/** A field of an unvalidated body, only when it passes its own pattern (never an email or arbitrary text in a log). */
+function safeField(json: unknown, key: "program" | "ref", pattern: RegExp): string | null {
+  const v = json && typeof json === "object" && !Array.isArray(json) ? (json as Record<string, unknown>)[key] : undefined
+  return typeof v === "string" && pattern.test(v) ? v : null
 }
 
 /**
@@ -44,26 +33,36 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
 
   const rawBuf: Buffer | undefined = (req as any).rawBody
   if (!rawBuf) {
-    logger.warn("vouchers.auth rejected: no raw body")
-    return res.status(401).json({ error: "unauthorized" })
+    // The body parser keeps raw bytes only for the content types it parses (JSON, text); anything else has none to verify.
+    logger.warn("vouchers.issue rejected: unsupported_content_type")
+    return res.status(415).json({ error: "unsupported_content_type" })
   }
   const raw = rawBuf.toString("utf8")
   if (!authorized(req, secret, raw, logger)) return res.status(401).json({ error: "unauthorized" })
 
+  const logResult = (program: string | null, ref: string | null, result: string) =>
+    logger.info("vouchers.issue " + JSON.stringify({ program, ref, result }))
   let json: unknown
   try {
     json = JSON.parse(raw)
   } catch {
+    logResult(null, null, "invalid_body")
     return res.status(400).json({ error: "invalid_body" })
   }
   const parsed = issueBody.safeParse(json)
-  if (!parsed.success) return res.status(400).json({ error: "invalid_body" })
+  if (!parsed.success) {
+    logResult(safeField(json, "program", PROGRAM), safeField(json, "ref", REF), "invalid_body")
+    return res.status(400).json({ error: "invalid_body" })
+  }
   const { program: name, ref, email } = parsed.data
 
   const program = getVoucherProgram(name)
-  if (!program) return res.status(400).json({ error: "unknown_program" })
+  if (!program) {
+    logResult(name, ref, "unknown_program")
+    return res.status(400).json({ error: "unknown_program" })
+  }
 
-  const log = (result: string) => logger.info("vouchers.issue " + JSON.stringify({ program: name, ref, result }))
+  const log = (result: string) => logResult(name, ref, result)
   try {
     const out = await issueVoucher(req.scope, { program, ref, email, secret })
     log(out.status)
@@ -80,6 +79,11 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     if (e instanceof CapReachedError) {
       log("cap")
       return res.status(429).json({ error: "cap_reached" })
+    }
+    if (e instanceof ExpiryUnknownError) {
+      log("expiry_unknown")
+      logger.error("vouchers.issue failed " + JSON.stringify({ program: name, ref, message: String(e.message) }))
+      return res.status(500).json({ error: "expiry_unknown" })
     }
     log("error")
     logger.error("vouchers.issue failed " + JSON.stringify({ program: name, ref, message: String(e?.message ?? e) }))

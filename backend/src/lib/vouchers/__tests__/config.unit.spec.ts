@@ -92,6 +92,14 @@ describe("getVoucherProgram", () => {
     expect(errSpy).toHaveBeenCalledWith(expect.stringMatching(/voucher_programs.*bad/))
   })
 
+  it("L3: logs a dropped entry once per process, not on every request", () => {
+    fixture = { voucher_programs: { "once-bad": { ...good, code_prefix: "lower" } } }
+    getVoucherProgram("once-bad")
+    getVoucherProgram("once-bad")
+    getVoucherProgram("other")
+    expect(errSpy.mock.calls.filter((c) => String(c[0]).includes("once-bad"))).toHaveLength(1)
+  })
+
   it("returns null when voucher_programs is absent", () => {
     fixture = {}
     expect(getVoucherProgram("test-prog")).toBeNull()

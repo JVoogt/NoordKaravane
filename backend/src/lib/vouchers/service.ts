@@ -21,6 +21,8 @@ export type IssueResult = { status: "created" | "existing"; voucher: VoucherView
 export class CapReachedError extends Error {}
 export class ProgramEndedError extends Error {}
 export class VoucherRevokedError extends Error {}
+/** The code's campaign is missing or has no end, so no `expires_at` can be given (M6). Nothing is created. */
+export class ExpiryUnknownError extends Error {}
 
 const PROMO_FIELDS = ["id", "code", "status", "used", "limit", "deleted_at", "metadata", "campaign_id"]
 
@@ -34,11 +36,12 @@ async function findPromotionByCode(container: MedusaContainer, code: string): Pr
   return p ?? null
 }
 
-function view(p: any, fallbackEndsAt?: Date): VoucherView {
-  const endsAt = p.campaign?.ends_at ?? fallbackEndsAt ?? null
+function view(p: any): VoucherView {
+  const endsAt = p.campaign?.ends_at ?? null
+  if (!endsAt) throw new ExpiryUnknownError(`voucher ${p.code} has no campaign end (campaign ${p.campaign_id ?? "missing"})`)
   return {
     code: p.code,
-    expires_at: endsAt ? new Date(endsAt).toISOString() : "",
+    expires_at: new Date(endsAt).toISOString(),
     value: Number(p.metadata?.value_zar ?? p.application_method?.value ?? 0),
     min_spend: Number(p.metadata?.min_spend_zar ?? 0),
     currency: "zar",
@@ -52,12 +55,15 @@ async function findCampaign(container: MedusaContainer, campaign_identifier: str
   return c ?? null
 }
 
-/** Find the campaign by identifier, else create it; a failed create re-reads (a concurrent request won), else rethrows. */
+/**
+ * Find the campaign by identifier, else create it; a failed create re-reads (a concurrent request won), else rethrows.
+ * `ends_at` is null for an existing campaign without an end (never turned into the epoch).
+ */
 export async function findOrCreateCampaign(
   container: MedusaContainer,
   args: { campaign_identifier: string; ends_at: Date }
-): Promise<{ id: string; ends_at: Date }> {
-  const toResult = (c: any) => ({ id: c.id, ends_at: new Date(c.ends_at) })
+): Promise<{ id: string; ends_at: Date | null }> {
+  const toResult = (c: any) => ({ id: c.id, ends_at: c.ends_at ? new Date(c.ends_at) : null })
   const existing = await findCampaign(container, args.campaign_identifier)
   if (existing) return toResult(existing)
   try {
@@ -100,8 +106,9 @@ export async function createVoucherPromotion(
 }
 
 /**
- * Find-or-create the single-use code for (program, ref). Throws VoucherRevokedError (RD2), ProgramEndedError (RD3)
- * or CapReachedError; anything else is unexpected and rethrown. Never stores or logs the raw email.
+ * Find-or-create the single-use code for (program, ref). Throws VoucherRevokedError (RD2), ProgramEndedError (RD3,
+ * also when the existing cohort campaign already ended, M3), CapReachedError, or ExpiryUnknownError (the campaign is
+ * missing or has no end, M6); anything else is unexpected and rethrown. Never stores or logs the raw email.
  */
 export async function issueVoucher(
   container: MedusaContainer,
@@ -122,6 +129,10 @@ export async function issueVoucher(
   const cohort = cohortFor(program, now)
   const existingCampaign = await findCampaign(container, cohort.campaign_identifier)
   if (existingCampaign) {
+    // Refuse rather than extend: extending would also move the expiry of every code already issued in the cohort.
+    if (!existingCampaign.ends_at) throw new ExpiryUnknownError(`campaign ${existingCampaign.campaign_identifier} has no end`)
+    if (new Date(existingCampaign.ends_at).getTime() <= now.getTime())
+      throw new ProgramEndedError(`campaign ${existingCampaign.campaign_identifier} has ended`)
     const promotionModule = container.resolve(Modules.PROMOTION) as any
     const inCampaign = (await promotionModule.listPromotions({ campaign_id: existingCampaign.id }, { select: ["id"] })) as any[]
     if (inCampaign.length >= program.monthly_cap) throw new CapReachedError(`program ${program.name} reached its monthly cap`)
@@ -129,6 +140,8 @@ export async function issueVoucher(
   const campaign = existingCampaign
     ? { id: existingCampaign.id, ends_at: new Date(existingCampaign.ends_at) }
     : await findOrCreateCampaign(container, cohort)
+  if (!campaign.ends_at) throw new ExpiryUnknownError(`campaign ${cohort.campaign_identifier} has no end`)
+  const expiresAt = campaign.ends_at
 
   try {
     await createVoucherPromotion(container, {
@@ -154,7 +167,7 @@ export async function issueVoucher(
     status: "created",
     voucher: {
       code,
-      expires_at: campaign.ends_at.toISOString(),
+      expires_at: expiresAt.toISOString(),
       value: program.value_zar,
       min_spend: program.min_spend_zar,
       currency: "zar",
@@ -173,9 +186,9 @@ function adjustmentCodes(order: any): Set<string> {
 }
 
 /**
- * DD9. Campaigns whose identifier starts with `${program}-${month}`; issued = their promotion count; a redemption is
- * an order_promotion link to an order that is not canceled AND carries an adjustment with the promotion's code.
- * Never reads promotion.used (G19).
+ * DD9. Campaigns whose identifier starts with `${program}-${month}`; issued = their non-deleted promotion count; a
+ * redemption is an order_promotion link from any of their promotions (soft-deleted included, R-M1) to an order that is
+ * not canceled, not a draft (H2) AND carries an adjustment with the promotion's code. Never reads promotion.used (G19).
  */
 export async function voucherReport(
   container: MedusaContainer,
@@ -190,7 +203,7 @@ export async function voucherReport(
   if (!campaigns.length) return { issued: 0, redeemed: 0, discount_value_zar: 0 }
   const promotions = (await promotionModule.listPromotions(
     { campaign_id: campaigns.map((c) => c.id) },
-    { select: ["id", "code", "metadata", "campaign_id"], relations: ["application_method"] }
+    { select: ["id", "code", "metadata", "campaign_id", "deleted_at"], relations: ["application_method"], withDeleted: true }
   )) as any[]
   if (!promotions.length) return { issued: 0, redeemed: 0, discount_value_zar: 0 }
 
@@ -204,7 +217,7 @@ export async function voucherReport(
   if (orderIds.length) {
     const { data } = await query.graph({
       entity: "order",
-      fields: ["id", "status", "items.adjustments.code", "shipping_methods.adjustments.code"],
+      fields: ["id", "status", "is_draft_order", "items.adjustments.code", "shipping_methods.adjustments.code"],
       filters: { id: orderIds },
     })
     for (const o of data as any[]) orders.set(o.id, o)
@@ -216,10 +229,10 @@ export async function voucherReport(
   for (const l of links as any[]) {
     const p = byId.get(l.promotion_id)
     const o = orders.get(l.order_id)
-    if (!p || !o || o.status === "canceled") continue
+    if (!p || !o || o.status === "canceled" || o.status === "draft" || o.is_draft_order) continue
     if (!adjustmentCodes(o).has(String(p.code).toUpperCase())) continue
     redeemed += 1
     discount += Number(p.metadata?.value_zar ?? p.application_method?.value ?? 0)
   }
-  return { issued: promotions.length, redeemed, discount_value_zar: discount }
+  return { issued: promotions.filter((p) => !p.deleted_at).length, redeemed, discount_value_zar: discount }
 }

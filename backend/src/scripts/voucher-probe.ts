@@ -3,12 +3,17 @@ import path from "path"
 import type { ExecArgs, MedusaContainer } from "@medusajs/framework/types"
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 import {
+  addDraftOrderPromotionWorkflow,
   addShippingMethodToCartWorkflow,
   addToCartWorkflow,
+  beginDraftOrderEditWorkflow,
   cancelOrderWorkflow,
   completeCartWorkflow,
+  confirmDraftOrderEditWorkflow,
+  convertDraftOrderWorkflow,
   createCampaignsWorkflow,
   createCartWorkflow,
+  createOrderWorkflow,
   createPaymentCollectionForCartWorkflow,
   createPaymentSessionsWorkflow,
   createProductsWorkflow,
@@ -505,6 +510,130 @@ async function issue(env: ProbeEnv, p: VoucherProgram, ref: string, now?: Date) 
   return issueVoucher(env.container, { program: p, ref, email: `${ref.toLowerCase()}@example.com`, secret: secret(), now })
 }
 
+/** The codes on an order's line-item and shipping-method adjustments. */
+async function orderAdjustmentCodes(env: ProbeEnv, orderId: string): Promise<string[]> {
+  const { data } = await env.query.graph({
+    entity: "order",
+    fields: ["id", "items.adjustments.code", "shipping_methods.adjustments.code"],
+    filters: { id: orderId },
+  })
+  const o = (data as any[])[0] ?? {}
+  return [...(o.items ?? []), ...(o.shipping_methods ?? [])].flatMap((h: any) => (h?.adjustments ?? []).map((a: any) => a?.code)).filter(Boolean)
+}
+
+/**
+ * S-B14 steps 6-9 (H1, H2, R-M1): a code on a non-cart order. An admin draft order (draft-order workflows, as the admin
+ * routes run them) gets the code while it is unused, so its adjustment registered no usage. A cart order then redeems
+ * the code (used 1). Cancelling the converted draft must not give that use back. The code is a single-use promotion
+ * WITHOUT the min-spend rule (an admin-minted code; measured: a DD7 code with the rule gets no adjustment on a draft
+ * order) in its own future cohort campaign, so no other report baseline moves, and its `PROBE-` prefix keeps it out of
+ * Part C's program-code count.
+ */
+async function draftOrderSteps(env: ProbeEnv, summary: Record<string, any>, checks: Checks) {
+  const month = "2031-05"
+  const X = "PROBE-DRAFT1"
+  const campaignId = await makeCampaign(env, `kampi-review-${month}`, new Date("2031-07-01T00:00:00Z"))
+  await createPromotionsWorkflow(env.container).run({
+    input: {
+      promotionsData: [
+        {
+          code: X,
+          type: "standard",
+          status: "active",
+          is_automatic: false,
+          is_tax_inclusive: true,
+          limit: 1,
+          campaign_id: campaignId,
+          application_method: { type: "fixed", target_type: "order", allocation: "across", value: env.VALUE, currency_code: "zar" },
+          metadata: { source: "probe" },
+        },
+      ],
+    } as any,
+  })
+  const r0 = await voucherReport(env.container, { program: "kampi-review", month })
+  const out: Record<string, any> = { code: X, r0 }
+  let draftId: string | null = null
+  try {
+    const { result } = await createOrderWorkflow(env.container).run({
+      input: {
+        status: "draft",
+        is_draft_order: true,
+        region_id: env.region.id,
+        sales_channel_id: env.channel.id,
+        currency_code: "zar",
+        email: PROBE_EMAIL,
+        shipping_address: ADDRESS,
+        billing_address: ADDRESS,
+        items: [{ variant_id: env.variants.min, quantity: 1 }],
+      } as any,
+    })
+    draftId = (result as any).id
+    await beginDraftOrderEditWorkflow(env.container).run({ input: { order_id: draftId } as any })
+    await addDraftOrderPromotionWorkflow(env.container).run({ input: { order_id: draftId, promo_codes: [X] } as any })
+    await confirmDraftOrderEditWorkflow(env.container).run({ input: { order_id: draftId, confirmed_by: "voucher-probe" } as any })
+  } catch (e: any) {
+    out.draft_error = String(e?.message ?? e)
+  }
+  out.draft_id = draftId
+  if (draftId) {
+    out.draft_codes = await orderAdjustmentCodes(env, draftId)
+    const { data: links } = await env.query.graph({ entity: "order_promotion", fields: ["order_id", "promotion_id"], filters: { order_id: draftId } })
+    const { data: cartLinks } = await env.query.graph({ entity: "order_cart", fields: ["order_id", "cart_id"], filters: { order_id: draftId } })
+    out.draft_order_promotion_links = (links as any[]).length
+    out.draft_order_cart_links = (cartLinks as any[]).length
+  }
+  out.used_after_draft = await promotionUsed(env, X)
+  out.report_with_draft = await voucherReport(env.container, { program: "kampi-review", month })
+  if (draftId) {
+    try {
+      await convertDraftOrderWorkflow(env.container).run({ input: { id: draftId } as any })
+    } catch (e: any) {
+      out.convert_error = String(e?.message ?? e)
+    }
+  }
+  const cartOrderCart = await newCart(env, [{ variant_id: env.variants.min, quantity: 1 }])
+  await applyCodes(env, cartOrderCart, [X])
+  out.cart_order = await completeWithEft(env, cartOrderCart)
+  out.used_after_cart_order = await promotionUsed(env, X)
+  if (draftId) {
+    try {
+      await cancelOrderWorkflow(env.container).run({ input: { order_id: draftId } as any })
+    } catch (e: any) {
+      out.cancel_error = String(e?.message ?? e)
+    }
+  }
+  out.used_after_draft_cancel = await promotionUsed(env, X)
+  // R-M1: deleting a redeemed code drops it from issued but keeps its redemption (the cart order above).
+  out.report_before_delete = await voucherReport(env.container, { program: "kampi-review", month })
+  const pX = await promotionByCode(env, X)
+  await deletePromotionsWorkflow(env.container).run({ input: { ids: [pX.id] } as any })
+  out.report_after_delete = await voucherReport(env.container, { program: "kampi-review", month })
+  summary.SB14_draft = out
+  check(
+    checks,
+    "S-B14.6 a draft order carries the code without registering usage",
+    Boolean(draftId) && !out.draft_error && (out.draft_codes ?? []).includes(X) && out.draft_order_cart_links === 0 && out.used_after_draft === 0,
+    out
+  )
+  check(checks, "S-B14.7 report skips the draft order (H2)", out.draft_order_promotion_links >= 1 && out.report_with_draft.redeemed === r0.redeemed, out)
+  check(
+    checks,
+    "S-B14.8 cancelling a non-cart order gives nothing back (H1)",
+    !out.convert_error && Boolean(out.cart_order.order_id) && out.used_after_cart_order === 1 && !out.cancel_error && out.used_after_draft_cancel === 1,
+    out
+  )
+  check(
+    checks,
+    "S-B14.9 a deleted code keeps its redemption, not its issue (R-M1)",
+    out.report_before_delete.issued === 1 &&
+      out.report_before_delete.redeemed === 1 &&
+      out.report_after_delete.issued === 0 &&
+      out.report_after_delete.redeemed === 1 &&
+      out.report_after_delete.discount_value_zar === env.VALUE,
+    out
+  )
+}
+
 /** Part B: service, report, revert-on-cancel (S-B14) and the completion backstop (S-B15 step 8). */
 async function partB(env: ProbeEnv, summary: Record<string, any>, checks: Checks) {
   const review = program("kampi-review")
@@ -647,6 +776,7 @@ async function partB(env: ProbeEnv, summary: Record<string, any>, checks: Checks
   check(checks, "S-B14.3 applies again", s3.codes.includes(C) && s3.discount_total === review.value_zar, s3)
   check(checks, "S-B14.4 report excludes the cancelled order", s4.redeemed === r0.redeemed && s4.discount_value_zar === r0.discount_value_zar, s4)
   check(checks, "S-B14.5 re-redeem counts once", Boolean(o2.order_id) && s5.used === 1 && s5.report.redeemed === r0.redeemed + 1, s5)
+  await draftOrderSteps(env, summary, checks)
 
   // S-B15 step 8: forged second cart_promotion link, then completeCartWorkflow
   const c1 = (await issue(env, review, "PROBE15X")).voucher.code

@@ -11,7 +11,8 @@ import { createVoucherPromotion, findOrCreateCampaign } from "../lib/vouchers/se
  *   VOUCHERS_IMPORT_FILE=/path/rows.json [VOUCHERS_IMPORT_DRY_RUN=1] npx medusa exec ./src/scripts/import-vouchers.ts
  *
  * Idempotent: codes that already exist (soft-deleted included) are skipped. A rejected row aborts the whole run
- * before any write, with every rejection printed and a non-zero exit. Never commit an import file.
+ * before any write, with every rejection printed and a non-zero exit. A write failure mid-run logs how far it got
+ * (`vouchers.import failed`) and exits non-zero; a rerun skips what was created. Never commit an import file.
  */
 export default async function importVouchers({ container }: ExecArgs) {
   const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
@@ -43,37 +44,53 @@ export default async function importVouchers({ container }: ExecArgs) {
   for (const code of plan.skipped_existing) logger.info(`vouchers.import skipped existing ${code}`)
 
   const campaignsExtended: string[] = []
+  const planned = plan.campaigns.reduce((n, g) => n + g.rows.length, 0)
   let created = 0
-  for (const group of plan.campaigns) {
-    if (dryRun) {
-      const [c] = await promotionModule.listCampaigns({ campaign_identifier: group.campaign_identifier }, { select: ["id", "ends_at"] })
-      if (c && c.ends_at && campaignEndsAtUpdate(new Date(c.ends_at), group.ends_at)) campaignsExtended.push(group.campaign_identifier)
-      logger.info(
-        `vouchers.import plan ${JSON.stringify({ campaign: group.campaign_identifier, ends_at: group.ends_at.toISOString(), exists: Boolean(c), codes: group.rows.map((r) => r.code) })}`
-      )
-      continue
+  let failedCampaign: string | null = null
+  let failedCode: string | null = null
+  try {
+    for (const group of plan.campaigns) {
+      failedCampaign = group.campaign_identifier
+      failedCode = null
+      if (dryRun) {
+        const [c] = await promotionModule.listCampaigns({ campaign_identifier: group.campaign_identifier }, { select: ["id", "ends_at"] })
+        if (c && c.ends_at && campaignEndsAtUpdate(new Date(c.ends_at), group.ends_at)) campaignsExtended.push(group.campaign_identifier)
+        logger.info(
+          `vouchers.import plan ${JSON.stringify({ campaign: group.campaign_identifier, ends_at: group.ends_at.toISOString(), exists: Boolean(c), codes: group.rows.map((r) => r.code) })}`
+        )
+        continue
+      }
+      const campaign = await findOrCreateCampaign(container, { campaign_identifier: group.campaign_identifier, ends_at: group.ends_at })
+      // An open-ended campaign (ends_at null) is never "extended", matching the dry run.
+      const newEnd = campaign.ends_at ? campaignEndsAtUpdate(campaign.ends_at, group.ends_at) : null
+      if (newEnd) {
+        await updateCampaignsWorkflow(container).run({ input: { campaignsData: [{ id: campaign.id, ends_at: newEnd }] } } as any)
+        campaignsExtended.push(group.campaign_identifier)
+      }
+      for (const row of group.rows) {
+        failedCode = row.code
+        await createVoucherPromotion(container, {
+          code: row.code,
+          campaign_id: campaign.id,
+          value_zar: row.value_zar,
+          min_spend_zar: row.min_spend_zar,
+          metadata: { program: row.program, ref: null, email_hash: null, value_zar: row.value_zar, min_spend_zar: row.min_spend_zar, source: "import" },
+        })
+        created += 1
+      }
     }
-    const campaign = await findOrCreateCampaign(container, { campaign_identifier: group.campaign_identifier, ends_at: group.ends_at })
-    const newEnd = campaignEndsAtUpdate(campaign.ends_at, group.ends_at)
-    if (newEnd) {
-      await updateCampaignsWorkflow(container).run({ input: { campaignsData: [{ id: campaign.id, ends_at: newEnd }] } } as any)
-      campaignsExtended.push(group.campaign_identifier)
-    }
-    for (const row of group.rows) {
-      await createVoucherPromotion(container, {
-        code: row.code,
-        campaign_id: campaign.id,
-        value_zar: row.value_zar,
-        min_spend_zar: row.min_spend_zar,
-        metadata: { program: row.program, ref: null, email_hash: null, value_zar: row.value_zar, min_spend_zar: row.min_spend_zar, source: "import" },
-      })
-      created += 1
-    }
+  } catch (e: any) {
+    // A write failed mid-run: say how far it got, then fail the run. A rerun skips the codes already created.
+    logger.error(
+      "vouchers.import failed " +
+        JSON.stringify({ created, planned, failed_campaign: failedCampaign, failed_code: failedCode, message: String(e?.message ?? e) })
+    )
+    throw e
   }
   const summary = {
     dry_run: dryRun,
     created,
-    planned: plan.campaigns.reduce((n, g) => n + g.rows.length, 0),
+    planned,
     skipped_existing: plan.skipped_existing.length,
     skipped_expired: plan.skipped_expired.length,
     campaigns_extended: campaignsExtended,
