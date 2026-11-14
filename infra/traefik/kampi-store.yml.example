@@ -1,0 +1,132 @@
+# Kampi Store: Traefik v3 dynamic config (file provider) for store.kampi.co.za.
+# Installed BY HAND through the homelab runbook as /home/voogiepi/docker/traefik/config/dynamic/kampi-store.yml
+# (owner voogiepi, mode 644). Never by `make route`: that target owns nkshop.yml only.
+#
+# Routes store.kampi.co.za to the Kampi storefront container (nkshop-storefront-kampi, host port 8554 by default,
+# PORT_WEB_KAMPI in infra/.env). Router, service and middleware names are global across Traefik files, so every
+# name here starts with "kampi-store". Before installing, check that no other file in the dynamic dir uses a
+# "kampi-store" name (the old kampi-shop repo has a never-deployed traefik/kampi-store.yml that would clash).
+#
+# Placeholders to replace on the Pi before installing (never commit the real values):
+#   REPLACE_WITH_PI_LAN_IP  the LAN address the nkshop ports bind to (BIND_IP in infra/.env)
+#   REPLACE_WITH_TOKEN      preview cookie value, `openssl rand -hex 16`; kept only in the Pi file
+#
+# Two phases, one file name:
+#   1. PREVIEW (as shipped): only requests carrying the cookie kampi_preview=<token> reach the new store
+#      (priority 300). Everyone else still gets the old route in kampi-shop.yml. Set the cookie in the browser
+#      for store.kampi.co.za to test on the real hostname.
+#   2. SWITCH: delete the block between the PREVIEW ROUTER markers and strip the "#S " prefix from every line
+#      (sed -e '/# --- PREVIEW ROUTER BEGIN ---/,/# --- PREVIEW ROUTER END ---/d' -e 's/^#S //').
+#      The three public routers (priority 200) then beat kampi-shop.yml's routers (rule-length priority, far lower),
+#      and shop.kampi.co.za answers 301 to the same path on store.kampi.co.za.
+#      After the switch, move kampi-shop.yml out of the watched dir into
+#      /home/voogiepi/docker/traefik/config/dynamic-archive/kampi-shop.yml.pre-nk-cutover-<YYYYMMDD>.
+#
+# ROLLBACK (back to the old store): copy the archived kampi-shop.yml.pre-nk-cutover-<YYYYMMDD> back into the
+# dynamic dir as kampi-shop.yml (and start the old store if it was stopped), then move this file out of the
+# dynamic dir. Traefik reloads by itself; check `docker logs --since 2m traefik` for errors after each change.
+
+http:
+  routers:
+    # --- PREVIEW ROUTER BEGIN ---
+    kampi-store-preview:
+      rule: "Host(`store.kampi.co.za`) && HeaderRegexp(`Cookie`, `(^|;\\s*)kampi_preview=REPLACE_WITH_TOKEN(;|$)`)"
+      priority: 300
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+      middlewares:
+        - kampi-store-security-headers
+        - kampi-store-compress
+      service: kampi-store-storefront
+    # --- PREVIEW ROUTER END ---
+
+#S     # ---- SWITCH: the public routers ----
+#S     kampi-store-http:
+#S       rule: "Host(`store.kampi.co.za`) || Host(`shop.kampi.co.za`)"
+#S       priority: 200
+#S       entryPoints:
+#S         - web
+#S       middlewares:
+#S         - kampi-store-domain-redirect
+#S         - kampi-store-https-redirect
+#S       service: kampi-store-storefront
+#S
+#S     kampi-store:
+#S       rule: "Host(`store.kampi.co.za`)"
+#S       priority: 200
+#S       entryPoints:
+#S         - websecure
+#S       tls:
+#S         certResolver: letsencrypt
+#S       middlewares:
+#S         - kampi-store-security-headers
+#S         - kampi-store-compress
+#S       service: kampi-store-storefront
+#S
+#S     # The old hostname: 301 to the same path on store.kampi.co.za.
+#S     kampi-store-legacy:
+#S       rule: "Host(`shop.kampi.co.za`)"
+#S       priority: 200
+#S       entryPoints:
+#S         - websecure
+#S       tls:
+#S         certResolver: letsencrypt
+#S       middlewares:
+#S         - kampi-store-domain-redirect
+#S       service: kampi-store-storefront
+
+  services:
+    kampi-store-storefront:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "http://REPLACE_WITH_PI_LAN_IP:8554"
+
+  middlewares:
+#S     kampi-store-https-redirect:
+#S       redirectScheme:
+#S         scheme: https
+#S         permanent: true
+#S
+#S     kampi-store-domain-redirect:
+#S       redirectRegex:
+#S         regex: "^https?://shop\\.kampi\\.co\\.za(.*)"
+#S         replacement: "https://store.kampi.co.za${1}"
+#S         permanent: true
+#S
+    kampi-store-compress:
+      compress: {}
+
+    # NK's storefront header set (nkshop.yml.example), with two Kampi differences in the CSP:
+    #  - img-src adds https://noordkaravane.co.za: product image URLs from the NK catalogue are absolute
+    #    (https://noordkaravane.co.za/shop/products/...), next to the R2 host cdn.noordkaravane.co.za.
+    #  - form-action is 'self' only: the Kampi store takes EFT only, no PayFast hosted page.
+    # connect-src keeps https://api.noordkaravane.co.za (the shared Medusa store API).
+    kampi-store-security-headers:
+      headers:
+        stsSeconds: 31536000
+        stsIncludeSubdomains: false
+        stsPreload: false
+        customFrameOptionsValue: "SAMEORIGIN"
+        contentTypeNosniff: true
+        browserXssFilter: true
+        referrerPolicy: "strict-origin-when-cross-origin"
+        customResponseHeaders:
+          X-Powered-By: ""
+          Server: ""
+          Permissions-Policy: "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+          Content-Security-Policy: >-
+            default-src 'self';
+            script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://connect.facebook.net https://challenges.cloudflare.com https://static.cloudflareinsights.com;
+            style-src 'self' 'unsafe-inline';
+            img-src 'self' data: blob: https://noordkaravane.co.za https://cdn.noordkaravane.co.za https://www.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://*.g.doubleclick.net https://www.facebook.com;
+            font-src 'self' data:;
+            connect-src 'self' https://api.noordkaravane.co.za https://www.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://*.g.doubleclick.net https://connect.facebook.net https://www.facebook.com https://challenges.cloudflare.com;
+            frame-src https://challenges.cloudflare.com https://www.googletagmanager.com;
+            form-action 'self';
+            object-src 'none';
+            base-uri 'self';
+            frame-ancestors 'self';
+            upgrade-insecure-requests
