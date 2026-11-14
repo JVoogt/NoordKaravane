@@ -39,6 +39,10 @@ RUN npm run build
 
 FROM node:22-alpine AS runtime
 ENV NODE_ENV=production HOST=0.0.0.0 PORT=4321
+# The brand this image was built as, read back by `make build-storefront-kampi` (it fails unless this says kampi).
+# A label, not ENV: the runtime never sees BRAND.
+ARG BRAND=nk
+LABEL org.noordkaravane.storefront.brand=$BRAND
 WORKDIR /app
 COPY --from=deps /src/node_modules ./node_modules
 COPY --from=build /src/dist ./dist
