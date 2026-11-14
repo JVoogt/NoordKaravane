@@ -142,11 +142,11 @@ describe("Kampi order emails", () => {
   })
 
   it("EFT emails keep NK's bank block and the NK<display_id> reference", () => {
-    const { templates, orders } = loadWith(config({ bank: { account_name: "Example Legal (Pty) Ltd", bank_name: "Example Bank", account_number: "000111222", branch_code: "250655", account_type: "Cheque" } }))
+    const { templates, orders } = loadWith(config({ bank: { account_name: "Example Legal (Pty) Ltd", bank_name: "Example Bank", account_number: "000111222", branch_code: "000000", account_type: "Cheque" } }))
     for (const t of ["order-placed-eft", "eft-reminder"] as const) {
       const r = templates.renderEmail(t, { ...GOLDEN_DATA[t], ...orders.orderEmailData(order("sc_A")) })
       expect(r.html).toContain("000111222")
-      expect(r.text).toContain("Account number: 000111222\nBranch code: 250655")
+      expect(r.text).toContain("Account number: 000111222\nBranch code: 000000")
       expect(r.text).toContain("Payment reference: NK3")
       expect(r.subject).toContain("NK3")
     }
