@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { PROMO_COPY, appliedCodes, droppedCodes, errMsg, isNetworkError, normalisePromoCode, promoErrorCopy, promoOutcome, promoPrecheck, summaryTotals } from './promo.ts';
-import type { PromoOutcomeCart, SummaryCart, SummaryTotals } from './promo.ts';
+import { PROMO_COPY, appliedCodes, droppedCodes, errMsg, isNetworkError, normalisePromoCode, optionsLoader, placeCheck, promoErrorCopy, promoOutcome, promoPrecheck, summaryTotals } from './promo.ts';
+import type { OptionsState, PlaceCart, PromoOutcomeCart, SummaryCart, SummaryTotals } from './promo.ts';
 
 // Made-up codes and amounts only: this repo is public.
 const withCode = (code: string, extra: PromoOutcomeCart = {}): PromoOutcomeCart => ({ promotions: [{ code }], ...extra });
@@ -194,4 +194,108 @@ test('summaryTotals: chosen option has no price: delivery unknown, total is item
   const t = summaryTotals(itemCodeCart, LOCKER, null);
   assert.deepEqual(t, { subtotal: 800, discount: 120, ship: null, total: 680 });
   p8(t);
+});
+
+test('isNetworkError: older iOS Safari wordings count as the network', () => {
+  assert.equal(isNetworkError(new TypeError('The network connection was lost.')), true);
+  assert.equal(isNetworkError(new TypeError('The Internet connection appears to be offline.')), true);
+  assert.equal(isNetworkError(new TypeError('cancelled')), true);
+  assert.equal(errMsg(new TypeError('The network connection was lost.')), CONNECTION);
+  // Only the whole word "cancelled" is Safari's abort; a bug message that mentions it is not the network.
+  assert.equal(isNetworkError(new TypeError('order.cancelled is not a function')), false);
+});
+test('errMsg: a JSON SyntaxError or a code-bug TypeError gets the fallback, never its raw message', () => {
+  assert.equal(errMsg(new SyntaxError('Unexpected token < in JSON at position 0'), 'Fallback.'), 'Fallback.');
+  assert.equal(errMsg(new TypeError("Cannot read properties of undefined (reading 'items')"), 'Fallback.'), 'Fallback.');
+  assert.equal(errMsg({ message: 'no status, not an Error' }, 'Fallback.'), 'Fallback.');
+});
+test('errMsg: an Error the checkout throws itself passes through', () => {
+  assert.equal(errMsg(new Error('Card payment is not available right now. Please choose EFT.'), 'Fallback.'), 'Card payment is not available right now. Please choose EFT.');
+});
+
+// place() method check (failure-hunter HIGH 1): at free delivery every method costs R0, so equal totals prove nothing.
+const placed = (method: string | null, total: number, codes: string[] = []): PlaceCart => ({ total, promotions: codes.map((code) => ({ code })), shipping_methods: method ? [{ shipping_option_id: method }] : [] });
+test('placeCheck: the cart holds a different method than the one on screen at an equal total: add it again', () => {
+  assert.equal(placeCheck(placed(COURIER, 2700), placed(COURIER, 2700), LOCKER, 2700, false), 'readd');
+});
+test('placeCheck: still a different method after adding it again: stop with total_changed', () => {
+  assert.equal(placeCheck(placed(COURIER, 2700), placed(COURIER, 2700), LOCKER, 2700, true), 'total_changed');
+});
+test('placeCheck: the cart has no method at all: add it again, then stop', () => {
+  assert.equal(placeCheck(placed(null, 2700), placed(null, 2700), LOCKER, 2700, false), 'readd');
+  assert.equal(placeCheck(placed(null, 2700), placed(null, 2700), LOCKER, 2700, true), 'total_changed');
+});
+test('placeCheck: same method and total: ok; a dropped code or a moved total still stops', () => {
+  assert.equal(placeCheck(placed(LOCKER, 2700), placed(LOCKER, 2700), LOCKER, 2700, false), 'ok');
+  assert.equal(placeCheck(placed(LOCKER, 2550, ['KR-T1']), placed(LOCKER, 2700), LOCKER, 2550, false), 'dropped');
+  assert.equal(placeCheck(placed(LOCKER, 2700), placed(LOCKER, 2785), LOCKER, 2700, true), 'total_changed');
+});
+
+// Delivery options loader (HIGH 2: Try again and a code request racing). Made-up option ids.
+type O = { id: string; amount: number | null };
+const deferred = <T,>() => { let resolve!: (v: T) => void; let reject!: (e: unknown) => void; const promise = new Promise<T>((a, b) => { resolve = a; reject = b; }); return { promise, resolve, reject }; };
+const flush = () => new Promise((r) => setTimeout(r, 0));
+function harness() {
+  const seen = { options: [] as O[], state: 'loading' as OptionsState, lists: [] as ReturnType<typeof deferred<O[]>>[], prices: [] as ReturnType<typeof deferred<O>>[] };
+  const loader = optionsLoader<O>({
+    list: () => { const x = deferred<O[]>(); seen.lists.push(x); return x.promise; },
+    price: () => { const x = deferred<O>(); seen.prices.push(x); return x.promise; },
+    setOptions: (o) => { seen.options = o; },
+    setState: (st) => { seen.state = st; },
+  });
+  return { loader, seen };
+}
+test('optionsLoader: a code applied while Try again is pricing never leaves "ready" with no options', async () => {
+  const { loader, seen } = harness();
+  void loader.load('cart_1');                // Try again
+  await flush();
+  seen.lists[0].resolve([{ id: 'so_a', amount: null }]);
+  await flush();                             // its price run is now waiting on the shop
+  const refreshed = loader.refresh('cart_1'); // the code request lands
+  await flush();
+  for (const l of seen.lists.slice(1)) l.resolve([{ id: 'so_a', amount: null }]);
+  await flush();
+  for (const p of seen.prices) p.resolve({ id: 'so_a', amount: 85 });
+  await refreshed; await flush();
+  assert.equal(seen.state, 'ready');
+  assert.deepEqual(seen.options, [{ id: 'so_a', amount: 85 }]);
+});
+test('optionsLoader: price() reports whether its run won', async () => {
+  const { loader, seen } = harness();
+  const first = loader.price('cart_1', [{ id: 'so_a', amount: null }]);
+  const second = loader.price('cart_1', [{ id: 'so_b', amount: null }]);
+  seen.prices[1].resolve({ id: 'so_b', amount: 85 });
+  seen.prices[0].resolve({ id: 'so_a', amount: 99 });
+  assert.equal(await second, true);
+  assert.equal(await first, false);
+  assert.deepEqual(seen.options, [{ id: 'so_b', amount: 85 }]);
+});
+test('optionsLoader: an older load that fails late does not undo a newer ready', async () => {
+  const { loader, seen } = harness();
+  void loader.load('cart_1');
+  const second = loader.load('cart_1');
+  await flush();
+  seen.lists[1].resolve([{ id: 'so_a', amount: null }]);
+  await flush();
+  seen.prices[0].resolve({ id: 'so_a', amount: 85 });
+  await second;
+  seen.lists[0].reject(new TypeError('Failed to fetch'));
+  await flush();
+  assert.equal(seen.state, 'ready');
+});
+test('optionsLoader: refresh once ready prices the current options without listing again', async () => {
+  const { loader, seen } = harness();
+  const l = loader.load('cart_1');
+  await flush();
+  seen.lists[0].resolve([{ id: 'so_a', amount: null }]);
+  await flush();
+  seen.prices[0].resolve({ id: 'so_a', amount: 85 });
+  await l;
+  const r = loader.refresh('cart_1');
+  await flush();
+  assert.equal(seen.lists.length, 1);
+  seen.prices[1].resolve({ id: 'so_a', amount: 0 });
+  await r;
+  assert.equal(seen.state, 'ready');
+  assert.deepEqual(seen.options, [{ id: 'so_a', amount: 0 }]);
 });

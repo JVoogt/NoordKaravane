@@ -3,7 +3,8 @@ import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { backendAvailable, client, errMsg, ga4Items, getCart, publishCount, reloadCart, setCartId, setShippingMethod, type Cart } from '../scripts/cart-client';
 import { zar } from './format';
 import { quoteHref, quoteLines } from '../lib/quote';
-import { PROMO_COPY, droppedCodes, isNetworkError, summaryTotals } from '../lib/promo';
+import { PROMO_COPY, isNetworkError, optionsLoader, placeCheck, summaryTotals, type OptionsState } from '../lib/promo';
+import { cartLoadMsg } from '../lib/cart-load';
 import PromoCode from './PromoCode';
 
 interface Props {
@@ -29,6 +30,9 @@ const isCollect = (o?: Opt) => !!o && (o.data?.id === 'workshop-collect' || /col
 /** Total parcel weight in grams, from the variant weights the cart returns. Unknown weights count as 0 (the backend re-checks). */
 const cartWeightG = (c: Cart | null) => (c?.items ?? []).reduce((s, i) => s + Number(i.variant?.weight ?? 0) * i.quantity, 0);
 
+/** What a log keeps from a failed request: status, name and message, never the whole object. */
+const errInfo = (e: unknown) => { const x = e as { status?: number; name?: string; message?: string } | null | undefined; return { status: x?.status, name: x?.name, message: x?.message }; };
+
 type F = Record<string, string>;
 const EMPTY: F = { email: '', first_name: '', last_name: '', phone: '', address_1: '', address_2: '', city: '', province: '', postal_code: '', locker: '' };
 
@@ -37,7 +41,7 @@ export default function Checkout(props: Props) {
   const [loading, setLoading] = useState(true);
   const [loadErr, setLoadErr] = useState('');
   const [opts, setOpts] = useState<Opt[]>([]);
-  const [optsState, setOptsState] = useState<'loading' | 'ready' | 'failed'>('loading');
+  const [optsState, setOptsState] = useState<OptionsState>('loading');
   const [providers, setProviders] = useState<string[]>([EFT]);
   const [f, setF] = useState<F>(EMPTY);
   const [shipId, setShipId] = useState('');
@@ -56,7 +60,6 @@ export default function Checkout(props: Props) {
   const [placeStop, setPlaceStop] = useState(false);
   const summary = useRef<HTMLDetailsElement>(null);
   const tracked = useRef(false);
-  const priceSeq = useRef(0);
 
   useEffect(() => {
     if (!backendAvailable()) { setLoading(false); return; }
@@ -69,11 +72,10 @@ export default function Checkout(props: Props) {
         const a = c.shipping_address;
         if (a) setF((p) => ({ ...p, first_name: a.first_name || '', last_name: a.last_name || '', phone: a.phone || '', address_1: a.address_1 || '', address_2: a.address_2 || '', city: a.city || '', province: a.province || '', postal_code: a.postal_code || '' }));
         if (typeof c.metadata?.pudo_locker === 'string') setF((p) => ({ ...p, locker: String(c.metadata!.pudo_locker) }));
-        const sm = c.shipping_methods?.[0];
-        // CONTRACT: a Pudo method chosen earlier must not survive a cart that has since become too heavy. Make the customer re-pick.
-        if (sm && !(/pudo/i.test(sm.name || '') && cartWeightG(c) > props.pudoMaxWeightG)) setShipId(sm.shipping_option_id);
+        const held = serverShipId(c);
+        if (held) setShipId(held);
         const [, pp] = await Promise.allSettled([
-          loadOptions(c.id),
+          delivery.load(c.id),
           client().store.payment.listPaymentProviders({ region_id: c.region_id }),
         ]);
         if (pp.status === 'fulfilled') {
@@ -86,39 +88,44 @@ export default function Checkout(props: Props) {
           tracked.current = true;
           window.nkTrack?.('begin_checkout', { currency: 'ZAR', value: c.total, items: ga4Items(c), meta_event_id: eventId() });
         }
-      } catch (e) { console.error('[checkout] load failed', e); setLoadErr(errMsg(e)); } finally { setLoading(false); }
+      } catch (e) { console.error('[checkout] load failed', errInfo(e)); setLoadErr(cartLoadMsg(e)); } finally { setLoading(false); }
     })();
   }, []);
 
-  /** Lists the delivery options for this cart and prices them. Never throws: a failure shows a Try again action. */
-  async function loadOptions(cartId: string) {
-    setOptsState('loading');
-    try {
+  /**
+   * Lists the delivery options for this cart and prices them; never throws, a failure shows a Try again action.
+   * Calculated options (ours all are) carry no price in the listing: Medusa calculates each for this cart. After a code
+   * or a place() stop changes the cart they are priced again (a discount can take the courier's basis under the
+   * free-delivery threshold), so the options not selected never show a stale price. The latest run wins. A failed
+   * price keeps the previous amount but is flagged as unconfirmed; place() still stops if the total moves.
+   */
+  const delivery = useMemo(() => optionsLoader<Opt>({
+    list: async (cartId) => {
       const so = (await client().store.fulfillment.listCartOptions({ cart_id: cartId })) as any;
       const listed = ((so.shipping_options ?? []) as Opt[]).filter((x) => props.collectEnabled || !isCollect(x));
       if (!listed.length) console.error('[checkout] no delivery options', cartId);
-      await priceOptions(cartId, listed);
-      setOptsState('ready');
-    } catch (e) { console.error('[checkout] delivery options failed', e); setOptsState('failed'); }
-  }
-
-  /**
-   * Calculated options (ours all are) carry no price in the listing: ask Medusa to calculate each for this cart. Run
-   * again after a code changes the cart (a discount can take the courier's basis under the free-delivery threshold), so
-   * the options not selected never show a stale price. The latest run wins. A failed price keeps the previous amount
-   * but is flagged as unconfirmed; place() still stops if the total moves.
-   */
-  async function priceOptions(cartId: string, listed: Opt[]) {
-    const run = ++priceSeq.current;
-    const priced = await Promise.all(listed.map(async (o) => {
+      return listed;
+    },
+    price: async (cartId, o) => {
       if (o.price_type !== 'calculated') return o;
       try {
         const r = (await client().store.fulfillment.calculate(o.id, { cart_id: cartId })) as any;
         return { ...o, amount: r.shipping_option?.amount ?? null, unconfirmed: false };
-      } catch (e) { console.error('[checkout] delivery price failed', o.id, e); return { ...o, unconfirmed: true }; }
-    }));
-    if (run === priceSeq.current) setOpts(priced);
-  }
+      } catch (e) { console.error('[checkout] delivery price failed', o.id, errInfo(e)); return { ...o, unconfirmed: true }; }
+    },
+    setOptions: setOpts,
+    setState: setOptsState,
+    onError: (e) => console.error('[checkout] delivery options failed', errInfo(e)),
+  }), []);
+
+  /**
+   * The delivery option a cart really holds, as the one to show selected. CONTRACT: a Pudo method chosen earlier must
+   * not survive a cart that has since become too heavy, so the customer re-picks.
+   */
+  const serverShipId = (c: Cart | null) => {
+    const m = c?.shipping_methods?.[0];
+    return m && !(/pudo/i.test(m.name || '') && cartWeightG(c) > props.pudoMaxWeightG) ? m.shipping_option_id : '';
+  };
 
   const eventId = () => {
     try {
@@ -137,9 +144,6 @@ export default function Checkout(props: Props) {
   // The cart's own delivery method (the summary and the option labels read the same one) and its pre-discount fee.
   const cartOptionId = cart?.shipping_methods?.[0]?.shipping_option_id;
   const cartShip = cart ? cart.original_shipping_total ?? cart.shipping_total : 0;
-  // What a refused delivery choice falls back to: the cart's own method, unless it is a Pudo the parcel is too heavy for.
-  const cartMethod = cart?.shipping_methods?.[0];
-  const keepShipId = cartMethod && !(/pudo/i.test(cartMethod.name || '') && heavy) ? cartMethod.shipping_option_id : '';
   const set = (k: string) => (e: Event) => { const v = (e.target as HTMLInputElement).value; setF((p) => ({ ...p, [k]: v })); if (errors[k]) setErrors((p) => { const n = { ...p }; delete n[k]; return n; }); };
 
   async function chooseShipping(o: Opt) {
@@ -152,8 +156,15 @@ export default function Checkout(props: Props) {
     try {
       setCart(await setShippingMethod(cart.id, o.id));
     } catch (e) {
-      console.error('[checkout] delivery method failed', o.id, e);
-      setShipId(keepShipId);
+      console.error('[checkout] delivery method failed', o.id, errInfo(e));
+      // The response can be lost after the shop made the change: read the cart back and show the method it really
+      // holds, never the one assumed from the cart on screen. place() checks the method again before payment.
+      let back: Cart | null = null;
+      try { back = await reloadCart(cart.id); } catch (err) { console.error('[checkout] reload after delivery failure failed', errInfo(err)); }
+      if (back) {
+        setCart(back); setShipId(serverShipId(back));
+        if (back.shipping_methods?.[0]?.shipping_option_id === o.id) return;
+      } else setShipId(serverShipId(cart));
       setShipErr(isNetworkError(e) ? errMsg(e) : 'We could not set that delivery method.');
     } finally { setShipBusy(false); }
   }
@@ -208,21 +219,32 @@ export default function Checkout(props: Props) {
       const mid = eventId();
       const metadata = { ...(cart.metadata ?? {}), pudo_locker: pudo ? f.locker.trim() : '', collect_from_workshop: collect, marketing_consent: marketing, analytics_consent: consent.analytics, meta_event_id: mid, ...ids };
       await sdk.store.cart.update(cart.id, { email: f.email.trim(), shipping_address: addr, billing_address: addr, metadata });
-      if (!cart.shipping_methods?.some((m) => m.shipping_option_id === shipId)) await sdk.store.cart.addShippingMethod(cart.id, { option_id: shipId, data: {} });
+      const read = async () => (await sdk.store.cart.retrieve(cart.id, { fields: '*items,*shipping_methods,*payment_collection,*payment_collection.payment_sessions' })).cart as unknown as Cart;
 
-      const fresh = (await sdk.store.cart.retrieve(cart.id, { fields: '*items,*shipping_methods,*payment_collection,*payment_collection.payment_sessions' })).cart as unknown as Cart;
       // The update above refreshes the cart: a shown code can drop out, or shipping can be re-priced (a discount can take
-      // the courier's basis under the free-delivery threshold). Stop before payment and show the new cart.
-      const dropped = droppedCodes(cart, fresh).length > 0;
-      const moved = shownTotal != null && Math.round(fresh.total * 100) !== Math.round(shownTotal * 100);
-      if (dropped || moved) {
+      // the courier's basis under the free-delivery threshold). Only the shop's cart says which delivery method it holds
+      // (a lost response can leave it on another one, and at free delivery every method costs R0, so the totals match).
+      // A different method is added again once (a Pudo locker is already in the metadata saved above); if the cart
+      // still differs, or the total or a code moved, stop before payment and show the new cart.
+      let fresh = await read();
+      let check = placeCheck(cart, fresh, shipId, shownTotal, false);
+      if (check === 'readd') {
+        await sdk.store.cart.addShippingMethod(cart.id, { option_id: shipId, data: {} });
+        fresh = await read();
+        check = placeCheck(cart, fresh, shipId, shownTotal, true);
+      }
+      if (check !== 'ok') {
         // `fresh` lacks the variant weights the Pudo rule reads, so show the fully-shaped cart. If that read fails, keep
         // the cart on screen rather than one without weights; the message still stops the order.
         let shown: Cart | null = null;
-        try { shown = await reloadCart(cart.id); } catch (err) { console.error('[checkout] reload after stop failed', err); }
-        if (shown) { setPlaceStop(true); setShipErr(''); setCart(shown); priceOptions(shown.id, opts); }
+        try { shown = await reloadCart(cart.id); } catch (err) { console.error('[checkout] reload after stop failed', errInfo(err)); }
+        if (shown) {
+          setPlaceStop(true); setShipErr(''); setCart(shown); delivery.refresh(shown.id);
+          // The cart would not hold the method on screen: show the one it really holds.
+          if (shown.shipping_methods?.[0]?.shipping_option_id !== shipId) setShipId(serverShipId(shown));
+        }
         setPlacing(false);
-        setSubmitErr(dropped ? PROMO_COPY.dropped : PROMO_COPY.total_changed);
+        setSubmitErr(check === 'dropped' ? PROMO_COPY.dropped : PROMO_COPY.total_changed);
         return;
       }
       await sdk.store.payment.initiatePaymentSession(fresh as any, { provider_id: pay });
@@ -252,7 +274,7 @@ export default function Checkout(props: Props) {
       setCartId(null); publishCount(null);
       window.location.assign(u(`/order/confirmed/${encodeURIComponent(o.id)}`));
     } catch (err) {
-      console.error('[checkout] place order failed', err);
+      console.error('[checkout] place order failed', errInfo(err));
       setSubmitErr(errMsg(err, 'We could not place your order. Please try again.'));
       setPlacing(false);
     }
@@ -352,7 +374,7 @@ export default function Checkout(props: Props) {
           <legend class="display mb-2 text-[1.7rem]">Delivery method</legend>
           {optsState === 'loading' && opts.length === 0 && <p class="hint">Loading delivery options...</p>}
           {optsState === 'failed' && (
-            <p class="err" role="alert">We could not load delivery options. <button type="button" class="link min-h-11 px-1" onClick={() => loadOptions(cart.id)}>Try again</button></p>
+            <p class="err" role="alert">We could not load delivery options. <button type="button" class="link min-h-11 px-1" onClick={() => delivery.load(cart.id)}>Try again</button></p>
           )}
           {optsState === 'ready' && visibleOpts.length === 0 && (
             <p class="err" role="alert">No delivery options are available for this order. <a href={u('/contact')}>Contact us</a> to arrange delivery.</p>
@@ -371,7 +393,7 @@ export default function Checkout(props: Props) {
                 <span class="choice__body">
                   <span class="flex items-baseline justify-between gap-3"><strong class="font-display text-[1.05rem] uppercase">{o.name}</strong><span class="typed font-bold">{amount == null ? 'Price not available' : free ? 'Free' : zar(amount)}</span></span>
                   <span class="text-[0.92rem] text-muted">{isPudo(o) ? 'Small parcels only. Collect from a Pudo locker near you, any time of day.' : isCollect(o) ? `Free. Collect from ${props.workshop.address_1}, ${props.workshop.city}, Mon to Thu 08:00 to 16:00, Fri 08:00 to 14:00. We contact you when it is ready.` : 'Delivered to your door by The Courier Guy. Price depends on parcel size.'}{isCollect(o) ? '' : <> Free over {zar(props.freeShipping)} for parcels up to 5 kg.</>}</span>
-                  {unconfirmed && <span class="hint">We could not confirm this price. It is checked again when you place your order.</span>}
+                  {unconfirmed && amount != null && <span class="hint">We could not confirm this price. It is checked again when you place your order.</span>}
                 </span>
               </label>
             );
@@ -420,7 +442,7 @@ export default function Checkout(props: Props) {
         </fieldset>
 
         <PromoCode idPrefix="co" cart={cart} announceDrops={!placeStop} disabled={placing || shipBusy} onBusy={setPromoBusy}
-          onCart={(c) => { setPlaceStop(false); setShipErr(''); setCart(c); priceOptions(c.id, opts); }} />
+          onCart={(c) => { setPlaceStop(false); setShipErr(''); setCart(c); delivery.refresh(c.id); }} />
 
         <div>
           {submitErr && <p id="submit-err" class="err mb-3 border-2 border-wine p-3 font-medium" role="alert">{submitErr}</p>}

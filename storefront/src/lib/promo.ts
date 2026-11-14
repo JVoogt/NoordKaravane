@@ -44,8 +44,11 @@ export function promoOutcome(cart: PromoOutcomeCart, code: string): PromoOutcome
   return sum > 0 ? 'applied' : 'inactive';
 }
 
-/** What fetch throws when the request never reached the shop (Chrome, Firefox, Safari). */
-const NETWORK = /failed to fetch|networkerror|network error|load failed/i;
+/**
+ * What fetch throws when the request never reached the shop (Chrome, Firefox, Safari, and older iOS Safari, which
+ * reports an aborted request as the bare word "cancelled").
+ */
+const NETWORK = /failed to fetch|networkerror|network error|load failed|network connection was lost|internet connection appears to be offline|^cancelled$/i;
 
 /**
  * Maps an SDK error from applying or removing a code to one line of copy. A 400 is matched on Medusa's own message;
@@ -72,10 +75,14 @@ export function isNetworkError(e: unknown): boolean {
 /**
  * One line of copy for a failed shop request: the connection line when fetch never reached the shop, otherwise the
  * shop's own short message. The backend's Pudo refusal names an internal field, so it maps to the checkout's locker copy.
+ * A raw message is shown only from the shop (an error with a numeric HTTP status) or from a plain Error the checkout
+ * throws itself; anything else (a JSON SyntaxError, a code-bug TypeError) gets the fallback.
  */
 export function errMsg(e: unknown, fallback = 'Something went wrong. Please try again.'): string {
   if (isNetworkError(e)) return 'We could not reach the shop. Check your connection and try again.';
-  const err = e as { message?: string; statusText?: string } | null | undefined;
+  const err = e as { status?: unknown; message?: string; statusText?: string } | null | undefined;
+  const own = !!err && Object.getPrototypeOf(err) === Error.prototype;
+  if (!own && typeof err?.status !== 'number') return fallback;
   const m = err?.message;
   // The SDK falls back to the HTTP status text when the body has no shop message (a proxy page): not shopper copy.
   if (!m || m === err?.statusText) return fallback;
@@ -124,4 +131,70 @@ export function summaryTotals(cart: SummaryCart, shipId: string, chosenAmount: n
 export function droppedCodes(before: PromoCart, after: PromoCart): string[] {
   const now = appliedCodes(after);
   return appliedCodes(before).filter((c) => !now.some((n) => same(n, c)));
+}
+
+export type PlaceCart = PromoCart & { total: number; shipping_methods?: { shipping_option_id: string }[] | null };
+export type PlaceCheck = 'ok' | 'readd' | 'dropped' | 'total_changed';
+
+/**
+ * place()'s last check before payment, on the cart read back from the shop. `shownTotal` is the Total the shopper saw,
+ * `shipId` the delivery option on screen, `readded` true once place() has already added that option again.
+ */
+export function placeCheck(before: PromoCart, fresh: PlaceCart, shipId: string, shownTotal: number | null | undefined, readded: boolean): PlaceCheck {
+  // At free delivery every method costs R0, so an equal total does not prove the cart holds the method on screen.
+  if (fresh.shipping_methods?.[0]?.shipping_option_id !== shipId) return readded ? 'total_changed' : 'readd';
+  if (droppedCodes(before, fresh).length > 0) return 'dropped';
+  if (shownTotal != null && Math.round(fresh.total * 100) !== Math.round(shownTotal * 100)) return 'total_changed';
+  return 'ok';
+}
+
+export type OptionsState = 'loading' | 'ready' | 'failed';
+export type OptionsLoaderDeps<O> = {
+  /** The delivery options listed for the cart. May throw. */
+  list: (cartId: string) => Promise<O[]>;
+  /** One option priced for the cart. Never throws (a failed price comes back flagged). */
+  price: (cartId: string, o: O) => Promise<O>;
+  setOptions: (o: O[]) => void;
+  setState: (s: OptionsState) => void;
+  onError?: (e: unknown) => void;
+};
+
+/**
+ * Lists and prices the checkout's delivery options. Pure: the shop calls and the setters are passed in. It keeps its own
+ * copy of the state and options it last set, so a caller never reads them from a stale render.
+ */
+export function optionsLoader<O>(d: OptionsLoaderDeps<O>) {
+  let seq = 0;
+  let loads = 0;
+  let state: OptionsState = 'loading';
+  let options: O[] = [];
+  const setState = (s: OptionsState) => { state = s; d.setState(s); };
+  /** Prices `listed` for the cart. The latest run wins; returns whether this run won. */
+  async function price(cartId: string, listed: O[]): Promise<boolean> {
+    const run = ++seq;
+    const priced = await Promise.all(listed.map((o) => d.price(cartId, o)));
+    if (run !== seq) return false;
+    options = priced; d.setOptions(priced);
+    return true;
+  }
+  /**
+   * Lists the options for the cart and prices them. Never throws: a failure sets 'failed'. Only the latest load sets a
+   * state, and 'ready' only when its own price run won (a later run's options are the ones on screen).
+   */
+  async function load(cartId: string): Promise<void> {
+    const mine = ++loads;
+    setState('loading');
+    try {
+      const listed = await d.list(cartId);
+      if (await price(cartId, listed) && mine === loads) setState('ready');
+    } catch (e) { d.onError?.(e); if (mine === loads) setState('failed'); }
+  }
+  /**
+   * After the cart changed (a code, a place() stop): price the options on screen again once they are ready, otherwise
+   * (a load in flight or failed) list them again, so a run with no options never wins over a load.
+   */
+  function refresh(cartId: string): Promise<unknown> {
+    return state === 'ready' ? price(cartId, options) : load(cartId);
+  }
+  return { load, price, refresh, state: () => state };
 }
