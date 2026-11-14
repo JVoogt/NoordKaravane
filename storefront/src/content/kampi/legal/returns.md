@@ -8,7 +8,7 @@ order: 3
 
 <p data-seller>Kampi Store (store.kampi.co.za) is operated by {{legal_name}}, who sells and delivers every order. The Kampi caravan rental platform is a separate business and is not a party to your purchase.</p>
 
-We want you to be happy with what you buy. If something is wrong, or you change your mind, here is what happens. Returns, refunds and repairs are handled by {{legal_name}}, the seller.
+We want you to be happy with what you buy. If something is wrong, or you change your mind, here is what happens. Returns, refunds and repairs are handled by <span data-seller>{{legal_name}}</span>, the seller.
 
 ## 1. If your product is faulty or not as described
 

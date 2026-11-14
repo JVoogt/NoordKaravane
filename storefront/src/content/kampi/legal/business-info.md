@@ -16,7 +16,7 @@ Section 43 of the Electronic Communications and Transactions Act 25 of 2002 (ECT
 |---|---|
 | Store name | Kampi Store |
 | Seller (trading name) | <span data-seller>{{brand}}</span> |
-| Full legal name | {{legal_name}} |
+| Full legal name | <span data-seller>{{legal_name}}</span> |
 | Legal status | {{legal_status}} |
 | Registration number | {{registration_number}} |
 | VAT number | {{vat_number}} |

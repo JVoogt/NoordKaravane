@@ -16,7 +16,7 @@ You may browse and buy for personal, lawful use. Do not misuse the site, attempt
 
 ## 2. Who you buy from
 
-Every order on Kampi Store is a sale by {{legal_name}}. We take your payment, prepare and deliver your order, and handle returns, refunds and complaints. Kampi, the caravan rental platform at kampi.co.za, lets us use the Kampi name for this store. It does not sell, deliver or guarantee the goods, and it is not a party to your purchase.
+Every order on Kampi Store is a sale by <span data-seller>{{legal_name}}</span>. We take your payment, prepare and deliver your order, and handle returns, refunds and complaints. Kampi, the caravan rental platform at kampi.co.za, lets us use the Kampi name for this store. It does not sell, deliver or guarantee the goods, and it is not a party to your purchase.
 
 ## 3. Products and descriptions
 
@@ -34,7 +34,7 @@ Placing an order is an offer to buy. We accept it, and the contract is concluded
 
 We accept **direct EFT (bank transfer)**.
 
-- After checkout you receive our bank details ({{bank.bank_name}}, account name {{bank.account_name}}) and your order number as the payment reference. Order numbers start with NK, the seller's initials.
+- After checkout you receive our bank details ({{bank.bank_name}}, account name <span data-seller>{{bank.account_name}}</span>) and your order number as the payment reference. Order numbers start with NK, the seller's initials.
 - You must pay within **{{eft_payment_window_hours}} hours**. We send a reminder after {{eft_reminder_after_hours}} hours. **Orders unpaid after {{eft_payment_window_hours}} hours are cancelled automatically.** You are welcome to place the order again.
 - We prepare your order only after we see the payment in our account. Bank processing delays are outside our control. Email proof of payment to {{email_orders}} if in doubt.
 

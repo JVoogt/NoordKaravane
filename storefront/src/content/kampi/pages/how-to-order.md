@@ -24,7 +24,7 @@ After you place the order we show you the banking details and your **payment ref
 
 | | |
 |---|---|
-| Account name | {{bank.account_name}} |
+| Account name | <span data-seller>{{bank.account_name}}</span> |
 | Bank | {{bank.bank_name}} |
 | Account number | {{bank.account_number}} |
 | Branch code | {{bank.branch_code}} |
