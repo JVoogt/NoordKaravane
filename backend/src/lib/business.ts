@@ -34,8 +34,42 @@ export type BusinessConfig = {
   staff_order_alerts?: string | string[]
   /** Voucher programs keyed by name (see CONTRACTS.md, Vouchers). Validated by lib/vouchers/config.ts. */
   voucher_programs?: Record<string, unknown>
+  legal_status: string
+  registration_number: string
+  vat_number: string
+  physical_address: string
+  email_privacy: string
+  information_officer: string
+  /** Other storefront brands selling NK's catalogue, keyed by brand. Validated by kampiBrandConfig. */
+  brands?: { kampi?: KampiBrandConfig }
   [key: string]: unknown
 }
+
+export type BrandKey = "nk" | "kampi"
+export type BrandPalette = { ink: string; paper: string; accent: string; muted: string }
+export type Brand = {
+  key: BrandKey
+  name: string
+  shopUrl: string
+  logoUrl: string | null
+  palette: BrandPalette
+  fromName: string
+  sellerLine: string | null
+}
+export type KampiBrandConfig = {
+  sales_channel_ids: string[]
+  name: string
+  shop_url: string
+  logo_url?: string | null
+  palette: BrandPalette
+  from_name: string
+  tagline?: string
+  whatsapp?: string
+  instagram?: string
+  facebook?: string
+}
+
+export const NK_PALETTE: BrandPalette = { ink: "#0e0f11", paper: "#ebe6dd", accent: "#e95e1d", muted: "#5f594d" }
 
 let cached: BusinessConfig | null = null
 
@@ -124,9 +158,137 @@ export function staffAlertRecipients(cfg: Pick<BusinessConfig, "email_orders" | 
  * Base URL of the storefront. The Astro app is served under /shop on the apex (everything else on the apex is the
  * static landing page), so ANY link to a storefront page must go through this, never bare siteUrl().
  * URL scheme (see CONTRACTS.md): /shop/<handle>/  /shop/cart  /shop/checkout  /shop/order/confirmed/<id>
+ * With a sales channel id it is that channel's brand's shop URL (brandFor), e.g. the Kampi store at its root.
  */
-export function shopUrl(): string {
-  return `${siteUrl()}/shop`
+export function shopUrl(salesChannelId?: string | null): string {
+  if (!salesChannelId) return `${siteUrl()}/shop`
+  return brandFor(salesChannelId).shopUrl
+}
+
+/** The trimmed string when v is a non-blank string holding neither {{ nor REPLACE_ME; otherwise null. Pure. */
+export function usableValue(v: unknown): string | null {
+  if (typeof v !== "string") return null
+  const t = v.trim()
+  if (!t || t.includes("{{") || t.includes("REPLACE_ME")) return null
+  return t
+}
+
+let kampiInvalidLogged = false
+
+const HEX = /^#[0-9a-fA-F]{6}$/
+const CHANNEL_ID = /^sc_[A-Za-z0-9]+$/
+const OPTIONAL_TEXT = ["tagline", "whatsapp", "instagram", "facebook"] as const
+
+function httpsUrl(v: unknown): string | null {
+  const s = usableValue(v)
+  if (!s || !s.startsWith("https://")) return null
+  try {
+    new URL(s)
+  } catch {
+    return null
+  }
+  return s.replace(/\/+$/, "")
+}
+
+/** Why a brands.kampi block is unusable, or the normalised block. */
+function checkKampiBlock(raw: unknown): { ok: KampiBrandConfig } | { reason: string } {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return { reason: "not an object" }
+  const r = raw as Record<string, unknown>
+  const ids = r.sales_channel_ids
+  if (!Array.isArray(ids) || !ids.length) return { reason: "sales_channel_ids must be a non-empty list" }
+  for (const id of ids) if (usableValue(id) === null || !CHANNEL_ID.test(String(id).trim())) return { reason: `sales_channel_ids has an unusable id ${JSON.stringify(id)}` }
+  const name = usableValue(r.name)
+  if (!name) return { reason: "name is missing or a placeholder" }
+  const from_name = usableValue(r.from_name)
+  if (!from_name) return { reason: "from_name is missing or a placeholder" }
+  const shop_url = httpsUrl(r.shop_url)
+  if (!shop_url) return { reason: "shop_url must be an https:// URL" }
+  let logo_url: string | null = null
+  if (r.logo_url != null) {
+    logo_url = httpsUrl(r.logo_url)
+    if (!logo_url) return { reason: "logo_url must be an https:// URL or null" }
+  }
+  const pal = r.palette as Record<string, unknown> | undefined
+  if (!pal || typeof pal !== "object") return { reason: "palette is missing" }
+  for (const k of ["ink", "paper", "accent", "muted"] as const)
+    if (typeof pal[k] !== "string" || !HEX.test(pal[k] as string)) return { reason: `palette.${k} must be #rrggbb` }
+  const ok: KampiBrandConfig = {
+    sales_channel_ids: ids.map((id) => String(id).trim()),
+    name,
+    shop_url,
+    logo_url,
+    palette: { ink: pal.ink as string, paper: pal.paper as string, accent: pal.accent as string, muted: pal.muted as string },
+    from_name,
+  }
+  for (const k of OPTIONAL_TEXT) {
+    if (r[k] == null) continue
+    const v = usableValue(r[k])
+    if (!v) return { reason: `${k} is blank or a placeholder` }
+    ok[k] = v
+  }
+  return { ok }
+}
+
+/**
+ * The validated brands.kampi block, or null when it is missing (silently) or invalid (logged once per process with
+ * console.error; Kampi orders then use NK branding). Never throws. cfg defaults to getBusinessConfig().
+ */
+export function kampiBrandConfig(cfg?: BusinessConfig): KampiBrandConfig | null {
+  let raw: unknown
+  try {
+    raw = (cfg ?? getBusinessConfig()).brands?.kampi
+  } catch {
+    return null
+  }
+  if (raw === undefined) return null
+  const res = checkKampiBlock(raw)
+  if ("ok" in res) return res.ok
+  if (!kampiInvalidLogged) {
+    kampiInvalidLogged = true
+    console.error(`[business] brands.kampi invalid: ${res.reason}; Kampi orders use NK branding`)
+  }
+  return null
+}
+
+function nkBrand(): Brand {
+  return { key: "nk", name: "Noord Karavane", shopUrl: `${siteUrl()}/shop`, logoUrl: null, palette: NK_PALETTE, fromName: "Noord Karavane", sellerLine: null }
+}
+
+function kampiBrand(k: KampiBrandConfig, cfg: BusinessConfig): Brand {
+  const seller = usableValue(cfg.legal_name) ?? usableValue(cfg.brand) ?? "Noord Karavane"
+  return {
+    key: "kampi",
+    name: k.name,
+    shopUrl: k.shop_url,
+    logoUrl: k.logo_url ?? null,
+    palette: k.palette,
+    fromName: k.from_name,
+    sellerLine: `${k.name}, sold and fulfilled by ${seller}`,
+  }
+}
+
+/** The brand an order on this sales channel is sold under: Kampi iff a valid brands.kampi lists the id. Never throws. */
+export function brandFor(salesChannelId: string | null | undefined, cfg?: BusinessConfig): Brand {
+  try {
+    if (!salesChannelId) return nkBrand()
+    const c = cfg ?? getBusinessConfig()
+    const k = kampiBrandConfig(c)
+    return k && k.sales_channel_ids.includes(salesChannelId) ? kampiBrand(k, c) : nkBrand()
+  } catch {
+    return nkBrand()
+  }
+}
+
+/** The brand for a stored key (EmailData.brand). Kampi needs a valid brands.kampi; anything else is NK. Never throws. */
+export function brandByKey(key: BrandKey | null | undefined, cfg?: BusinessConfig): Brand {
+  try {
+    if (key !== "kampi") return nkBrand()
+    const c = cfg ?? getBusinessConfig()
+    const k = kampiBrandConfig(c)
+    return k ? kampiBrand(k, c) : nkBrand()
+  } catch {
+    return nkBrand()
+  }
 }
 
 export function formatZar(amount: number): string {
