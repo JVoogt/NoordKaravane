@@ -13,8 +13,12 @@ import { createCampaignsWorkflow, createPromotionsWorkflow } from "@medusajs/med
  * rows.json: [{ "code": "KAMPI-QR-7F3KQ", "max_kits": 2, "host_id": "<kampi user id>", "listing_ids": "1418 1502" }]
  * Never commit an import file: it maps codes to hosts.
  *
- * Each promotion: 100% off, items only, product = the sticker kit, at most max_kits units, usable once, in the
- * campaign `kampi-host-qr-2026` that ends at HOST_KIT_CODES_ENDS_AT.
+ * Each promotion: a fixed amount of max_kits x the kit price, spread across the sticker-kit items only, usable once,
+ * in the campaign `kampi-host-qr-2026` that ends at HOST_KIT_CODES_ENDS_AT. A fixed amount is used, not "100% off
+ * up to max_kits units": Medusa 2.22.2 applies an `each` allocation's max_quantity per cart LINE, so a 1-kit host
+ * adding one kit in each of the three colours would get three free (measured with host-kit-probe, check 7).
+ * The amount is taken from the kit's price at import time: if the kit price changes afterwards, codes already
+ * imported still give the old amount.
  *
  * Idempotent: a code that already exists (soft-deleted included) is skipped. A rejected row aborts the run before
  * any write. A write failure mid-run reports how far it got and exits non-zero; a rerun skips what was created.
@@ -58,7 +62,7 @@ export function planHostKitImport(rows: unknown, existingCodes: Set<string>): Ho
 }
 
 /** The promotion for one host. Pure. */
-export function hostKitPromotion(row: HostKitRow, productId: string, campaignId: string) {
+export function hostKitPromotion(row: HostKitRow, productId: string, campaignId: string, kitPriceZar: number) {
   return {
     code: row.code,
     type: "standard",
@@ -68,15 +72,14 @@ export function hostKitPromotion(row: HostKitRow, productId: string, campaignId:
     limit: 1,
     campaign_id: campaignId,
     application_method: {
-      type: "percentage",
+      type: "fixed",
       target_type: "items",
-      allocation: "each",
-      value: 100,
-      max_quantity: row.max_kits,
+      allocation: "across",
+      value: row.max_kits * kitPriceZar,
       currency_code: "zar",
       target_rules: [{ attribute: "items.product.id", operator: "in", values: [productId] }],
     },
-    metadata: { program: HOST_KIT_PROGRAM, source: "import", host_id: row.host_id, listing_ids: row.listing_ids, max_kits: row.max_kits },
+    metadata: { program: HOST_KIT_PROGRAM, source: "import", host_id: row.host_id, listing_ids: row.listing_ids, max_kits: row.max_kits, kit_price_zar: kitPriceZar },
   }
 }
 
@@ -105,13 +108,22 @@ export default async function importHostKitCodes({ container }: ExecArgs) {
     throw new Error(`import-host-kit-codes: ${plan.rejected.length} rejected row(s), nothing written`)
   }
 
-  const product = ((await query.graph({ entity: "product", fields: ["id", "status"], filters: { handle: HOST_KIT_HANDLE } })).data as any[])[0]
+  const product = (
+    (await query.graph({ entity: "product", fields: ["id", "status", "variants.sku", "variants.prices.amount", "variants.prices.currency_code"], filters: { handle: HOST_KIT_HANDLE } }))
+      .data as any[]
+  )[0]
   if (!product) throw new Error(`import-host-kit-codes: product ${HOST_KIT_HANDLE} not found; run add-host-sticker-kit first. Nothing written.`)
+  // Every colour must cost the same, or "max_kits x price" is not one number.
+  const zarPrices: number[] = (product.variants ?? []).flatMap((v: any) => (v.prices ?? []).filter((p: any) => p.currency_code === "zar").map((p: any) => Number(p.amount)))
+  const kitPriceZar = zarPrices[0]
+  if (!zarPrices.length || !(kitPriceZar > 0) || zarPrices.some((p) => p !== kitPriceZar))
+    throw new Error(`import-host-kit-codes: the kit's variants must all have the same ZAR price, found ${JSON.stringify(zarPrices)}. Nothing written.`)
 
   const summary = {
     dry_run: dryRun,
     product_id: product.id,
     product_status: product.status,
+    kit_price_zar: kitPriceZar,
     campaign: HOST_KIT_CAMPAIGN,
     ends_at: endsAt.toISOString(),
     planned: plan.create.length,
@@ -140,7 +152,7 @@ export default async function importHostKitCodes({ container }: ExecArgs) {
   try {
     for (let i = 0; i < plan.create.length; i += BATCH) {
       const batch = plan.create.slice(i, i + BATCH)
-      await createPromotionsWorkflow(container).run({ input: { promotionsData: batch.map((r) => hostKitPromotion(r, product.id, campaign.id)) } } as any)
+      await createPromotionsWorkflow(container).run({ input: { promotionsData: batch.map((r) => hostKitPromotion(r, product.id, campaign.id, kitPriceZar)) } } as any)
       summary.created += batch.length
     }
   } catch (e: any) {

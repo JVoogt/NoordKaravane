@@ -68,13 +68,15 @@ export default async function hostKitProbe({ container }: ExecArgs) {
   if (!region || !channel || !kit || !other) throw new Error("host-kit-probe: seed, add-host-sticker-kit and import-host-kit-codes must run first")
   if (kit.status !== "published") await updateProductsWorkflow(container).run({ input: { selector: { id: kit.id }, update: { status: "published" } } } as any)
   const kitVariant: string = kit.variants[0].id
+  const kitVariantB: string | undefined = kit.variants[1]?.id
   const otherVariant: string = other.variants[0].id
 
   const opts = (await fulfillment.listShippingOptions({}, { select: ["id", "data"] })) as any[]
   const options: Record<string, string> = {}
   for (const o of opts) if (o.data?.id) options[o.data.id] = o.id
   const collect = options["workshop-collect"]
-  const courierKey = Object.keys(options).find((k) => k !== "workshop-collect")
+  // door courier first: the Pudo option refuses parcels over pudo_max_weight_g, which is not what this probe tests
+  const courierKey = options["tcg-door"] ? "tcg-door" : Object.keys(options).find((k) => k !== "workshop-collect" && !/pudo/i.test(k))
   if (!collect || !courierKey) throw new Error(`host-kit-probe: need workshop-collect and one courier option, found ${Object.keys(options).join(", ")}`)
 
   const promos = (await promotionModule.listPromotions({}, { select: ["code", "metadata", "used"], take: 1000 })) as any[]
@@ -146,6 +148,17 @@ export default async function hostKitProbe({ container }: ExecArgs) {
   const e6 = await apply(c6, twoB)
   const v6 = await view(c6)
   check("6_two_kit_code_frees_two_of_three", !e6 && v6.kit_total === v6.kit_full / 3, { error: e6, ...v6 })
+
+  // 7. two colours in one cart count as kits of the same product: a 2-kit code frees both, a 1-kit code frees one
+  if (kitVariantB) {
+    const c7 = await newCart([{ variant_id: kitVariant, quantity: 1 }, { variant_id: kitVariantB, quantity: 1 }])
+    const e7 = await apply(c7, twoB)
+    const v7 = await view(c7)
+    const c7b = await newCart([{ variant_id: kitVariant, quantity: 1 }, { variant_id: kitVariantB, quantity: 1 }])
+    const e7b = await apply(c7b, single)
+    const v7b = await view(c7b)
+    check("7_mixed_colours_share_the_kit_allowance", !e7 && !e7b && v7.kit_total === 0 && v7b.kit_total === v7b.kit_full / 2, { two_kit_code: v7, one_kit_code: v7b, errors: [e7, e7b] })
+  }
 
   // 3. kits only + collection: total R0, and the order can be placed with EFT
   const c3 = await newCart([{ variant_id: kitVariant, quantity: 2 }])

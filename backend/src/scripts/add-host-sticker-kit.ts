@@ -1,12 +1,16 @@
 import type { ExecArgs } from "@medusajs/framework/types"
 import { ContainerRegistrationKeys, Modules, ProductStatus } from "@medusajs/framework/utils"
-import { createProductsWorkflow } from "@medusajs/medusa/core-flows"
+import { createProductsWorkflow, deleteProductsWorkflow } from "@medusajs/medusa/core-flows"
 
 /**
  * Adds the "Kampi Host Sticker Kit with QR" product. Idempotent: an existing product with the handle is left as it
  * is and reported.
  *
- *   [HOST_KIT_STATUS=published] npx medusa exec ./src/scripts/add-host-sticker-kit.ts
+ *   [HOST_KIT_STATUS=published] [HOST_KIT_REPLACE_DRAFT=1] npx medusa exec ./src/scripts/add-host-sticker-kit.ts
+ *
+ * HOST_KIT_REPLACE_DRAFT=1 deletes an existing DRAFT of the kit and creates it again from this file (used when the
+ * kit's contents or variants change before launch). A published kit is never deleted; host codes point at the
+ * product id, so replace the draft before importing codes, not after.
  *
  * Created as a DRAFT unless HOST_KIT_STATUS=published: every QR sticker is printed for one Kampi listing, so the
  * kit must not be orderable before a checkout can capture the listing number and the printer is lined up. Publish it
@@ -17,13 +21,21 @@ import { createProductsWorkflow } from "@medusajs/medusa/core-flows"
  */
 export const HOST_KIT_HANDLE = "kampi-host-sticker-kit-qr"
 const SKU = "KAMPI-KIT-QR"
+const COLOUR_OPTION = "Sticker colour"
+// One vinyl colour per kit for the cut stickers (side stickers, square, logos), so they show on a dark or a light camper.
+const COLOURS = [
+  { value: "White", sku: `${SKU}-WHT` },
+  { value: "Khaki", sku: `${SKU}-KHK` },
+  { value: "Black", sku: `${SKU}-BLK` },
+]
 const PRICE_ZAR = 550
 const WEIGHT_G = 350
 const CATEGORIES = ["KampiHost Essentials", "Stickers & Decals"]
 const TAGS = ["kampi.co.za", "Stickers", "Vehicle decal", "QR"]
 const CONTENTS = [
   "1 x QR sticker printed for your listing (400 x 400 mm)",
-  '2 x "I am rented" Kampi stickers (500 x 121 mm)',
+  '2 x "Rent me / Huur my" side stickers (840 x 190 mm)',
+  '1 x "Rent me" square (300 x 300 mm)',
   "2 x Kampi stickers (500 x 121 mm)",
   "4 x Kampi stickers (300 x 73 mm)",
   "2 x pre-departure checklist stickers (105 x 148 mm)",
@@ -33,7 +45,7 @@ const CONTENTS = [
   "A placement guide",
 ]
 const INTRO =
-  "One kit per camper. The 400 mm QR sticker goes on the back of your camper and sends anyone who scans it straight to your own Kampi listing."
+  "One kit per camper. The 400 mm QR sticker goes on the back of your camper and sends anyone who scans it straight to your own Kampi listing. Choose white, khaki or black for the side stickers and logos, so they show up on your camper."
 const OUTRO =
   "Each QR sticker is printed for one specific camper, so we need your Kampi listing number with the order. Courier to your door or a locker, or collect for free at Noord Karavane in Pretoria North, where we can also fit the stickers for you."
 const DESCRIPTION = `${INTRO} The kit includes: ${CONTENTS.join(", ")}. ${OUTRO}`
@@ -49,8 +61,13 @@ export default async function addHostStickerKit({ container }: ExecArgs) {
   const existing = (
     (await query.graph({ entity: "product", fields: ["id", "status", "variants.id", "variants.sku"], filters: { handle: HOST_KIT_HANDLE } })).data as any[]
   )[0]
-  if (existing) {
-    console.log("HOST_KIT_PRODUCT " + JSON.stringify({ created: false, id: existing.id, status: existing.status, variant_id: existing.variants?.[0]?.id ?? null }))
+  const replaceDraft = process.env.HOST_KIT_REPLACE_DRAFT === "1"
+  if (existing && replaceDraft) {
+    if (existing.status !== "draft") throw new Error(`add-host-sticker-kit: the kit is ${existing.status}; only a draft is ever replaced`)
+    await deleteProductsWorkflow(container).run({ input: { ids: [existing.id] } } as any)
+    logger.info(`add-host-sticker-kit: deleted draft ${existing.id} to recreate it`)
+  } else if (existing) {
+    console.log("HOST_KIT_PRODUCT " + JSON.stringify({ created: false, id: existing.id, status: existing.status, variants: (existing.variants ?? []).map((v: any) => v.sku) }))
     return
   }
 
@@ -93,23 +110,21 @@ export default async function addHostStickerKit({ container }: ExecArgs) {
             // one Kampi listing number per kit must travel with the order (the QR print file is picked by it)
             requires_kampi_listing_numbers: true,
           },
-          options: [{ title: "Default", values: ["Default"] }],
-          variants: [
-            {
-              title: "Default",
-              sku: SKU,
-              manage_inventory: false,
-              weight: WEIGHT_G,
-              options: { Default: "Default" },
-              prices: [{ amount: PRICE_ZAR, currency_code: "zar" }],
-            },
-          ],
+          options: [{ title: COLOUR_OPTION, values: COLOURS.map((c) => c.value) }],
+          variants: COLOURS.map((c) => ({
+            title: c.value,
+            sku: c.sku,
+            manage_inventory: false,
+            weight: WEIGHT_G,
+            options: { [COLOUR_OPTION]: c.value },
+            prices: [{ amount: PRICE_ZAR, currency_code: "zar" }],
+          })),
         },
       ],
     },
   } as any)
   const product = (result as any[])[0]
   console.log(
-    "HOST_KIT_PRODUCT " + JSON.stringify({ created: true, id: product.id, status: product.status, variant_id: product.variants?.[0]?.id ?? null, price_zar: PRICE_ZAR })
+    "HOST_KIT_PRODUCT " + JSON.stringify({ created: true, id: product.id, status: product.status, variants: (product.variants ?? []).map((v: any) => v.sku), price_zar: PRICE_ZAR })
   )
 }

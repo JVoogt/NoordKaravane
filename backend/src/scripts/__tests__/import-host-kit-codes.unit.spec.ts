@@ -38,10 +38,12 @@ describe("planHostKitImport", () => {
 })
 
 describe("hostKitPromotion", () => {
-  const promo = hostKitPromotion({ code: "KAMPI-QR-7F3KQ", max_kits: 3, host_id: "host-1", listing_ids: "1 2 3" }, "prod_kit", "camp_1")
+  const promo = hostKitPromotion({ code: "KAMPI-QR-7F3KQ", max_kits: 3, host_id: "host-1", listing_ids: "1 2 3" }, "prod_kit", "camp_1", 550)
 
-  it("takes the kit to zero for at most max_kits units", () => {
-    expect(promo.application_method).toMatchObject({ type: "percentage", value: 100, allocation: "each", max_quantity: 3 })
+  it("is worth max_kits kits in total, however the kits are split across cart lines", () => {
+    // not `each` + max_quantity: Medusa applies that per line, so three colours would give three free kits each
+    expect(promo.application_method).toMatchObject({ type: "fixed", value: 1650, allocation: "across", currency_code: "zar" })
+    expect(promo.application_method).not.toHaveProperty("max_quantity")
   })
 
   it("targets items of the kit product only, never delivery or the whole order", () => {
@@ -54,6 +56,6 @@ describe("hostKitPromotion", () => {
   })
 
   it("keeps the host and listings but no email", () => {
-    expect(promo.metadata).toEqual({ program: "kampi-host-qr", source: "import", host_id: "host-1", listing_ids: "1 2 3", max_kits: 3 })
+    expect(promo.metadata).toEqual({ program: "kampi-host-qr", source: "import", host_id: "host-1", listing_ids: "1 2 3", max_kits: 3, kit_price_zar: 550 })
   })
 })
