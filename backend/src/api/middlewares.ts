@@ -9,5 +9,11 @@ export default defineMiddlewares({
       method: ["POST"],
       bodyParser: { preserveRawBody: true },
     },
+    {
+      // Voucher hook (CONTRACTS.md, Vouchers): the HMAC is over the exact raw bytes received.
+      matcher: "/hooks/vouchers",
+      method: ["POST"],
+      bodyParser: { preserveRawBody: true },
+    },
   ],
 })

@@ -1,21 +1,31 @@
 import Medusa from '@medusajs/js-sdk';
 import { clientEnv } from './env';
+import { loadCart } from '../lib/cart-load';
+export { errMsg } from '../lib/promo';
 
 export interface CartItem {
   id: string; title: string; product_title?: string; variant_title?: string; product_handle?: string; thumbnail?: string | null;
   variant_id?: string; quantity: number; unit_price: number; total: number;
+  /** Pre-discount line value (line `total` is post-discount). */
+  subtotal?: number; original_total?: number;
+  adjustments?: { code?: string | null; amount?: number | null }[] | null;
   variant?: { id: string; title?: string; weight?: number | null; options?: { value: string }[] };
 }
 export interface Cart {
   id: string; email?: string; currency_code: string; region_id: string;
   items: CartItem[]; subtotal: number; total: number; shipping_total: number; discount_total: number; item_total: number;
-  shipping_methods?: { id: string; shipping_option_id: string; name: string; amount: number }[];
+  /** Pre-discount, VAT-inclusive item total. `item_total` is post-discount once a code applies. */
+  original_item_total?: number;
+  /** Pre-discount delivery. `shipping_total` is post-discount when a code discounts shipping (that part is in `discount_total`). */
+  original_shipping_total?: number;
+  promotions?: { id: string; code?: string | null; is_automatic?: boolean | null }[];
+  shipping_methods?: { id: string; shipping_option_id: string; name: string; amount: number; adjustments?: { code?: string | null; amount?: number | null }[] | null }[];
   shipping_address?: Record<string, string>; metadata?: Record<string, unknown> | null;
   payment_collection?: { payment_sessions?: { id: string; provider_id: string; data?: Record<string, any> }[] };
 }
 
 export const CART_COOKIE = 'nk_cart';
-const FIELDS = '*items,+items.thumbnail,+items.product_handle,+items.product_title,+items.variant_title,*items.variant,*items.variant.options,+items.variant.weight,*shipping_methods,*payment_collection,*payment_collection.payment_sessions';
+const FIELDS = '*items,+items.thumbnail,+items.product_handle,+items.product_title,+items.variant_title,*items.variant,*items.variant.options,+items.variant.weight,*shipping_methods,*payment_collection,*payment_collection.payment_sessions,+promotions.code';
 
 let sdk: Medusa | null = null;
 export function client(): Medusa {
@@ -54,17 +64,11 @@ async function region(): Promise<string> {
   return (regionId = r.id);
 }
 
+/** The cookie's cart, or null when there is none (cookie cleared on 404 or a completed cart). Network and server errors throw. */
 export async function getCart(): Promise<Cart | null> {
   const id = getCartId();
   if (!id) return null;
-  try {
-    const { cart } = await client().store.cart.retrieve(id, { fields: FIELDS });
-    if ((cart as any).completed_at) { setCartId(null); return null; }
-    return cart as unknown as Cart;
-  } catch {
-    setCartId(null);
-    return null;
-  }
+  return loadCart(id, async (cid) => (await client().store.cart.retrieve(cid, { fields: FIELDS })).cart as unknown as Cart & { completed_at?: unknown }, () => setCartId(null));
 }
 
 export async function ensureCart(): Promise<Cart> {
@@ -98,11 +102,28 @@ export async function removeLine(cartId: string, lineId: string): Promise<Cart> 
 
 export const reloadCart = refresh;
 
-export function errMsg(e: unknown, fallback = 'Something went wrong. Please try again.'): string {
-  const m = (e as { message?: string })?.message;
-  if (!m) return fallback;
-  if (/fetch|network|Failed to/i.test(m)) return 'We could not reach the shop. Check your connection and try again.';
-  return m.length < 200 ? m : fallback;
+/**
+ * Adds a code (already normalised by the caller). The route answers with the cart in our FIELDS shape, so no second
+ * read is needed. SDK errors are re-thrown unchanged for promoErrorCopy.
+ */
+export async function applyPromo(cartId: string, code: string): Promise<Cart> {
+  const { cart } = await client().store.cart.addPromotions(cartId, { promo_codes: [code] }, { fields: FIELDS });
+  publishCount(cart as unknown as Cart);
+  return cart as unknown as Cart;
+}
+export async function removePromo(cartId: string, code: string): Promise<Cart> {
+  const { cart } = await client().store.cart.removePromotions(cartId, { promo_codes: [code] }, { fields: FIELDS });
+  publishCount(cart as unknown as Cart);
+  return cart as unknown as Cart;
+}
+
+/**
+ * Sets the cart's delivery method. The route answers with the cart in our FIELDS shape (variant weights included, which
+ * the Pudo rule reads), so the response is used as-is. SDK errors are re-thrown unchanged.
+ */
+export async function setShippingMethod(cartId: string, optionId: string, data: Record<string, unknown> = {}): Promise<Cart> {
+  const { cart } = await client().store.cart.addShippingMethod(cartId, { option_id: optionId, data }, { fields: FIELDS });
+  return cart as unknown as Cart;
 }
 
 export function ga4Items(cart: Cart) {

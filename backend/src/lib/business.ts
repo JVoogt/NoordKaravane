@@ -32,6 +32,8 @@ export type BusinessConfig = {
   dropship_suppliers: Record<string, { name: string; email: string }>
   /** Staff who get an email for every new and every paid order. Falls back to email_orders when unset, empty, or holding no usable address. */
   staff_order_alerts?: string | string[]
+  /** Voucher programs keyed by name (see CONTRACTS.md, Vouchers). Validated by lib/vouchers/config.ts. */
+  voucher_programs?: Record<string, unknown>
   [key: string]: unknown
 }
 
