@@ -60,8 +60,27 @@ export function promoErrorCopy(e: unknown): string {
     if (/is invalid/i.test(m)) return PROMO_COPY.invalid;
     return PROMO_COPY.generic;
   }
-  if (e instanceof TypeError && NETWORK.test(m)) return PROMO_COPY.network;
+  if (isNetworkError(e)) return PROMO_COPY.network;
   return PROMO_COPY.generic;
+}
+
+/** True only when fetch never reached the shop. Any other TypeError is a bug, not the network. */
+export function isNetworkError(e: unknown): boolean {
+  return e instanceof TypeError && NETWORK.test(String(e.message ?? ''));
+}
+
+/**
+ * One line of copy for a failed shop request: the connection line when fetch never reached the shop, otherwise the
+ * shop's own short message. The backend's Pudo refusal names an internal field, so it maps to the checkout's locker copy.
+ */
+export function errMsg(e: unknown, fallback = 'Something went wrong. Please try again.'): string {
+  if (isNetworkError(e)) return 'We could not reach the shop. Check your connection and try again.';
+  const err = e as { message?: string; statusText?: string } | null | undefined;
+  const m = err?.message;
+  // The SDK falls back to the HTTP status text when the body has no shop message (a proxy page): not shopper copy.
+  if (!m || m === err?.statusText) return fallback;
+  if (/pudo_locker/.test(m)) return 'Tell us which Pudo locker you want it delivered to.';
+  return m.length < 200 ? m : fallback;
 }
 
 /** The shopper's codes on the cart (automatic promotions skipped). */

@@ -1,6 +1,7 @@
 import Medusa from '@medusajs/js-sdk';
 import { clientEnv } from './env';
 import { loadCart } from '../lib/cart-load';
+export { errMsg } from '../lib/promo';
 
 export interface CartItem {
   id: string; title: string; product_title?: string; variant_title?: string; product_handle?: string; thumbnail?: string | null;
@@ -116,11 +117,13 @@ export async function removePromo(cartId: string, code: string): Promise<Cart> {
   return cart as unknown as Cart;
 }
 
-export function errMsg(e: unknown, fallback = 'Something went wrong. Please try again.'): string {
-  const m = (e as { message?: string })?.message;
-  if (!m) return fallback;
-  if (/fetch|network|Failed to/i.test(m)) return 'We could not reach the shop. Check your connection and try again.';
-  return m.length < 200 ? m : fallback;
+/**
+ * Sets the cart's delivery method. The route answers with the cart in our FIELDS shape (variant weights included, which
+ * the Pudo rule reads), so the response is used as-is. SDK errors are re-thrown unchanged.
+ */
+export async function setShippingMethod(cartId: string, optionId: string, data: Record<string, unknown> = {}): Promise<Cart> {
+  const { cart } = await client().store.cart.addShippingMethod(cartId, { option_id: optionId, data }, { fields: FIELDS });
+  return cart as unknown as Cart;
 }
 
 export function ga4Items(cart: Cart) {

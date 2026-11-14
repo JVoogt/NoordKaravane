@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { PROMO_COPY, appliedCodes, droppedCodes, normalisePromoCode, promoErrorCopy, promoOutcome, promoPrecheck } from './promo.ts';
+import { PROMO_COPY, appliedCodes, droppedCodes, errMsg, isNetworkError, normalisePromoCode, promoErrorCopy, promoOutcome, promoPrecheck } from './promo.ts';
 import type { PromoOutcomeCart } from './promo.ts';
 
 // Made-up codes and amounts only: this repo is public.
@@ -120,4 +120,32 @@ test('droppedCodes reports only shopper codes that disappeared', () => {
 });
 test('droppedCodes compares case-insensitively', () => {
   assert.deepEqual(droppedCodes({ promotions: [{ code: 'A' }] }, { promotions: [{ code: 'a' }] }), []);
+});
+
+const CONNECTION = 'We could not reach the shop. Check your connection and try again.';
+test('isNetworkError: true only for a fetch TypeError (Chrome, Firefox, Safari)', () => {
+  assert.equal(isNetworkError(new TypeError('Failed to fetch')), true);
+  assert.equal(isNetworkError(new TypeError('NetworkError when attempting to fetch resource.')), true);
+  assert.equal(isNetworkError(new TypeError('Load failed')), true);
+  assert.equal(isNetworkError(new TypeError("Cannot read properties of undefined (reading 'items')")), false);
+  assert.equal(isNetworkError({ status: 500, message: 'Failed to fetch' }), false);
+  assert.equal(isNetworkError(undefined), false);
+});
+test('errMsg: Safari "Load failed" gets the connection copy, like Chrome and Firefox', () => {
+  assert.equal(errMsg(new TypeError('Load failed')), CONNECTION);
+  assert.equal(errMsg(new TypeError('Failed to fetch')), CONNECTION);
+  assert.equal(errMsg(new TypeError('NetworkError when attempting to fetch resource.')), CONNECTION);
+});
+test('errMsg: a short shop message passes through; a long or missing one gives the fallback', () => {
+  assert.equal(errMsg({ status: 400, message: 'Pudo lockers only take small parcels.' }), 'Pudo lockers only take small parcels.');
+  assert.equal(errMsg({ status: 500, message: 'x'.repeat(250) }, 'Fallback.'), 'Fallback.');
+  assert.equal(errMsg(undefined), 'Something went wrong. Please try again.');
+});
+test('errMsg: never shows the internal pudo_locker field name', () => {
+  const out = errMsg({ status: 400, message: 'Please choose your Pudo locker (pudo_locker) before selecting this shipping option.' });
+  assert.equal(out, 'Tell us which Pudo locker you want it delivered to.');
+});
+test('errMsg: a proxy error with only an HTTP status text (no shop message) gives the fallback, never "Not Found"', () => {
+  assert.equal(errMsg({ status: 404, message: 'Not Found', statusText: 'Not Found' }, 'Fallback.'), 'Fallback.');
+  assert.equal(errMsg({ status: 502, message: 'Bad Gateway', statusText: 'Bad Gateway' }, 'Fallback.'), 'Fallback.');
 });
