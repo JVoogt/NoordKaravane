@@ -54,11 +54,23 @@ test('promoOutcome: missing arrays and null amounts count as 0 and never throw',
 test('promoErrorCopy: the backend one-code refusal maps to one_code', () => {
   assert.equal(promoErrorCopy({ status: 400, message: 'Only one discount code can be used per order.' }), PROMO_COPY.one_code);
 });
-test('promoErrorCopy: any other 400 maps to invalid', () => {
-  assert.equal(promoErrorCopy({ status: 400, message: 'The promotion code NOPE-1 is invalid' }), PROMO_COPY.invalid);
+test('promoErrorCopy: the unknown-code 400 maps to invalid', () => {
+  assert.equal(promoErrorCopy({ status: 400, message: 'The promotion code NOPE-1 is invalid' }), 'That code is not valid or has expired.');
 });
-test('promoErrorCopy: a failed fetch maps to network', () => {
+test('promoErrorCopy: a 400 for a cart that was already completed maps to the already-placed copy', () => {
+  assert.equal(promoErrorCopy({ status: 400, message: 'Cart cart_01TEST is already completed.' }), 'This order was already placed. Refresh the page.');
+});
+test('promoErrorCopy: any other 400 maps to generic, never invalid', () => {
+  assert.equal(promoErrorCopy({ status: 400, message: 'Invalid request: Field promo_codes is required' }), 'Something went wrong. Please try again.');
+  assert.equal(promoErrorCopy({ status: 400 }), 'Something went wrong. Please try again.');
+});
+test('promoErrorCopy: a failed fetch maps to network (Chrome, Firefox and Safari wording)', () => {
   assert.equal(promoErrorCopy(new TypeError('Failed to fetch')), PROMO_COPY.network);
+  assert.equal(promoErrorCopy(new TypeError('NetworkError when attempting to fetch resource.')), PROMO_COPY.network);
+  assert.equal(promoErrorCopy(new TypeError('Load failed')), PROMO_COPY.network);
+});
+test('promoErrorCopy: a TypeError that is a code bug, not the network, maps to generic', () => {
+  assert.equal(promoErrorCopy(new TypeError("Cannot read properties of undefined (reading 'promotions')")), 'Something went wrong. Please try again.');
 });
 test('promoErrorCopy: a 500 or anything unknown maps to generic', () => {
   assert.equal(promoErrorCopy({ status: 500, message: 'boom' }), PROMO_COPY.generic);
@@ -75,6 +87,8 @@ test('PROMO_COPY holds the exact approved strings', () => {
     one_code: 'Only one code can be used per order. Remove the current code to use a different one.',
     dropped: 'Your discount code no longer applies to this order. Check the total and place your order again.',
     total_changed: 'Your total changed. Check the new total and place your order again.',
+    already_placed: 'This order was already placed. Refresh the page.',
+    already_applied: 'That code is already applied to this order.',
   });
 });
 

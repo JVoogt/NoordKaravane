@@ -1,5 +1,6 @@
 import Medusa from '@medusajs/js-sdk';
 import { clientEnv } from './env';
+import { loadCart } from '../lib/cart-load';
 
 export interface CartItem {
   id: string; title: string; product_title?: string; variant_title?: string; product_handle?: string; thumbnail?: string | null;
@@ -14,6 +15,8 @@ export interface Cart {
   items: CartItem[]; subtotal: number; total: number; shipping_total: number; discount_total: number; item_total: number;
   /** Pre-discount, VAT-inclusive item total. `item_total` is post-discount once a code applies. */
   original_item_total?: number;
+  /** Pre-discount delivery. `shipping_total` is post-discount when a code discounts shipping (that part is in `discount_total`). */
+  original_shipping_total?: number;
   promotions?: { id: string; code?: string | null; is_automatic?: boolean | null }[];
   shipping_methods?: { id: string; shipping_option_id: string; name: string; amount: number; adjustments?: { code?: string | null; amount?: number | null }[] | null }[];
   shipping_address?: Record<string, string>; metadata?: Record<string, unknown> | null;
@@ -60,17 +63,11 @@ async function region(): Promise<string> {
   return (regionId = r.id);
 }
 
+/** The cookie's cart, or null when there is none (cookie cleared on 404 or a completed cart). Network and server errors throw. */
 export async function getCart(): Promise<Cart | null> {
   const id = getCartId();
   if (!id) return null;
-  try {
-    const { cart } = await client().store.cart.retrieve(id, { fields: FIELDS });
-    if ((cart as any).completed_at) { setCartId(null); return null; }
-    return cart as unknown as Cart;
-  } catch {
-    setCartId(null);
-    return null;
-  }
+  return loadCart(id, async (cid) => (await client().store.cart.retrieve(cid, { fields: FIELDS })).cart as unknown as Cart & { completed_at?: unknown }, () => setCartId(null));
 }
 
 export async function ensureCart(): Promise<Cart> {
@@ -104,14 +101,19 @@ export async function removeLine(cartId: string, lineId: string): Promise<Cart> 
 
 export const reloadCart = refresh;
 
-/** Adds a code (already normalised by the caller). SDK errors are re-thrown unchanged for promoErrorCopy. */
+/**
+ * Adds a code (already normalised by the caller). The route answers with the cart in our FIELDS shape, so no second
+ * read is needed. SDK errors are re-thrown unchanged for promoErrorCopy.
+ */
 export async function applyPromo(cartId: string, code: string): Promise<Cart> {
-  await client().store.cart.addPromotions(cartId, { promo_codes: [code] });
-  return refresh(cartId);
+  const { cart } = await client().store.cart.addPromotions(cartId, { promo_codes: [code] }, { fields: FIELDS });
+  publishCount(cart as unknown as Cart);
+  return cart as unknown as Cart;
 }
 export async function removePromo(cartId: string, code: string): Promise<Cart> {
-  await client().store.cart.removePromotions(cartId, { promo_codes: [code] });
-  return refresh(cartId);
+  const { cart } = await client().store.cart.removePromotions(cartId, { promo_codes: [code] }, { fields: FIELDS });
+  publishCount(cart as unknown as Cart);
+  return cart as unknown as Cart;
 }
 
 export function errMsg(e: unknown, fallback = 'Something went wrong. Please try again.'): string {

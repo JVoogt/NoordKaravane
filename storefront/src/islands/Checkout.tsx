@@ -43,8 +43,13 @@ export default function Checkout(props: Props) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitErr, setSubmitErr] = useState('');
   const [placing, setPlacing] = useState(false);
+  // A code request in flight: delivery choice and Place order wait for it (the Total must be the one the shopper saw).
+  const [promoBusy, setPromoBusy] = useState(false);
+  // True only for the cart a place() stop shows: that stop's message already says the code dropped (one message).
+  const [placeStop, setPlaceStop] = useState(false);
   const summary = useRef<HTMLDetailsElement>(null);
   const tracked = useRef(false);
+  const priceSeq = useRef(0);
 
   useEffect(() => {
     if (!backendAvailable()) { setLoading(false); return; }
@@ -65,16 +70,7 @@ export default function Checkout(props: Props) {
           client().store.payment.listPaymentProviders({ region_id: c.region_id }),
         ]);
         if (so.status === 'fulfilled') {
-          // Calculated options (ours all are) carry no price in the listing: ask Medusa to calculate each for this cart.
-          const listed = (((so.value as any).shipping_options ?? []) as Opt[]).filter((x) => props.collectEnabled || !isCollect(x));
-          const priced = await Promise.all(listed.map(async (o) => {
-            if (o.price_type !== 'calculated') return o;
-            try {
-              const r = (await client().store.fulfillment.calculate(o.id, { cart_id: c.id })) as any;
-              return { ...o, amount: r.shipping_option?.amount ?? null };
-            } catch { return o; }
-          }));
-          setOpts(priced);
+          await priceOptions(c.id, (((so.value as any).shipping_options ?? []) as Opt[]).filter((x) => props.collectEnabled || !isCollect(x)));
         }
         if (pp.status === 'fulfilled') {
           const ids = ((pp.value as any).payment_providers as Provider[]).map((p) => p.id);
@@ -90,6 +86,23 @@ export default function Checkout(props: Props) {
     })();
   }, []);
 
+  /**
+   * Calculated options (ours all are) carry no price in the listing: ask Medusa to calculate each for this cart. Run
+   * again after a code changes the cart (a discount can take the courier's basis under the free-delivery threshold), so
+   * the options not selected never show a stale price. The latest run wins.
+   */
+  async function priceOptions(cartId: string, listed: Opt[]) {
+    const run = ++priceSeq.current;
+    const priced = await Promise.all(listed.map(async (o) => {
+      if (o.price_type !== 'calculated') return o;
+      try {
+        const r = (await client().store.fulfillment.calculate(o.id, { cart_id: cartId })) as any;
+        return { ...o, amount: r.shipping_option?.amount ?? null };
+      } catch (e) { console.error('[checkout] delivery price failed', o.id, e); return o; }
+    }));
+    if (run === priceSeq.current) setOpts(priced);
+  }
+
   const eventId = () => {
     try {
       let id = sessionStorage.getItem('nk_event_id');
@@ -104,11 +117,14 @@ export default function Checkout(props: Props) {
   const selected = visibleOpts.find((o) => o.id === shipId);
   const pudo = isPudo(selected);
   const collect = isCollect(selected);
+  // The cart's own delivery method (the summary and the option labels read the same one) and its pre-discount fee.
+  const cartOptionId = cart?.shipping_methods?.[0]?.shipping_option_id;
+  const cartShip = cart ? cart.original_shipping_total ?? cart.shipping_total : 0;
   const set = (k: string) => (e: Event) => { const v = (e.target as HTMLInputElement).value; setF((p) => ({ ...p, [k]: v })); if (errors[k]) setErrors((p) => { const n = { ...p }; delete n[k]; return n; }); };
 
   async function chooseShipping(o: Opt) {
-    if (!cart) return;
-    setShipId(o.id); setShipBusy(true); setSubmitErr('');
+    if (!cart || promoBusy) return;
+    setShipId(o.id); setShipBusy(true); setSubmitErr(''); setPlaceStop(false);
     try {
       const { cart: c } = await client().store.cart.addShippingMethod(cart.id, { option_id: o.id, data: {} });
       setCart({ ...cart, ...(c as unknown as Cart), items: cart.items.length ? (c as any).items ?? cart.items : cart.items });
@@ -120,11 +136,13 @@ export default function Checkout(props: Props) {
     if (!cart) return null;
     // Only trust the cart's own shipping total when its method is the one currently selected. A stale method (for example a
     // Pudo choice dropped because the cart became too heavy) must not leak its fee into the summary.
-    const matches = !!shipId && cart.shipping_methods?.[0]?.shipping_option_id === shipId;
-    if (matches) return { ship: cart.shipping_total, total: cart.total };
+    const matches = !!shipId && cartOptionId === shipId;
+    // Delivery shows the pre-discount fee: a code that discounts shipping is already in Discount, so it is subtracted
+    // once (Subtotal - Discount + Delivery = Total).
+    if (matches) return { ship: cartShip, total: cart.total };
     const base = cart.total - (cart.shipping_methods?.length ? cart.shipping_total : 0);
     return { ship: selected ? selected.amount : null, total: base + (selected?.amount ?? 0) };
-  }, [cart, selected, shipId]);
+  }, [cart, selected, shipId, cartOptionId, cartShip]);
 
   function validate(): Record<string, string> {
     const e: Record<string, string> = {};
@@ -146,7 +164,7 @@ export default function Checkout(props: Props) {
 
   async function place(ev: Event) {
     ev.preventDefault();
-    if (!cart || placing) return;
+    if (!cart || placing || promoBusy) return;
     // The Total the shopper sees right now. The order must be placed at exactly this amount (CONTRACTS "Vouchers").
     const shownTotal = totals?.total;
     setSubmitErr('');
@@ -160,7 +178,7 @@ export default function Checkout(props: Props) {
       (first as HTMLElement | null)?.focus?.({ preventScroll: true });
       return;
     }
-    setPlacing(true);
+    setPlacing(true); setPlaceStop(false);
     try {
       const sdk = client();
       const consent = window.nkConsent ?? { analytics: false, marketing: false };
@@ -179,8 +197,11 @@ export default function Checkout(props: Props) {
       const dropped = droppedCodes(cart, fresh).length > 0;
       const moved = shownTotal != null && Math.round(fresh.total * 100) !== Math.round(shownTotal * 100);
       if (dropped || moved) {
-        // `fresh` lacks the variant weights the Pudo rule reads, so show the fully-shaped cart.
-        setCart(await reloadCart(cart.id).catch(() => fresh));
+        // `fresh` lacks the variant weights the Pudo rule reads, so show the fully-shaped cart. If that read fails, keep
+        // the cart on screen rather than one without weights; the message still stops the order.
+        let shown: Cart | null = null;
+        try { shown = await reloadCart(cart.id); } catch (err) { console.error('[checkout] reload after stop failed', err); }
+        if (shown) { setPlaceStop(true); setCart(shown); priceOptions(shown.id, opts); }
         setPlacing(false);
         setSubmitErr(dropped ? PROMO_COPY.dropped : PROMO_COPY.total_changed);
         return;
@@ -312,12 +333,12 @@ export default function Checkout(props: Props) {
           {opts.length === 0 && <p class="hint">Loading delivery options...</p>}
           {heavy && opts.some(isPudo) && <p class="hint">This order is too big for a Pudo locker, so locker delivery is not offered.</p>}
           {visibleOpts.map((o) => {
-            // The cart's own price for its method wins over the listing price (a code can re-price it).
-            const amount = cart.shipping_methods?.some((m) => m.shipping_option_id === o.id) ? cart.shipping_total : o.amount;
+            // The cart's own (pre-discount) price for its method wins over the listing price, the same method the summary reads.
+            const amount = cartOptionId === o.id ? cartShip : o.amount;
             const free = amount === 0;
             return (
               <label class={'choice' + (shipId === o.id ? ' is-on' : '')}>
-                <input type="radio" name="shipping" value={o.id} checked={shipId === o.id} onChange={() => chooseShipping(o)} disabled={shipBusy || placing} />
+                <input type="radio" name="shipping" value={o.id} checked={shipId === o.id} onChange={() => chooseShipping(o)} disabled={shipBusy || placing || promoBusy} />
                 <span class="choice__body">
                   <span class="flex items-baseline justify-between gap-3"><strong class="font-display text-[1.05rem] uppercase">{o.name}</strong><span class="typed font-bold">{free ? 'Free' : zar(amount)}</span></span>
                   <span class="text-[0.92rem] text-muted">{isPudo(o) ? 'Small parcels only. Collect from a Pudo locker near you, any time of day.' : isCollect(o) ? 'Free. Collect from 252 General Beyers Street, Pretoria North, Mon to Thu 08:00 to 16:00, Fri 08:00 to 14:00. We contact you when it is ready.' : 'Delivered to your door by The Courier Guy. Price depends on parcel size.'}{isCollect(o) ? '' : <> Free over {zar(props.freeShipping)} for parcels up to 5 kg.</>}</span>
@@ -367,11 +388,12 @@ export default function Checkout(props: Props) {
           </div>
         </fieldset>
 
-        <PromoCode idPrefix="co" cart={cart} onCart={(c) => setCart(c)} announceDrops={false} />
+        <PromoCode idPrefix="co" cart={cart} announceDrops={!placeStop} disabled={placing || shipBusy} onBusy={setPromoBusy}
+          onCart={(c) => { setPlaceStop(false); setCart(c); priceOptions(c.id, opts); }} />
 
         <div>
           {submitErr && <p id="submit-err" class="err mb-3 border-2 border-wine p-3 font-medium" role="alert">{submitErr}</p>}
-          <button class="btn btn--lg w-full sm:w-auto" type="submit" disabled={placing || shipBusy}>{placing ? 'Placing your order...' : pay === PAYFAST ? 'Continue to Payfast' : `Place order${totals ? ' · ' + zar(totals.total) : ''}`}</button>
+          <button class="btn btn--lg w-full sm:w-auto" type="submit" disabled={placing || shipBusy || promoBusy}>{placing ? 'Placing your order...' : pay === PAYFAST ? 'Continue to Payfast' : `Place order${totals ? ' · ' + zar(totals.total) : ''}`}</button>
           <p class="hint mt-3">{pay === EFT ? `You will not be charged yet. Next you get our banking details to pay by EFT within ${props.eftWindowHours} hours.` : 'You will pay on the next screen.'}</p>
         </div>
       </div>

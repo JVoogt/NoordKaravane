@@ -10,19 +10,32 @@ export default function Cart({ freeShipping, quoteHandles }: { freeShipping: num
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState('');
+  // A code request in flight: quantity and Remove wait for it, so two cart responses never land out of order.
+  const [promoBusy, setPromoBusy] = useState(false);
 
   useEffect(() => {
     if (!backendAvailable()) { setLoading(false); return; }
-    getCart().then((c) => { setCart(c); publishCount(c); }).catch((e) => setError(errMsg(e))).finally(() => setLoading(false));
+    // getCart throws when the shop cannot be reached (the cookie is kept), so the shopper sees why, not an empty cart.
+    getCart().then((c) => { setCart(c); publishCount(c); }).catch((e) => { console.error('[cart] load failed', e); setError(errMsg(e)); }).finally(() => setLoading(false));
   }, []);
 
   async function change(fn: () => Promise<CartT>, id: string) {
+    if (promoBusy) return;
     setBusyId(id); setError('');
     try { setCart(await fn()); } catch (e) { setError(errMsg(e)); } finally { setBusyId(null); }
   }
 
   if (loading) return <div class="min-h-[22rem]" aria-busy="true"><p class="typed text-muted">Loading your cart...</p></div>;
   if (!backendAvailable()) return <div class="max-w-xl border-2 border-dashed border-ink/40 p-8"><p class="soft text-3xl">Preview mode.</p><p class="mt-2 text-muted">The shop backend is not connected, so the cart is switched off.</p></div>;
+
+  if (!cart && error) {
+    return (
+      <div class="max-w-xl py-6">
+        <p class="err" role="alert">{error}</p>
+        <button type="button" class="btn btn--lg mt-6" onClick={() => location.reload()}>Try again</button>
+      </div>
+    );
+  }
 
   const items = cart?.items ?? [];
   if (!items.length) {
@@ -61,11 +74,11 @@ export default function Cart({ freeShipping, quoteHandles }: { freeShipping: num
                 {isQuote(it) && <p class="mt-1 text-[0.9rem] font-bold text-wine-lit">Quote only: we quote delivery for this item.</p>}
                 <div class="mt-3 flex flex-wrap items-center gap-4">
                   <div class="inline-flex items-center border-[1.5px] border-ink" role="group" aria-label={`Quantity for ${it.product_title || it.title}`}>
-                    <button type="button" class="qty-btn" aria-label="Decrease quantity" disabled={busyId === it.id || it.quantity <= 1} onClick={() => change(() => updateQty(cart!.id, it.id, it.quantity - 1), it.id)}>&minus;</button>
+                    <button type="button" class="qty-btn" aria-label="Decrease quantity" disabled={busyId === it.id || promoBusy || it.quantity <= 1} onClick={() => change(() => updateQty(cart!.id, it.id, it.quantity - 1), it.id)}>&minus;</button>
                     <output class="typed grid w-10 place-items-center" aria-live="polite">{it.quantity}</output>
-                    <button type="button" class="qty-btn" aria-label="Increase quantity" disabled={busyId === it.id || it.quantity >= 10} onClick={() => change(() => updateQty(cart!.id, it.id, it.quantity + 1), it.id)}>+</button>
+                    <button type="button" class="qty-btn" aria-label="Increase quantity" disabled={busyId === it.id || promoBusy || it.quantity >= 10} onClick={() => change(() => updateQty(cart!.id, it.id, it.quantity + 1), it.id)}>+</button>
                   </div>
-                  <button type="button" class="link min-h-11 px-1 text-[0.95rem]" onClick={() => change(() => removeLine(cart!.id, it.id), it.id)}>Remove</button>
+                  <button type="button" class="link min-h-11 px-1 text-[0.95rem]" disabled={busyId === it.id || promoBusy} onClick={() => change(() => removeLine(cart!.id, it.id), it.id)}>Remove</button>
                 </div>
               </div>
               <p class="typed col-start-2 text-[1.15rem] font-bold sm:col-start-3 sm:text-right">{zar(it.original_total ?? it.total)}</p>
@@ -81,7 +94,7 @@ export default function Cart({ freeShipping, quoteHandles }: { freeShipping: num
           {cart!.discount_total > 0 && <div class="flex justify-between"><dt>Discount</dt><dd class="typed">&minus;{zar(cart!.discount_total)}</dd></div>}
           <div class="flex justify-between text-muted"><dt>Delivery</dt><dd>{quoted.length > 0 ? 'quoted for large items' : 'chosen at checkout'}</dd></div>
         </dl>
-        <PromoCode idPrefix="cart" cart={cart!} onCart={(c) => { setCart(c); publishCount(c); }} />
+        <PromoCode idPrefix="cart" cart={cart!} onCart={(c) => { setCart(c); publishCount(c); }} disabled={!!busyId} onBusy={setPromoBusy} />
         {quoted.length === 0 && <div class="mt-4" aria-live="polite">
           {toFree > 0 ? <p class="text-[0.92rem]">Add <strong>{zar(toFree)}</strong> more for free delivery (parcels up to 5 kg).</p> : <p class="text-[0.92rem] font-bold text-moss-deep">You have free shipping.</p>}
           <div class="mt-2 h-2 border border-ink bg-paper" role="presentation"><div class="h-full bg-wine" style={{ width: pct + '%' }} /></div>

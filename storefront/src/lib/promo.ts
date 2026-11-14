@@ -21,6 +21,8 @@ export const PROMO_COPY = {
   one_code: 'Only one code can be used per order. Remove the current code to use a different one.',
   dropped: 'Your discount code no longer applies to this order. Check the total and place your order again.',
   total_changed: 'Your total changed. Check the new total and place your order again.',
+  already_placed: 'This order was already placed. Refresh the page.',
+  already_applied: 'That code is already applied to this order.',
 };
 
 /** What the shopper typed, as Medusa stores codes: no whitespace anywhere, uppercase. */
@@ -42,11 +44,23 @@ export function promoOutcome(cart: PromoOutcomeCart, code: string): PromoOutcome
   return sum > 0 ? 'applied' : 'inactive';
 }
 
-/** Maps an SDK error from applying or removing a code to one line of copy. */
+/** What fetch throws when the request never reached the shop (Chrome, Firefox, Safari). */
+const NETWORK = /failed to fetch|networkerror|network error|load failed/i;
+
+/**
+ * Maps an SDK error from applying or removing a code to one line of copy. A 400 is matched on Medusa's own message;
+ * a 400 we do not recognise is generic, never "invalid". Only a fetch failure is "network": any other TypeError is a bug.
+ */
 export function promoErrorCopy(e: unknown): string {
   const err = e as { status?: number; message?: string } | null | undefined;
-  if (err?.status === 400) return /one discount code/i.test(err.message ?? '') ? PROMO_COPY.one_code : PROMO_COPY.invalid;
-  if (e instanceof TypeError || /failed to fetch|networkerror|load failed/i.test(err?.message ?? '')) return PROMO_COPY.network;
+  const m = String(err?.message ?? '');
+  if (err?.status === 400) {
+    if (/already completed/i.test(m)) return PROMO_COPY.already_placed;
+    if (/one discount code/i.test(m)) return PROMO_COPY.one_code;
+    if (/is invalid/i.test(m)) return PROMO_COPY.invalid;
+    return PROMO_COPY.generic;
+  }
+  if (e instanceof TypeError && NETWORK.test(m)) return PROMO_COPY.network;
   return PROMO_COPY.generic;
 }
 
