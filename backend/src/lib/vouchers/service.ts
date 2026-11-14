@@ -196,19 +196,19 @@ export async function issueVoucher(
 export async function voucherReport(
   container: MedusaContainer,
   args: { program: string; month: string }
-): Promise<{ issued: number; redeemed: number; discount_value_zar: number }> {
+): Promise<{ issued: number; redeemed: number; discount_value_zar: number; unreadable_orders: number }> {
   const promotionModule = container.resolve(Modules.PROMOTION) as any
   const query = container.resolve(ContainerRegistrationKeys.QUERY) as any
   const prefix = `${args.program}-${args.month}`
   const campaigns = ((await promotionModule.listCampaigns({ campaign_identifier: { $like: `${prefix}%` } }, { select: ["id", "campaign_identifier"] })) as any[]).filter(
     (c) => String(c.campaign_identifier).startsWith(prefix)
   )
-  if (!campaigns.length) return { issued: 0, redeemed: 0, discount_value_zar: 0 }
+  if (!campaigns.length) return { issued: 0, redeemed: 0, discount_value_zar: 0, unreadable_orders: 0 }
   const promotions = (await promotionModule.listPromotions(
     { campaign_id: campaigns.map((c) => c.id) },
     { select: ["id", "code", "metadata", "campaign_id", "deleted_at"], relations: ["application_method"], withDeleted: true }
   )) as any[]
-  if (!promotions.length) return { issued: 0, redeemed: 0, discount_value_zar: 0 }
+  if (!promotions.length) return { issued: 0, redeemed: 0, discount_value_zar: 0, unreadable_orders: 0 }
 
   const { data: links } = await query.graph({
     entity: "order_promotion",
@@ -226,7 +226,8 @@ export async function voucherReport(
     for (const o of data as any[]) if (o.status !== "canceled" && o.status !== "draft" && !o.is_draft_order) orders.set(o.id, o)
   }
   const { carts, missing } = await originatingCarts(query, [...orders.keys()])
-  // An order linked to a cart that cannot be read is not counted; say so once per report, not once per order.
+  // An order linked to a cart that cannot be read is not counted; say so once per report, not once per order, and
+  // return the count (unreadable_orders) so the caller sees the undercount without reading the log.
   if (missing.length)
     container
       .resolve(ContainerRegistrationKeys.LOGGER)
@@ -243,5 +244,5 @@ export async function voucherReport(
     redeemed += 1
     discount += Number(p.metadata?.value_zar ?? p.application_method?.value ?? 0)
   }
-  return { issued: promotions.filter((p) => !p.deleted_at).length, redeemed, discount_value_zar: discount }
+  return { issued: promotions.filter((p) => !p.deleted_at).length, redeemed, discount_value_zar: discount, unreadable_orders: missing.length }
 }

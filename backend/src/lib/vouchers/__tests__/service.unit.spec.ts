@@ -377,7 +377,7 @@ describe("voucherReport", () => {
       ],
     })
     const r = await voucherReport(f.container, { program: "import-woo", month: "2031-07" })
-    expect(r).toEqual({ issued: 3, redeemed: 2, discount_value_zar: 90 })
+    expect(r).toEqual({ issued: 3, redeemed: 2, discount_value_zar: 90, unreadable_orders: 0 })
   })
 
   it("excludes a link to a canceled order", async () => {
@@ -387,7 +387,7 @@ describe("voucherReport", () => {
       links: [{ order_id: "o1", promotion_id: "p1" }],
       orders: [{ id: "o1", status: "canceled", ...adj("A") }],
     })
-    expect(await voucherReport(f.container, { program: "test-prog", month: "2026-11" })).toEqual({ issued: 1, redeemed: 0, discount_value_zar: 0 })
+    expect(await voucherReport(f.container, { program: "test-prog", month: "2026-11" })).toEqual({ issued: 1, redeemed: 0, discount_value_zar: 0, unreadable_orders: 0 })
   })
 
   it("excludes a link to an order with no adjustment carrying the code", async () => {
@@ -413,7 +413,7 @@ describe("voucherReport", () => {
         { id: "o2", status: "pending", ...adj("A") },
       ],
     })
-    expect(await voucherReport(f.container, { program: "test-prog", month: "2026-11" })).toEqual({ issued: 1, redeemed: 1, discount_value_zar: 50 })
+    expect(await voucherReport(f.container, { program: "test-prog", month: "2026-11" })).toEqual({ issued: 1, redeemed: 1, discount_value_zar: 50, unreadable_orders: 0 })
   })
 
   it("never reads promotion.used", async () => {
@@ -421,7 +421,7 @@ describe("voucherReport", () => {
       campaigns: camps,
       promotions: [{ id: "p1", code: "A", campaign_id: "c_nov", used: 1, limit: 1, metadata: { value_zar: 50 } }],
     })
-    expect(await voucherReport(f.container, { program: "test-prog", month: "2026-11" })).toEqual({ issued: 1, redeemed: 0, discount_value_zar: 0 })
+    expect(await voucherReport(f.container, { program: "test-prog", month: "2026-11" })).toEqual({ issued: 1, redeemed: 0, discount_value_zar: 0, unreadable_orders: 0 })
   })
 
   it("selects campaigns by prefix only (other program and other month excluded) and matches codes case-insensitively", async () => {
@@ -435,7 +435,7 @@ describe("voucherReport", () => {
       links: [{ order_id: "o1", promotion_id: "p1" }],
       orders: [{ id: "o1", status: "pending", ...adj("a") }],
     })
-    expect(await voucherReport(f.container, { program: "test-prog", month: "2026-11" })).toEqual({ issued: 1, redeemed: 1, discount_value_zar: 50 })
+    expect(await voucherReport(f.container, { program: "test-prog", month: "2026-11" })).toEqual({ issued: 1, redeemed: 1, discount_value_zar: 50, unreadable_orders: 0 })
   })
 
   it("skips draft orders (H2): status draft or is_draft_order, and asks for is_draft_order", async () => {
@@ -453,7 +453,7 @@ describe("voucherReport", () => {
         { id: "o_real", status: "pending", is_draft_order: false, ...adj("A") },
       ],
     })
-    expect(await voucherReport(f.container, { program: "test-prog", month: "2026-11" })).toEqual({ issued: 1, redeemed: 1, discount_value_zar: 50 })
+    expect(await voucherReport(f.container, { program: "test-prog", month: "2026-11" })).toEqual({ issued: 1, redeemed: 1, discount_value_zar: 50, unreadable_orders: 0 })
     const orderCall = f.graphCalls.find((c) => c.entity === "order")
     expect(orderCall.fields).toEqual(expect.arrayContaining(["id", "status", "is_draft_order"]))
   })
@@ -471,7 +471,7 @@ describe("voucherReport", () => {
         { id: "o_checkout", status: "pending", is_draft_order: false, ...adj("A") },
       ],
     })
-    expect(await voucherReport(f.container, { program: "test-prog", month: "2026-11" })).toEqual({ issued: 1, redeemed: 1, discount_value_zar: 50 })
+    expect(await voucherReport(f.container, { program: "test-prog", month: "2026-11" })).toEqual({ issued: 1, redeemed: 1, discount_value_zar: 50, unreadable_orders: 0 })
   })
 
   it("counts from the originating cart's adjustments: a code added to the order later (order edit) does not count", async () => {
@@ -494,7 +494,7 @@ describe("voucherReport", () => {
       links: [{ order_id: "o1", promotion_id: "p2" }],
       orders: [{ id: "o1", status: "pending", ...adj("B") }],
     })
-    expect(await voucherReport(f.container, { program: "test-prog", month: "2026-11" })).toEqual({ issued: 1, redeemed: 1, discount_value_zar: 50 })
+    expect(await voucherReport(f.container, { program: "test-prog", month: "2026-11" })).toEqual({ issued: 1, redeemed: 1, discount_value_zar: 50, unreadable_orders: 0 })
     const reportCall = f.promotion.listPromotions.mock.calls.find((c: any[]) => c[0]?.campaign_id) as any[]
     expect(reportCall[1]).toEqual(expect.objectContaining({ withDeleted: true }))
     expect(reportCall[1].select).toEqual(expect.arrayContaining(["deleted_at"]))
@@ -515,7 +515,7 @@ describe("voucherReport", () => {
         { id: "o3", status: "pending", ...adj("A") },
       ],
     })
-    expect(await voucherReport(f.container, { program: "test-prog", month: "2026-11" })).toEqual({ issued: 1, redeemed: 1, discount_value_zar: 50 })
+    expect(await voucherReport(f.container, { program: "test-prog", month: "2026-11" })).toEqual({ issued: 1, redeemed: 1, discount_value_zar: 50, unreadable_orders: 2 })
     expect(f.logger.warn).toHaveBeenCalledTimes(1)
     expect(f.logger.warn).toHaveBeenCalledWith(
       "vouchers.report cart not found, orders not counted " +
@@ -543,7 +543,7 @@ describe("voucherReport", () => {
 
   it("returns zeros without querying links when no campaign matches", async () => {
     const f = fake({ campaigns: camps })
-    expect(await voucherReport(f.container, { program: "nothing", month: "2026-11" })).toEqual({ issued: 0, redeemed: 0, discount_value_zar: 0 })
+    expect(await voucherReport(f.container, { program: "nothing", month: "2026-11" })).toEqual({ issued: 0, redeemed: 0, discount_value_zar: 0, unreadable_orders: 0 })
     expect(f.query.graph).not.toHaveBeenCalled()
   })
 })

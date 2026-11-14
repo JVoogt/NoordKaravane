@@ -236,16 +236,16 @@ describe("GET /hooks/vouchers/report", () => {
   })
 
   it("200 with the report, signed over originalUrl", async () => {
-    voucherReport.mockResolvedValue({ issued: 2, redeemed: 1, discount_value_zar: 50 })
+    voucherReport.mockResolvedValue({ issued: 2, redeemed: 1, discount_value_zar: 50, unreadable_orders: 1 })
     const res = fakeRes()
     await GET(getReq(url, { program: "test-prog", month: "2026-11" }), res)
     expect(res.statusCode).toBe(200)
-    expect(res.body).toEqual({ issued: 2, redeemed: 1, discount_value_zar: 50 })
+    expect(res.body).toEqual({ issued: 2, redeemed: 1, discount_value_zar: 50, unreadable_orders: 1 })
     expect(voucherReport).toHaveBeenCalledWith(expect.anything(), { program: "test-prog", month: "2026-11" })
   })
 
   it("does not require the program to be in config", async () => {
-    voucherReport.mockResolvedValue({ issued: 0, redeemed: 0, discount_value_zar: 0 })
+    voucherReport.mockResolvedValue({ issued: 0, redeemed: 0, discount_value_zar: 0, unreadable_orders: 0 })
     const u = "/hooks/vouchers/report?program=import-woo&month=2031-07"
     const res = fakeRes()
     await GET(getReq(u, { program: "import-woo", month: "2031-07" }), res)
