@@ -4,6 +4,7 @@ import type { Product, Category } from '~/lib/products';
 import { categoryFamily, inCategory, topCategories } from '~/lib/products';
 import { u } from '~/lib/url';
 import { brand } from '~/lib/brand';
+import { shownCount, moreLink } from '~/lib/paging';
 const KAMPI = brand.key === 'kampi';
 
 interface Props { products: Product[]; categories: Category[]; error?: string; basePath: string; lockedCategory?: string }
@@ -21,6 +22,9 @@ if (sort === 'az') list = [...list].sort((a, b) => a.title.localeCompare(b.title
 const chips = lockedCategory ? categories.filter((c) => c.parent === lockedCategory) : topCategories(categories);
 const countOf = (h: string) => products.filter((p) => inCategory(p, categoryFamily(categories, h))).length;
 const active = [!lockedCategory && cat, search].filter(Boolean).length;
+const shown = shownCount(q.get('show'), list.length);
+const more = moreLink(Astro.url, shown, list.length);
+const noun = (n: number) => (n === 1 ? 'product' : 'products');
 ---
 <form method="get" action={basePath} class="mb-10 grid gap-5 border-y border-ink-3 py-5" data-filters aria-label="Filter and sort products">
   <div class="flex flex-wrap items-end gap-x-8 gap-y-5">
@@ -55,16 +59,25 @@ const active = [!lockedCategory && cat, search].filter(Boolean).length;
     <button class="btn !min-h-11" type="submit">Apply</button>
   </div>
   <div class="flex flex-wrap items-center justify-between gap-3">
-    <p class="text-[0.9rem] text-muted" role="status" aria-live="polite">{list.length} {list.length === 1 ? 'product' : 'products'}{active ? ' match' : ''}</p>
+    <p class="text-[0.9rem] text-muted" role="status" aria-live="polite" data-shop-count>{shown < list.length ? `Showing ${shown} of ` : ''}{list.length} {noun(list.length)}{active ? ' match' : ''}</p>
     {active > 0 && <a class="link text-[0.95rem]" href={basePath}>Clear filters</a>}
   </div>
 </form>
 
 {error && <p class="err mb-6" role="alert">{error}</p>}
 {list.length ? (
-  <ul class="grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-3 lg:grid-cols-4 lg:gap-x-6 lg:gap-y-14">
-    {list.map((p, i) => <li><ProductCard product={p} priority={i < 4} /></li>)}
-  </ul>
+  <div data-shop-grid>
+    <ul class="grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-3 lg:grid-cols-4 lg:gap-x-6 lg:gap-y-14" data-shop-list>
+      {list.slice(0, shown).map((p, i) => <li id={`p-${i + 1}`}><ProductCard product={p} priority={i < 4} /></li>)}
+    </ul>
+    {more && (
+      <div class="mt-12 flex flex-col items-center gap-3 text-center" data-shop-more>
+        <p class="text-[0.9rem] text-muted">Showing {shown} of {list.length} {noun(list.length)}</p>
+        <a class="btn btn--ghost btn--lg" href={more.href} data-shop-more-link>Show {more.next} more</a>
+        <p class="err" role="alert" data-shop-more-error hidden>Couldn't load more products. Check your connection and try again.</p>
+      </div>
+    )}
+  </div>
 ) : (
   <div class="mx-auto max-w-xl border border-dashed border-ink-3 px-8 py-14 text-center">
     <p class="font-display text-4xl">{KAMPI ? 'No gear matches that.' : 'Nothing here.'}</p>
@@ -86,5 +99,48 @@ const active = [!lockedCategory && cat, search].filter(Boolean).length;
   // Filters apply on change when JS is available; the Apply button is the no-JS fallback.
   document.querySelectorAll<HTMLFormElement>('form[data-filters]').forEach((f) => {
     f.addEventListener('change', (e) => { if ((e.target as HTMLInputElement).type !== 'search') f.requestSubmit(); });
+  });
+
+  // "Show more": with JS the next page's cards are appended in place; without JS the link loads the longer page.
+  document.addEventListener('click', async (e) => {
+    const link = (e.target as Element).closest<HTMLAnchorElement>('a[data-shop-more-link]');
+    if (!link || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    if (link.getAttribute('aria-disabled') === 'true') return;
+    const grid = link.closest<HTMLElement>('[data-shop-grid]');
+    const list = grid?.querySelector<HTMLUListElement>('[data-shop-list]');
+    const box = grid?.querySelector<HTMLElement>('[data-shop-more]');
+    const error = box?.querySelector<HTMLElement>('[data-shop-more-error]');
+    if (!grid || !list || !box) { location.href = link.href; return; }
+    const url = new URL(link.href);
+    url.hash = '';
+    link.setAttribute('aria-disabled', 'true');
+    link.textContent = 'Loading…';
+    list.setAttribute('aria-busy', 'true');
+    if (error) error.hidden = true;
+    try {
+      const res = await fetch(url, { headers: { Accept: 'text/html' } });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
+      const nextGrid = doc.querySelector('[data-shop-grid]');
+      const items = [...(nextGrid?.querySelectorAll('[data-shop-list] > li') ?? [])].slice(list.children.length);
+      if (!nextGrid || !items.length) throw new Error('no new products in the response');
+      list.append(...items.map((li) => document.importNode(li, true)));
+      const count = document.querySelector('[data-shop-count]');
+      const nextCount = doc.querySelector('[data-shop-count]');
+      if (count && nextCount) count.textContent = nextCount.textContent;
+      const nextBox = nextGrid.querySelector('[data-shop-more]');
+      if (nextBox) box.replaceWith(document.importNode(nextBox, true));
+      else box.remove();
+      history.replaceState(history.state, '', url);
+      items[0] && document.getElementById(items[0].id)?.querySelector<HTMLAnchorElement>('a')?.focus({ preventScroll: true });
+    } catch (err) {
+      console.warn('[shop] show more failed', err);
+      link.textContent = 'Try again';
+      link.removeAttribute('aria-disabled');
+      if (error) error.hidden = false;
+    } finally {
+      list.removeAttribute('aria-busy');
+    }
   });
 </script>

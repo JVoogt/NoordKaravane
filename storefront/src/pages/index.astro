@@ -14,6 +14,7 @@ const KAMPI = brand.key === 'kampi';
 const { products, categories, error } = await getCatalogue();
 if (error) Astro.response.headers.set('Cache-Control', 'no-store');
 const filtered = [...Astro.url.searchParams.keys()].some((k) => ['cat', 'sort', 'q'].includes(k));
+const paged = Astro.url.searchParams.has('show');
 const tops = topCategories(categories).map((c) => ({ ...c, n: products.filter((p) => inCategory(p, categoryFamily(categories, c.handle))).length })).filter((c) => c.n > 0);
 const imgFor = (h: string) => CATEGORY_IMAGES[h] ? { src: u(CATEGORY_IMAGES[h]), alt: '' } : products.find((p) => inCategory(p, categoryFamily(categories, h)) && p.images[0])?.images[0];
 ---
@@ -21,7 +22,7 @@ const imgFor = (h: string) => CATEGORY_IMAGES[h] ? { src: u(CATEGORY_IMAGES[h]),
   title={KAMPI ? 'Camping, caravan and braai gear' : 'Caravan & camping gear shop'}
   description={KAMPI ? 'Camping gear, caravan kit, braai tools and first aid kits for South African road trips. Delivered countrywide or collected in Pretoria North. Pay by EFT.' : 'Lithium batteries, lighting, water pumps, towing cameras, braai gear and first aid kits for caravans and campers. Picked and fitted by a caravan workshop in Pretoria North. Pay by EFT.'}
   path={u('/')}
-  noindex={filtered}
+  noindex={filtered || paged}
   jsonld={[breadcrumbLd([{ name: 'Home', path: '/' }, { name: 'Shop', path: u('/') }])]}
 >
   {' '}{KAMPI ? <KampiHero products={products} /> : <section class="border-b border-ink-3">
