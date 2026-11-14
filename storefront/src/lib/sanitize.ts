@@ -6,6 +6,22 @@
 const ALLOWED = new Set(['p', 'br', 'ul', 'ol', 'li', 'strong', 'b', 'em', 'i', 'h2', 'h3', 'h4', 'a', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'span', 'blockquote']);
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
+const LOCAL_ORIGIN = 'https://local.invalid';
+/**
+ * A root-relative href as the same-host path a browser would open, or null when it could leave the host. Browsers
+ * read `\` as `/` and strip tabs and newlines, so `/\evil.test` and `/<TAB>/evil.test` are protocol-relative: any
+ * backslash or character at or below U+0020 is refused. The rest is resolved against a placeholder origin and kept
+ * only if it stays there and its normalised path does not itself start with `//` (`/.//evil.test`).
+ */
+function localPath(url: string): string | null {
+  if (/[\\\u0000- ]/.test(url)) return null;
+  let r: URL;
+  try { r = new URL(url, LOCAL_ORIGIN); } catch { return null; }
+  if (r.origin !== LOCAL_ORIGIN) return null;
+  const path = r.pathname + r.search + r.hash;
+  return path.startsWith('/') && !path.startsWith('//') ? path : null;
+}
+
 /** `localLinks`: also keep root-relative hrefs (`/x/`, never `//host`) as same-site links (Kampi; NK passes nothing). */
 export function sanitizeHtml(input: string, opts: { localLinks?: boolean } = {}): string {
   if (!input) return '';
@@ -17,7 +33,10 @@ export function sanitizeHtml(input: string, opts: { localLinks?: boolean } = {})
     if (tag === 'a') {
       const href = attrs.match(/\bhref\s*=\s*("([^"]*)"|'([^']*)')/i);
       const url = (href?.[2] ?? href?.[3] ?? '').trim();
-      if (opts.localLinks && /^\/(?!\/)/.test(url)) return `<a href="${esc(url)}">`;
+      if (opts.localLinks && url.startsWith('/')) {
+        const path = localPath(url);
+        if (path) return `<a href="${esc(path)}">`;
+      }
       if (!/^(https?:\/\/|mailto:|tel:)/i.test(url)) return '<a>';
       return `<a href="${esc(url)}" rel="noopener nofollow" target="_blank">`;
     }
