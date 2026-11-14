@@ -67,6 +67,28 @@ export function promoErrorCopy(e: unknown): string {
   return PROMO_COPY.generic;
 }
 
+/** The one line shown when the shop could not be reached (errMsg, the cart page, a stop whose new cart did not load). */
+export const CONNECTION = 'We could not reach the shop. Check your connection and try again.';
+
+export type ErrInfo = { status?: unknown; name?: string; message?: string; stack?: string };
+/**
+ * What a log keeps from a failed request, never the whole object. An HTTP error (numeric status) keeps status, name and
+ * message. Any other error is a fetch failure or a code bug, so it also keeps its stack. `message: false` leaves the
+ * message out, and the stack's header with it (Chromium repeats the message there): PromoCode uses that, because a
+ * message can echo the code the shopper typed.
+ */
+export function errInfo(e: unknown, { message = true }: { message?: boolean } = {}): ErrInfo {
+  const x = e as { status?: unknown; name?: string; message?: string; stack?: string } | null | undefined;
+  const info: ErrInfo = { status: x?.status, name: x?.name };
+  if (message) info.message = x?.message;
+  if (typeof x?.status !== 'number' && typeof x?.stack === 'string') {
+    // Chromium starts the stack with "Name: message"; Firefox and Safari list only the frames.
+    const head = `${x.name}: ${x.message}`;
+    info.stack = message || !x.stack.startsWith(head) ? x.stack : x.stack.slice(head.length).replace(/^\n/, '');
+  }
+  return info;
+}
+
 /** True only when fetch never reached the shop. Any other TypeError is a bug, not the network. */
 export function isNetworkError(e: unknown): boolean {
   return e instanceof TypeError && NETWORK.test(String(e.message ?? ''));
@@ -79,7 +101,7 @@ export function isNetworkError(e: unknown): boolean {
  * throws itself; anything else (a JSON SyntaxError, a code-bug TypeError) gets the fallback.
  */
 export function errMsg(e: unknown, fallback = 'Something went wrong. Please try again.'): string {
-  if (isNetworkError(e)) return 'We could not reach the shop. Check your connection and try again.';
+  if (isNetworkError(e)) return CONNECTION;
   const err = e as { status?: unknown; message?: string; statusText?: string } | null | undefined;
   const own = !!err && Object.getPrototypeOf(err) === Error.prototype;
   if (!own && typeof err?.status !== 'number') return fallback;
@@ -142,10 +164,22 @@ export type PlaceCheck = 'ok' | 'readd' | 'dropped' | 'total_changed';
  */
 export function placeCheck(before: PromoCart, fresh: PlaceCart, shipId: string, shownTotal: number | null | undefined, readded: boolean): PlaceCheck {
   // At free delivery every method costs R0, so an equal total does not prove the cart holds the method on screen.
-  if (fresh.shipping_methods?.[0]?.shipping_option_id !== shipId) return readded ? 'total_changed' : 'readd';
+  const otherMethod = fresh.shipping_methods?.[0]?.shipping_option_id !== shipId;
+  if (otherMethod && !readded) return 'readd';
+  // Once the re-add has been tried, a dropped code gets its own line before the method mismatch.
   if (droppedCodes(before, fresh).length > 0) return 'dropped';
+  if (otherMethod) return 'total_changed';
   if (shownTotal != null && Math.round(fresh.total * 100) !== Math.round(shownTotal * 100)) return 'total_changed';
   return 'ok';
+}
+
+/**
+ * The line place() shows when it stops: the stop's own line once the new cart is on screen, otherwise the connection
+ * line (the old total is still showing, so "check the new total" would be wrong).
+ */
+export function stopCopy(check: PlaceCheck, reloaded: boolean): string {
+  if (!reloaded) return CONNECTION;
+  return check === 'dropped' ? PROMO_COPY.dropped : PROMO_COPY.total_changed;
 }
 
 export type OptionsState = 'loading' | 'ready' | 'failed';
@@ -178,14 +212,16 @@ export function optionsLoader<O>(d: OptionsLoaderDeps<O>) {
     return true;
   }
   /**
-   * Lists the options for the cart and prices them. Never throws: a failure sets 'failed'. Only the latest load sets a
-   * state, and 'ready' only when its own price run won (a later run's options are the ones on screen).
+   * Lists the options for the cart and prices them. Never throws: a failure sets 'failed'. Only the latest load prices
+   * its list or sets a state (lists can come back out of order), and 'ready' only when its own price run won (a later
+   * run's options are the ones on screen).
    */
   async function load(cartId: string): Promise<void> {
     const mine = ++loads;
     setState('loading');
     try {
       const listed = await d.list(cartId);
+      if (mine !== loads) return;
       if (await price(cartId, listed) && mine === loads) setState('ready');
     } catch (e) { d.onError?.(e); if (mine === loads) setState('failed'); }
   }

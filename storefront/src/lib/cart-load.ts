@@ -2,7 +2,7 @@
  * Reading the shopper's cart from the cart id in the `nk_cart` cookie. Pure: the retrieve call and the cookie clear
  * are passed in, so the rule is unit tested without the SDK or the DOM.
  */
-import { errMsg } from './promo.ts';
+import { CONNECTION, errMsg } from './promo.ts';
 
 export type CartRead<C> = (id: string) => Promise<C>;
 
@@ -25,8 +25,6 @@ export async function loadCart<C extends { completed_at?: unknown }>(id: string,
   if (cart.completed_at) { forget(); return null; }
   return cart;
 }
-
-const CONNECTION = 'We could not reach the shop. Check your connection and try again.';
 
 /**
  * The one line a cart page shows when loadCart throws: the connection line for an outage (offline, or a 404 from a

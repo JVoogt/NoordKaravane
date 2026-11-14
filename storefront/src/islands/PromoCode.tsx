@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { applyPromo, removePromo, type Cart } from '../scripts/cart-client';
-import { PROMO_COPY, appliedCodes, droppedCodes, normalisePromoCode, promoErrorCopy, promoOutcome, promoPrecheck } from '../lib/promo';
+import { PROMO_COPY, appliedCodes, errInfo, droppedCodes, normalisePromoCode, promoErrorCopy, promoOutcome, promoPrecheck } from '../lib/promo';
 
 /**
  * One discount code per order (CONTRACTS "Vouchers"). Everything shown is derived from the `cart` prop; local state is
@@ -9,8 +9,8 @@ import { PROMO_COPY, appliedCodes, droppedCodes, normalisePromoCode, promoErrorC
  * a quantity change); `onBusy` tells the parent while a code request is in flight, so it locks its own cart changes and
  * two responses can never land out of order.
  */
-/** What the log keeps from a failed code request: never the message (it can echo the code the shopper typed). */
-const errInfo = (e: unknown) => { const x = e as { status?: number; name?: string } | null | undefined; return { status: x?.status, name: x?.name }; };
+/** What the log keeps from a failed code request: never the message, which can echo the code the shopper typed. */
+const logInfo = (e: unknown) => errInfo(e, { message: false });
 
 export default function PromoCode({ cart, onCart, idPrefix, announceDrops = true, disabled = false, onBusy }: {
   cart: Cart; onCart: (c: Cart) => void; idPrefix: string; announceDrops?: boolean; disabled?: boolean; onBusy?: (busy: boolean) => void;
@@ -77,7 +77,7 @@ export default function PromoCode({ cart, onCart, idPrefix, announceDrops = true
       if (outcome === 'applied') { setRaw(''); focusToggle.current = true; setOpen(false); }
       else setMsg(outcome === 'inactive' ? PROMO_COPY.inactive : PROMO_COPY.not_applied);
     } catch (e) {
-      console.error('[promo] apply failed', errInfo(e));
+      console.error('[promo] apply failed', logInfo(e));
       setMsg(promoErrorCopy(e));
     } finally {
       setBusy(null); lock(false);
@@ -91,7 +91,7 @@ export default function PromoCode({ cart, onCart, idPrefix, announceDrops = true
       handOver(await removePromo(cart.id, c));
       setRefocus((n) => n + 1);
     } catch (e) {
-      console.error('[promo] remove failed', errInfo(e));
+      console.error('[promo] remove failed', logInfo(e));
       setMsg(promoErrorCopy(e));
     } finally {
       setBusy(null); lock(false);

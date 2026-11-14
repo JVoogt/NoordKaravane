@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { cartLoadMsg, loadCart } from './cart-load.ts';
+import * as promo from './promo.ts';
 
 type C = { id: string; completed_at?: string | null };
 const tracker = () => { const t = { cleared: 0, forget: () => { t.cleared += 1; } }; return t; };
@@ -52,6 +53,10 @@ const CONNECTION = 'We could not reach the shop. Check your connection and try a
 test('cartLoadMsg: a proxy 404 on cart load gets the connection line (empty message or the status text)', () => {
   assert.equal(cartLoadMsg(Object.assign(new Error(''), { status: 404, statusText: '' })), CONNECTION);
   assert.equal(cartLoadMsg(Object.assign(new Error('Not Found'), { status: 404, statusText: 'Not Found' })), CONNECTION);
+});
+test('cartLoadMsg: the proxy 404 line is the shared CONNECTION constant', () => {
+  assert.equal(promo.CONNECTION, CONNECTION);
+  assert.equal(cartLoadMsg(Object.assign(new Error(''), { status: 404, statusText: '' })), promo.CONNECTION);
 });
 test('cartLoadMsg: offline gets the connection line; a shop message passes through; a bare 5xx gets the fallback', () => {
   assert.equal(cartLoadMsg(new TypeError('Failed to fetch')), CONNECTION);

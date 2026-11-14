@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { backendAvailable, client, errMsg, ga4Items, getCart, publishCount, reloadCart, setCartId, setShippingMethod, type Cart } from '../scripts/cart-client';
 import { zar } from './format';
 import { quoteHref, quoteLines } from '../lib/quote';
-import { PROMO_COPY, isNetworkError, optionsLoader, placeCheck, summaryTotals, type OptionsState } from '../lib/promo';
+import { errInfo, isNetworkError, optionsLoader, placeCheck, stopCopy, summaryTotals, type OptionsState } from '../lib/promo';
 import { cartLoadMsg } from '../lib/cart-load';
 import PromoCode from './PromoCode';
 
@@ -29,9 +29,6 @@ const isPudo = (o?: Opt) => !!o && (/pudo/i.test(o.name) || o.data?.id === 'pudo
 const isCollect = (o?: Opt) => !!o && (o.data?.id === 'workshop-collect' || /collect from the workshop/i.test(o.name));
 /** Total parcel weight in grams, from the variant weights the cart returns. Unknown weights count as 0 (the backend re-checks). */
 const cartWeightG = (c: Cart | null) => (c?.items ?? []).reduce((s, i) => s + Number(i.variant?.weight ?? 0) * i.quantity, 0);
-
-/** What a log keeps from a failed request: status, name and message, never the whole object. */
-const errInfo = (e: unknown) => { const x = e as { status?: number; name?: string; message?: string } | null | undefined; return { status: x?.status, name: x?.name, message: x?.message }; };
 
 type F = Record<string, string>;
 const EMPTY: F = { email: '', first_name: '', last_name: '', phone: '', address_1: '', address_2: '', city: '', province: '', postal_code: '', locker: '' };
@@ -244,7 +241,7 @@ export default function Checkout(props: Props) {
           if (shown.shipping_methods?.[0]?.shipping_option_id !== shipId) setShipId(serverShipId(shown));
         }
         setPlacing(false);
-        setSubmitErr(check === 'dropped' ? PROMO_COPY.dropped : PROMO_COPY.total_changed);
+        setSubmitErr(stopCopy(check, !!shown));
         return;
       }
       await sdk.store.payment.initiatePaymentSession(fresh as any, { provider_id: pay });

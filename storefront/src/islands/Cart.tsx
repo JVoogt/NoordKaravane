@@ -2,6 +2,7 @@ import { u } from '../lib/url';
 import { useEffect, useState } from 'preact/hooks';
 import { backendAvailable, errMsg, getCart, publishCount, removeLine, updateQty, type Cart as CartT } from '../scripts/cart-client';
 import { cartLoadMsg } from '../lib/cart-load';
+import { errInfo } from '../lib/promo';
 import { zar } from './format';
 import { quoteHref, quoteLines } from '../lib/quote';
 import PromoCode from './PromoCode';
@@ -17,13 +18,13 @@ export default function Cart({ freeShipping, quoteHandles }: { freeShipping: num
   useEffect(() => {
     if (!backendAvailable()) { setLoading(false); return; }
     // getCart throws when the shop cannot be reached (the cookie is kept), so the shopper sees why, not an empty cart.
-    getCart().then((c) => { setCart(c); publishCount(c); }).catch((e) => { console.error('[cart] load failed', e); setError(cartLoadMsg(e)); }).finally(() => setLoading(false));
+    getCart().then((c) => { setCart(c); publishCount(c); }).catch((e) => { console.error('[cart] load failed', errInfo(e)); setError(cartLoadMsg(e)); }).finally(() => setLoading(false));
   }, []);
 
   async function change(fn: () => Promise<CartT>, id: string) {
     if (promoBusy) return;
     setBusyId(id); setError('');
-    try { setCart(await fn()); } catch (e) { setError(errMsg(e)); } finally { setBusyId(null); }
+    try { setCart(await fn()); } catch (e) { console.error('[cart] change failed', errInfo(e)); setError(errMsg(e)); } finally { setBusyId(null); }
   }
 
   if (loading) return <div class="min-h-[22rem]" aria-busy="true"><p class="typed text-muted">Loading your cart...</p></div>;

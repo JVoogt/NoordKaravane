@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { PROMO_COPY, appliedCodes, droppedCodes, errMsg, isNetworkError, normalisePromoCode, optionsLoader, placeCheck, promoErrorCopy, promoOutcome, promoPrecheck, summaryTotals } from './promo.ts';
+import * as promo from './promo.ts';
 import type { OptionsState, PlaceCart, PromoOutcomeCart, SummaryCart, SummaryTotals } from './promo.ts';
 
 // Made-up codes and amounts only: this repo is public.
@@ -298,4 +299,76 @@ test('optionsLoader: refresh once ready prices the current options without listi
   await r;
   assert.equal(seen.state, 'ready');
   assert.deepEqual(seen.options, [{ id: 'so_a', amount: 0 }]);
+});
+test('optionsLoader: two loads whose lists come back out of order end ready with the newer options', async () => {
+  const { loader, seen } = harness();
+  const first = loader.load('cart_1');
+  const second = loader.load('cart_1');
+  await flush();
+  seen.lists[1].resolve([{ id: 'so_new', amount: null }]); // the newer list lands first
+  await flush();
+  seen.lists[0].resolve([{ id: 'so_old', amount: null }]); // the older list lands late
+  await flush();
+  // Each price run echoes the option its own list held: run 1 priced the newer list, run 2 (if any) the older one.
+  ['so_new', 'so_old'].forEach((id, i) => seen.prices[i]?.resolve({ id, amount: 85 }));
+  await Promise.all([first, second]); await flush();
+  assert.equal(seen.state, 'ready');
+  assert.deepEqual(seen.options, [{ id: 'so_new', amount: 85 }]);
+  assert.equal(seen.prices.length, 1, 'the stale list is never priced');
+});
+test('optionsLoader: an older load whose list fails after a newer load started sets no state', async () => {
+  const { loader, seen } = harness();
+  void loader.load('cart_1');
+  const second = loader.load('cart_1');
+  await flush();
+  seen.lists[0].reject(new TypeError('Failed to fetch'));
+  await flush();
+  assert.equal(seen.state, 'loading');
+  seen.lists[1].resolve([{ id: 'so_a', amount: null }]);
+  await flush();
+  seen.prices[0].resolve({ id: 'so_a', amount: 85 });
+  await second;
+  assert.equal(seen.state, 'ready');
+});
+test('placeCheck: after the re-add, a dropped code is named before the method mismatch', () => {
+  assert.equal(placeCheck(placed(LOCKER, 2550, ['KR-T1']), placed(COURIER, 2700), LOCKER, 2550, true), 'dropped');
+  assert.equal(placeCheck(placed(LOCKER, 2550, ['KR-T1']), placed(COURIER, 2700), LOCKER, 2550, false), 'readd');
+});
+
+// One shared log shape and one connection line (review lows).
+test('CONNECTION is the one connection line errMsg and the cart page use', () => {
+  assert.equal(promo.CONNECTION, 'We could not reach the shop. Check your connection and try again.');
+});
+test('errInfo: an HTTP error keeps status, name and message, never a stack', () => {
+  const e = Object.assign(new Error('Cart is already completed'), { status: 400 });
+  assert.deepEqual(promo.errInfo(e), { status: 400, name: 'Error', message: 'Cart is already completed' });
+});
+test('errInfo: a code-bug error keeps its stack', () => {
+  const e = new TypeError('x.map is not a function');
+  const info = promo.errInfo(e);
+  assert.equal(info.name, 'TypeError');
+  assert.equal(info.message, 'x.map is not a function');
+  assert.equal(info.stack, e.stack);
+});
+test('errInfo with message off: no message and no stack header line (either could echo the typed code)', () => {
+  const e = Object.assign(new Error('The promotion code KR-SECRET is invalid'), { status: 400 });
+  assert.deepEqual(promo.errInfo(e, { message: false }), { status: 400, name: 'Error' });
+  const bug = new TypeError('KR-SECRET broke it');
+  const info = promo.errInfo(bug, { message: false });
+  assert.equal('message' in info, false);
+  assert.ok(info.stack && !info.stack.includes('KR-SECRET'), 'stack frames only');
+  assert.ok(info.stack.includes('promo.test.ts'));
+});
+test('errInfo with message off: a Firefox or Safari stack (no header line) keeps its frames', () => {
+  const bug = Object.assign(new TypeError('KR-SECRET broke it'), { stack: 'apply@http://shop.test/PromoCode.js:80:7\nonClick@http://shop.test/PromoCode.js:12:3\n' });
+  assert.equal(promo.errInfo(bug, { message: false }).stack, 'apply@http://shop.test/PromoCode.js:80:7\nonClick@http://shop.test/PromoCode.js:12:3\n');
+});
+test('errInfo: a thrown non-object logs without crashing', () => {
+  assert.deepEqual(promo.errInfo(undefined), { status: undefined, name: undefined, message: undefined });
+});
+test('stopCopy: the stop line, or the connection line when the new cart could not be shown', () => {
+  assert.equal(promo.stopCopy('dropped', true), PROMO_COPY.dropped);
+  assert.equal(promo.stopCopy('total_changed', true), PROMO_COPY.total_changed);
+  assert.equal(promo.stopCopy('total_changed', false), 'We could not reach the shop. Check your connection and try again.');
+  assert.equal(promo.stopCopy('dropped', false), 'We could not reach the shop. Check your connection and try again.');
 });
