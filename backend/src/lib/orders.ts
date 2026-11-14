@@ -76,6 +76,17 @@ export function orderEmailData(order: any, extra: Partial<EmailData> = {}): Emai
   }
 }
 
+/**
+ * True once any payment on the order has been captured (staff marked the EFT as received, or PayFast
+ * confirmed). Reads the payment rows: `payment_status` is not populated by query.graph, so it must
+ * never be used to decide whether an order is unpaid.
+ */
+export function hasCapturedPayment(order: any): boolean {
+  return (order?.payment_collections ?? []).some((pc: any) =>
+    (pc.payments ?? []).some((p: any) => !!p.captured_at)
+  )
+}
+
 export function isEftOrder(order: any): boolean {
   return (order.payment_collections ?? []).some((pc: any) =>
     (pc.payments ?? []).some((p: any) => p.provider_id === "pp_eft_eft")
