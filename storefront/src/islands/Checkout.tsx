@@ -17,7 +17,8 @@ interface Props {
   quoteHandles: string[];
   eftWindowHours: number; leadTime: string; freeShipping: number; pudoMaxWeightG: number; collectEnabled: boolean;
   workshop: { address_1: string; city: string; province: string; postal_code: string };
-  bank: { account_name: string; bank_name: string };
+  /** Passed on NK only (unread here); the Kampi page leaves it out. */
+  bank?: { account_name: string; bank_name: string };
 }
 interface Opt {
   id: string; name: string; amount: number | null; price_type?: string; data?: Record<string, any> | null; provider_id?: string;
