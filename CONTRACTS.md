@@ -50,7 +50,7 @@ Hostnames: `api.noordkaravane.co.za` (Medusa store API, `/feeds`, `/hooks`), `ad
 ## Owner inputs still open (blockers before launch)
 - Every `{{PLACEHOLDER}}` in `config/business.json` (legal name/status, registration, VAT, emails, Information Officer, **bank details**, socials, `TFR_SUPPLIER_EMAIL`), then `cp config/business.json backend/src/config/business.json`.
 - Real weights (or confirm tiers) and real courier prices; `catalogue/GAPS.md` lists the 52 products on tier weights and the 27 with generated SKUs. Override per product in `catalogue/overrides.json` (`{handle: {ship_tier, sku}}`), then re-run `catalogue/scripts/normalise_kampi.py`.
-- Policies/legal copy (phase 3, adapt SR's `_LAWYER_REVIEW` approach), food-product labelling for the BoskampKos items, whether `store.kampi.co.za` stays up (decided: parallel, no redirects yet).
+- Policies/legal copy (phase 3, adapt SR's `_LAWYER_REVIEW` approach), food-product labelling for the BoskampKos items, `store.kampi.co.za` (decided: it becomes the Kampi Store on this stack, with redirects from the old Woo URLs; see "Kampi storefront" below).
 
 ## Storefront as built (phase 3)
 - `storefront/`: Astro 5 SSR (`@astrojs/node`, `base: "/shop"`), Preact islands, Tailwind 4, `@medusajs/js-sdk`. Dark NK theme (ink/paper/orange `#e95e1d`, Bebas Neue + Barlow) matching the landing page. Token names are kept from the shared structure but values flipped for dark (`paper*` = dark grounds, `ink*` = light foreground, `wine*` = orange accent).
@@ -146,3 +146,92 @@ Never against production. It refuses to run unless `VOUCHER_PROBE=1` and the `DA
 - Part B: `VOUCHER_PROBE_PART=service` (service, report, cancel revert including a converted draft order that must give nothing back and an order edit with `carry_over_promotions` whose added code must not be given back, completion backstop).
 - Part C, last: `VOUCHER_PROBE_PART=lifecycle` with a scratch config whose `eft_payment_window_hours` and `eft_reminder_after_hours` are 0, passed only to that process (it runs the EFT job, which cancels every unpaid EFT order in the DB).
 - Each part prints `VOUCHER_PROBE_SUMMARY {json}` and exits non-zero when a check fails.
+
+## Kampi storefront
+The Kampi Store (`store.kampi.co.za`, on this stack) is the same storefront code built with `BRAND=kampi`, selling NK's catalogue through its own sales channel. NK is the seller of record on every Kampi order. Real ids, keys and Kampi display values live only on the Pi (`config/business.json` copies, `infra/.env`), never in git.
+
+### Sales channel, key and auto-link (backend)
+- `backend/src/lib/channels.ts`: `KAMPI_CHANNEL_NAME = "Kampi"` (description `store.kampi.co.za`) and `KAMPI_KEY_TITLE = "Kampi"` (a publishable key).
+- `make -C infra kampi-channel` runs `backend/src/scripts/setup-kampi-channel.ts` (compiled `./src/scripts/setup-kampi-channel.js`). Idempotent: it finds or creates the channel and the key, links the key to **exactly one channel** (the Kampi one; any other channel is removed from that key, and the script fails if it cannot), links the channel to the stock location `Noord Karavane Workshop` (so shipping options list for Kampi carts), links every product, re-reads and asserts all of it, and prints `KAMPI_SALES_CHANNEL_ID=...`, `KAMPI_PUBLISHABLE_KEY=...` and `kampi-channel {"channel_created","key_created","location_linked","products_linked","products_total"}`.
+- Subscriber `backend/src/subscribers/product-channel-link.ts` (`product.created`): a new product is linked to the store's default channel plus every id in `brands.kampi.sales_channel_ids` that exists in this database (staging and production share one config, so the other database's ids are dropped).
+- New workflow hooks (cart, order, promotion) go in `backend/src/workflows/hooks/vouchers.ts`: each Medusa hook takes exactly one handler (see Vouchers, Order lifecycle).
+
+### Config: `business.json` -> `brands.kampi`
+```json
+"brands": { "kampi": {
+  "sales_channel_ids": ["sc_..."],
+  "name": "Kampi Store",
+  "shop_url": "https://store.kampi.co.za",
+  "logo_url": "https://store.kampi.co.za/kampi/logo-email.png",
+  "palette": { "ink": "#2c2c2c", "paper": "#fcf6e3", "accent": "#5f6f3a", "muted": "#5a5034" },
+  "from_name": "Kampi Store",
+  "tagline": "...", "whatsapp": "...", "instagram": "...", "facebook": "..."
+} }
+```
+- Required: `sales_channel_ids` (non-empty list, each matching `^sc_[A-Za-z0-9]+$`; list every database's Kampi id), `name`, `shop_url` (`https://`, no trailing slash), `palette` (four `#rrggbb`), `from_name`. Optional: `logo_url` (`https://` or null), `tagline`, `whatsapp`, `instagram`, `facebook`.
+- A value is unusable when it is empty after trim or holds `{{` or `REPLACE_ME` (`usableValue`). An unusable **required** key makes the whole block invalid: `kampiBrandConfig()` returns `null`, logs `[business] brands.kampi invalid: <reason>; Kampi orders use NK branding` once per process, and Kampi orders get NK emails. An unusable optional key is dropped with a one-time warning. **Leave an optional key out** rather than setting it to `""`: a blank value only adds that warning.
+- `kampiChannelIds()` validates the ids on their own, so the product auto-link, the staff channel label and the CAPI skip keep working when a display key is broken.
+- `config/business.example.json` holds an invalid placeholder block on purpose, so a fresh checkout behaves exactly like NK.
+- Two copies on the Pi, both edited (back up each as `business.json.bak-<YYYYMMDD-HHMMSS>` first, check each with `python3 -m json.tool`): `/home/voogiepi/docker/nkshop/config/business.json` (mounted at `/config`) and `/home/voogiepi/docker/nkshop/backend/src/config/business.json` (bundled fallback). Then restart `medusa-server` and `medusa-worker`: the config is read once per process.
+- **Positive validity probe after every edit.** `kampiBrandConfig` is lazy, so a quiet log after a restart proves nothing. Run in **both** containers, with the channel id that `kampi-channel` printed:
+  ```bash
+  for c in nkshop-medusa-server nkshop-medusa-worker; do
+    DOCKER_API_VERSION=1.41 docker exec -w /app "$c" node -e 'const b=require("./src/lib/business.js");const id=process.argv[1];console.log(JSON.stringify({kampi_valid:b.kampiBrandConfig() !== null,brand:b.brandFor(id).key,has_id:b.kampiChannelIds().includes(id)}))' "<sales channel id>"
+  done
+  ```
+  Each must print `{"kampi_valid":true,"brand":"kampi","has_id":true}`. Anything else: fix the block, restart, probe again.
+
+### Brand resolution (backend `backend/src/lib/business.ts`)
+- `brandFor(salesChannelId)` returns the Kampi brand only when `kampiBrandConfig()` is valid and lists that id; otherwise NK. `brandByKey("kampi")` with no valid block also returns NK. `shopUrl()` with no argument is NK's `/shop` URL, unchanged.
+- The Kampi brand's seller line is `<name>, sold and fulfilled by <legal_name>` (the top-level NK `legal_name`).
+
+### Emails
+- Branded per channel: `order-placed-eft`, `eft-reminder`, `payment-received`, `order-shipped`, `order-canceled`. NK output for them is unchanged.
+- Always NK: `password-reset`, `dropship-supplier`. Staff alerts are always NK-branded (`staff-new-order`, `staff-order-paid`, `staff-payment-no-order`): `staffOrderEmailData` drops `brand`, so a Kampi order's alert has NK's From header and shell. Alerts carry a `Channel: NK` or `Channel: Kampi` line, and Kampi orders get the subject prefix `[Kampi] `.
+- From header (`fromHeader` in `backend/src/modules/notification-smtp/from.ts`): NK unchanged; Kampi uses `from_name` as the display name with NK's authenticated sender address. Reply-To stays NK's `email_general` (staff alerts: the customer's address).
+- Kampi footer: the reply line, the seller line, then one legal line joining with ` · ` only the segments whose value is usable (`Reg. no.`, `VAT no.`, physical address); no usable segment means no legal line. Then a link to `shop_url`.
+
+### Storefront build: `BRAND`
+- `BRAND` is `nk` (default when unset) or `kampi`; anything else fails the build with `Unknown BRAND "<v>" (expected nk or kampi)`. It is **build-time only**: `astro.config.mjs` inlines it as the bare constant `__BRAND__` (never `import.meta.env.BRAND`, which Astro turns into a runtime `process.env.BRAND` read). The runtime image has no `BRAND` and no code reads it at runtime.
+- `nk`: base `/shop`, NK look. `kampi`: base `/`, Kampi look, copy and legal pages (`src/content/kampi/`), `security.allowedDomains` = `store.kampi.co.za` only.
+- An unset `BRAND` builds NK **silently**. Compose passes `BRAND: kampi` to `storefront-kampi`; both Dockerfiles label the image `org.noordkaravane.storefront.brand=<brand>`, and `make build` / `make build-storefront-kampi` fail unless the Kampi image's label says `kampi`.
+- Hand builds (outside compose) need both the `config` build context and the arg: `docker build --build-context config=../config --build-arg BRAND=kampi -f Dockerfile .` from `storefront/`. The guard in `npm run build` reads `config/business.example.json` from that context; `infra/docker/storefront.Dockerfile` also copies `config/business.json`, so that file must exist in `config/`.
+
+### Container and env mapping (compose service `storefront-kampi`)
+Container `nkshop-storefront-kampi`, image `nkshop-storefront-kampi` (`:<sha>`, `:latest`, `:prev`), host port `${PORT_WEB_KAMPI:-8554}` (staging: `nkshop-staging-storefront-kampi`, 8555, profile `staging-kampi`). Runtime hardening, limits (384 MB) and healthcheck as `storefront`. The container sees the standard names the code reads; `env()` reads the runtime value first and the build-time inlined one second, so both carry the Kampi source where both exist. Every `KAMPI_*` source has a `:-` default, so an `.env` without them still serves every NK target.
+
+| Container name | Build arg | Runtime env | Source in `infra/.env` |
+|---|---|---|---|
+| `BRAND` | `kampi` (literal) | not set | none |
+| `PUBLIC_MEDUSA_URL` | yes | yes | `PUBLIC_MEDUSA_URL` (shared with NK) |
+| `PUBLIC_MEDUSA_PUBLISHABLE_KEY` | yes | yes | `KAMPI_PUBLIC_MEDUSA_PUBLISHABLE_KEY` (from `make kampi-channel`) |
+| `PUBLIC_SITE_URL` | yes | yes | `KAMPI_PUBLIC_SITE_URL`, default `https://store.kampi.co.za` |
+| `PUBLIC_GA4_ID` | yes | yes | `KAMPI_PUBLIC_GA4_ID` |
+| `PUBLIC_META_PIXEL_ID` | yes | yes | `KAMPI_PUBLIC_META_PIXEL_ID` |
+| `PUBLIC_TURNSTILE_SITE_KEY` | yes | yes | `KAMPI_PUBLIC_TURNSTILE_SITE_KEY` |
+| `TURNSTILE_SECRET` | no | yes | `KAMPI_TURNSTILE_SECRET` |
+| `TURNSTILE_HOSTNAMES` | no | yes | `KAMPI_TURNSTILE_HOSTNAMES`, default `store.kampi.co.za` |
+| `BREVO_API_KEY`, `CONTACT_TO`, `CONTACT_FROM` | no | yes | shared with NK (the contact form sends through NK's Brevo account) |
+| `BREVO_LIST_ID` | no | **not set** | none |
+| `MEDUSA_INTERNAL_URL` | no | `http://medusa-server:9000` | none |
+| `NODE_ENV`, `HOST`, `PORT`, `TZ`, `NODE_OPTIONS` | no | as `storefront` | shared |
+
+- The Kampi build has no newsletter: `/api/newsletter` answers 404 (the route is brand-gated because the code would otherwise fall back to list 4).
+- `STORE_CORS` must include `https://store.kampi.co.za`.
+
+### URL scheme on `store.kampi.co.za` (base `/`)
+| Page | Path |
+|---|---|
+| home | `/` |
+| product | `/<handle>/` |
+| category | `/category/<handle>/` |
+| cart / checkout | `/cart`, `/checkout` |
+| order confirmed | `/order/confirmed/<id>` |
+| sitemap / robots | `/sitemap.xml`, `/robots.txt` |
+- `RESERVED_HANDLES` (`storefront/src/lib/format.ts`) adds the old Woo first segments: `product`, `product-category`, `product-tag`, `shop`, `my-account`, `terms-conditions`, `privacy-policy`, `refund_returns`, `home`, `feed`, `page`, `sitemap_index.xml`. No product handle may equal one.
+- Old Woo URLs answer 301 (Kampi build only) per the table in `storefront/src/lib/woo-redirects.ts` (`wooRedirect`, frozen lists of the Woo product slugs and categories). `node storefront/scripts/redirect-smoke.mjs <origin>` checks them against a running Kampi build.
+- Kampi legal pages (`src/content/kampi/legal/`) are adapted from the NK drafts and are **not lawyer reviewed**. They name NK's legal entity as the seller.
+- Product images stay on NK's hosts (`https://noordkaravane.co.za/shop/products/...`, `cdn.noordkaravane.co.za`); the Kampi CSP allows both (`infra/traefik/kampi-store.yml.example`).
+
+### NK-only
+- Meta CAPI goes out only for orders on NK's own channel (the store default), so Kampi orders send none (the pixel is NK's). The product feeds (`/feeds/meta.xml`, `/feeds/google.xml`) stay NK-only (NK URLs).
