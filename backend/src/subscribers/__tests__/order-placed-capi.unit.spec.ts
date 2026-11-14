@@ -52,7 +52,9 @@ const order = (salesChannelId: string) => ({
 
 function fakeContainer(o: any, store: "ok" | "fails" = "ok") {
   const logger = { info: jest.fn(), warn: jest.fn(), error: jest.fn() }
+  let storeCalls = 0
   const listStores = async () => {
+    storeCalls++
     if (store === "fails") throw new Error("store down")
     return [{ id: "store_1", default_sales_channel_id: "sc_WEBSHOP" }]
   }
@@ -60,6 +62,7 @@ function fakeContainer(o: any, store: "ok" | "fails" = "ok") {
   const notification = { createNotifications: jest.fn(async (n: any) => n) }
   return {
     logger,
+    storeCalls: () => storeCalls,
     resolve: (key: string) => {
       if (key === ContainerRegistrationKeys.QUERY) return query
       if (key === ContainerRegistrationKeys.LOGGER) return logger
@@ -121,6 +124,14 @@ describe("order.placed Meta CAPI decides from the real channel, not the brand bl
     const handler = handlerWithoutKampiBlock()
     await handler({ event: { data: { id: "order_01ABC" } }, container: fakeContainer(order("sc_WEBSHOP")) } as any)
     expect(sendPurchase).toHaveBeenCalledTimes(1)
+  })
+
+  it("the store default cannot be read: it is read once per order.placed, so one store warn", async () => {
+    const warn = console.warn as unknown as jest.Mock
+    const c = fakeContainer(order("sc_WEBSHOP"), "fails")
+    await orderPlacedHandler({ event: { data: { id: "order_01ABC" } }, container: c } as any)
+    expect(c.storeCalls()).toBe(1)
+    expect(warn.mock.calls.map((x: any[]) => String(x[0])).filter((l) => l.startsWith("[channels] could not read"))).toHaveLength(1)
   })
 
   it("the store default cannot be read: no CAPI, and a warn", async () => {

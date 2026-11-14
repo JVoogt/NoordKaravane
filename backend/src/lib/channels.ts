@@ -1,10 +1,9 @@
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 import type { MedusaContainer } from "@medusajs/framework/types"
 import { linkProductsToSalesChannelWorkflow } from "@medusajs/medusa/core-flows"
-import { kampiChannelIds } from "./business"
-import { readStoreDefault } from "./store-channel"
+import { kampiBlockPresent, kampiChannelIds } from "./business"
 
-export { storeDefaultChannelId } from "./store-channel"
+export { readStoreDefault, storeDefaultChannelId } from "./store-channel"
 
 /** The Kampi sales channel (description "store.kampi.co.za") and its publishable key, found or created by setup-kampi-channel. */
 export const KAMPI_CHANNEL_NAME = "Kampi"
@@ -25,29 +24,33 @@ export function missingChannelLinks(products: ProductChannels[], channelIds: str
 }
 
 let noneExistLogged = false
+let emptyListLogged = false
 
 /**
- * The channels a new product belongs in: the store's default channel plus every configured Kampi channel id
- * (brands.kampi.sales_channel_ids, read by kampiChannelIds, so broken styling keys do not stop the link) that exists
- * in this database. Staging and production share one config, so ids from the other database are dropped here (warned
- * once when none exist). Throws when the store or channel lookup fails.
+ * The Kampi channels a new product belongs in (the store default is read and linked separately, so a failed Kampi
+ * lookup never costs the default link): every configured Kampi channel id (brands.kampi.sales_channel_ids, read by
+ * kampiChannelIds, so broken styling keys do not stop the link) that exists in this database. Staging and production
+ * share one config, so ids from the other database are dropped here (warned once when none exist). Warns once when a
+ * brands.kampi block exists but yields no usable ids. Throws when the channel lookup fails.
  */
 export async function autoLinkChannelIds(container: MedusaContainer): Promise<string[]> {
-  const def = await readStoreDefault(container)
-  const ids: string[] = def ? [def] : []
   const configured = kampiChannelIds()
-  if (configured.length) {
-    const existing = await container.resolve(Modules.SALES_CHANNEL).listSalesChannels({ id: configured })
-    const found = new Set(existing.map((c: { id: string }) => c.id))
-    for (const id of configured) if (found.has(id) && !ids.includes(id)) ids.push(id)
-    if (!found.size && !noneExistLogged) {
-      noneExistLogged = true
-      console.warn(
-        `[channel-link] brands.kampi.sales_channel_ids [${configured.join(", ")}] has no channel in this database; new products link to the default channel only`
-      )
+  if (!configured.length) {
+    if (!emptyListLogged && kampiBlockPresent()) {
+      emptyListLogged = true
+      console.warn("[channel-link] brands.kampi has no usable sales_channel_ids; new products link to the default channel only")
     }
+    return []
   }
-  return ids
+  const existing = await container.resolve(Modules.SALES_CHANNEL).listSalesChannels({ id: configured })
+  const found = new Set(existing.map((c: { id: string }) => c.id))
+  if (!found.size && !noneExistLogged) {
+    noneExistLogged = true
+    console.warn(
+      `[channel-link] brands.kampi.sales_channel_ids [${configured.join(", ")}] has no channel in this database; new products link to the default channel only`
+    )
+  }
+  return [...new Set(configured.filter((id) => found.has(id)))]
 }
 
 /** Links the product to each of channelIds it is not in yet, one workflow run per channel. Returns the channels linked. A failed link throws naming its channel. */

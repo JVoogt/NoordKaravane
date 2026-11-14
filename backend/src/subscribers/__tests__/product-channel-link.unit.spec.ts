@@ -62,10 +62,33 @@ describe("product.created channel link subscriber", () => {
     expect(logger.warn).not.toHaveBeenCalled()
   })
 
-  it.each([["graph"], ["listStores"], ["listSalesChannels"]] as const)("resolves and warns when %s throws (P9)", async (what) => {
-    const { c, logger } = fake(["sc_D"], { [what]: true })
+  it("the Kampi lookup throws: the product still gets the default link, and the warn names Kampi", async () => {
+    const { c, logger } = fake([], { listSalesChannels: true })
     await expect(productChannelLink(event(c))).resolves.toBeUndefined()
-    expect(logs(logger.warn)).toMatch(/^\[channel-link\] prod_1: targets (unknown|sc_D, sc_K): .+ down; rerun setup-kampi-channel$/)
+    expect(run).toHaveBeenCalledTimes(1)
+    expect(run).toHaveBeenCalledWith({ input: { id: "sc_D", add: ["prod_1"] } })
+    expect(logs(logger.warn)).toBe("[channel-link] prod_1: Kampi channel link failed: channels down; rerun setup-kampi-channel")
+  })
+
+  it("the default read throws: the Kampi link is still made, and the warn names the admin repair", async () => {
+    const { c, logger } = fake([], { listStores: true })
+    await expect(productChannelLink(event(c))).resolves.toBeUndefined()
+    expect(run).toHaveBeenCalledTimes(1)
+    expect(run).toHaveBeenCalledWith({ input: { id: "sc_K", add: ["prod_1"] } })
+    expect(logs(logger.warn)).toBe(
+      "[channel-link] prod_1: default sales channel link failed: store down; add the product to the default sales channel in admin"
+    )
+  })
+
+  it("the product read throws: resolves with one warn per channel group (P9)", async () => {
+    const { c, logger } = fake([], { graph: true })
+    await expect(productChannelLink(event(c))).resolves.toBeUndefined()
+    expect(logs(logger.warn)).toBe(
+      [
+        "[channel-link] prod_1: default sales channel link failed: query down; add the product to the default sales channel in admin",
+        "[channel-link] prod_1: Kampi channel link failed: query down; rerun setup-kampi-channel",
+      ].join("\n")
+    )
   })
 
   it("resolves and warns when the link workflow throws (P9)", async () => {
@@ -74,6 +97,6 @@ describe("product.created channel link subscriber", () => {
     })
     const { c, logger } = fake(["sc_D"])
     await expect(productChannelLink(event(c))).resolves.toBeUndefined()
-    expect(logs(logger.warn)).toBe("[channel-link] prod_1: targets sc_D, sc_K: link to sc_K failed: workflow down; rerun setup-kampi-channel")
+    expect(logs(logger.warn)).toBe("[channel-link] prod_1: Kampi channel link failed: link to sc_K failed: workflow down; rerun setup-kampi-channel")
   })
 })

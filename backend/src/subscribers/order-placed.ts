@@ -21,12 +21,13 @@ export default async function orderPlacedHandler({ event: { data }, container }:
   if (isEftOrder(order)) {
     await sendEmail(container, order.email, "order-placed-eft", orderEmailData(order))
   }
-  await notifyStaff(container, order, "staff-new-order")
+  // Read once for both consumers, so an unreadable default warns once per order, not once per consumer.
+  const defaultChannelId = await storeDefaultChannelId(container)
+  await notifyStaff(container, order, "staff-new-order", defaultChannelId)
 
   const md = (order.metadata ?? {}) as Record<string, any>
   const consent = md.marketing_consent === true || md.marketing_consent === "true"
   if (!consent || !md.meta_event_id) return
-  const defaultChannelId = await storeDefaultChannelId(container)
   const channel = orderChannel(order.sales_channel_id, defaultChannelId)
   if (channel === "unknown")
     logger.warn(

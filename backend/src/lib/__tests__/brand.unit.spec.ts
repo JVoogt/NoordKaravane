@@ -135,6 +135,26 @@ describe("brand context", () => {
     expect(kampiChannelIds(cfgWith(kampiBlock({ sales_channel_ids: ["sc_A", "{{ID}}"] })))).toEqual([])
   })
 
+  it("an unusable sales_channel_ids logs its own line once per process, apart from the branding line", () => {
+    const { kampiChannelIds, kampiBrandConfig } = load()
+    const cfg = cfgWith(kampiBlock({ sales_channel_ids: ["sc_A", "{{ID}}"] }))
+    expect(kampiBrandConfig(cfg)).toBeNull()
+    expect(kampiChannelIds(cfg)).toEqual([])
+    expect(kampiChannelIds(cfg)).toEqual([])
+    const lines = error.mock.calls.map((x) => String(x[0]))
+    const idLines = lines.filter((l) => l.startsWith("[business] brands.kampi.sales_channel_ids unusable: "))
+    expect(idLines).toEqual([
+      '[business] brands.kampi.sales_channel_ids unusable: unusable id "{{ID}}"; new products will not link to the Kampi channel and Kampi orders show as Unknown channel',
+    ])
+    expect(lines.filter((l) => l.startsWith("[business] brands.kampi invalid: "))).toHaveLength(1)
+  })
+
+  it("kampiBlockPresent is true for any brands.kampi block and false when there is none", () => {
+    const { kampiBlockPresent } = load()
+    expect(kampiBlockPresent(cfgWith(kampiBlock({ sales_channel_ids: [] })))).toBe(true)
+    expect(kampiBlockPresent(cfgWith(undefined))).toBe(false)
+  })
+
   it("orderChannel: the store default is nk, a configured Kampi id is kampi, anything else unknown", () => {
     const { orderChannel } = load()
     const cfg = cfgWith(kampiBlock({ palette: undefined }))

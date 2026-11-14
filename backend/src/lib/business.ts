@@ -174,6 +174,7 @@ export function usableValue(v: unknown): string | null {
 }
 
 let kampiInvalidLogged = false
+let kampiChannelIdsLogged = false
 const optionalIgnoredLogged = new Set<string>()
 
 /** The brands.kampi error line, once per process (missing, invalid ids, or an invalid required key). */
@@ -181,6 +182,15 @@ function logKampiInvalid(reason: string) {
   if (kampiInvalidLogged) return
   kampiInvalidLogged = true
   console.error(`[business] brands.kampi invalid: ${reason}; Kampi orders use NK branding`)
+}
+
+/** The brands.kampi.sales_channel_ids error line, once per process and apart from the branding line (different consequence). */
+function logKampiChannelIdsUnusable(reason: string) {
+  if (kampiChannelIdsLogged) return
+  kampiChannelIdsLogged = true
+  console.error(
+    `[business] brands.kampi.sales_channel_ids unusable: ${reason}; new products will not link to the Kampi channel and Kampi orders show as Unknown channel`
+  )
 }
 
 /** An optional display key that is blank or a placeholder is dropped; warned once per key per process. */
@@ -278,7 +288,7 @@ export function kampiBrandConfig(cfg?: BusinessConfig): KampiBrandConfig | null 
  * The configured Kampi sales channel ids (brands.kampi.sales_channel_ids), validated on their own: the styling keys
  * do not matter here, so behaviour that depends only on the channel (product auto-link, staff channel label, CAPI)
  * keeps working when a display key is broken. Empty (and logged once) when the block is missing or any id is
- * unusable. Never throws.
+ * unusable (an unusable list is logged once per process on its own line). Never throws.
  */
 export function kampiChannelIds(cfg?: BusinessConfig): string[] {
   const read = rawKampiBlock(cfg)
@@ -288,11 +298,22 @@ export function kampiChannelIds(cfg?: BusinessConfig): string[] {
     return []
   }
   const ids = (read.raw as Record<string, unknown> | null)?.sales_channel_ids
-  if (!Array.isArray(ids) || !ids.length || ids.some((id) => usableValue(id) === null || !CHANNEL_ID.test(String(id).trim()))) {
-    logKampiInvalid(`sales_channel_ids has no usable list of sc_ ids`)
+  const bad = Array.isArray(ids) ? ids.findIndex((id) => usableValue(id) === null || !CHANNEL_ID.test(String(id).trim())) : -1
+  const reason = !Array.isArray(ids) ? "not a list" : !ids.length ? "empty list" : bad >= 0 ? `unusable id ${JSON.stringify(ids[bad]) ?? "undefined"}` : null
+  if (reason) {
+    logKampiChannelIdsUnusable(reason)
     return []
   }
-  return ids.map((id) => String(id).trim())
+  return (ids as unknown[]).map((id) => String(id).trim())
+}
+
+/** Whether config has a brands.kampi block at all (usable or not). Never throws. cfg defaults to getBusinessConfig(). */
+export function kampiBlockPresent(cfg?: BusinessConfig): boolean {
+  try {
+    return (cfg ?? getBusinessConfig()).brands?.kampi !== undefined
+  } catch {
+    return false
+  }
 }
 
 /**

@@ -7,9 +7,11 @@ jest.mock("@medusajs/medusa/core-flows", () => ({
 }))
 
 const kampiIds = jest.fn((): string[] | null => ["sc_A", "sc_X"])
+const blockPresent = jest.fn(() => true)
 jest.mock("../business", () => ({
   ...jest.requireActual("../business"),
   kampiChannelIds: () => kampiIds() ?? [],
+  kampiBlockPresent: () => blockPresent(),
 }))
 
 import { KAMPI_CHANNEL_NAME, KAMPI_KEY_TITLE, autoLinkChannelIds, linkProductToChannels, missingChannelLinks, storeDefaultChannelId } from "../channels"
@@ -76,22 +78,35 @@ describe("missingChannelLinks (P7)", () => {
   })
 })
 
-describe("autoLinkChannelIds", () => {
-  it("is the store default plus the configured Kampi ids that exist in this database", async () => {
-    const { c } = container({ existing: ["sc_A"] })
-    await expect(autoLinkChannelIds(c)).resolves.toEqual(["sc_DEFAULT", "sc_A"])
+describe("autoLinkChannelIds (the Kampi channels; the default is linked separately)", () => {
+  it("is the configured Kampi ids that exist in this database, without the store default", async () => {
+    const { c, listStores } = container({ existing: ["sc_A"] })
+    await expect(autoLinkChannelIds(c)).resolves.toEqual(["sc_A"])
+    expect(listStores).not.toHaveBeenCalled()
   })
 
-  it("with no valid Kampi block it is only the default", async () => {
+  it("with no valid Kampi ids it is empty and makes no lookup", async () => {
+    blockPresent.mockImplementation(() => false)
     kampiIds.mockImplementation(() => null)
     const { c, listSalesChannels } = container()
-    await expect(autoLinkChannelIds(c)).resolves.toEqual(["sc_DEFAULT"])
+    await expect(autoLinkChannelIds(c)).resolves.toEqual([])
     expect(listSalesChannels).not.toHaveBeenCalled()
+    blockPresent.mockImplementation(() => true)
   })
 
-  it("with no store default it is only the existing Kampi ids", async () => {
-    const { c } = container({ defaultChannel: null, existing: ["sc_A"] })
-    await expect(autoLinkChannelIds(c)).resolves.toEqual(["sc_A"])
+  it("warns once across calls when a brands.kampi block exists but its id list is empty", async () => {
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {})
+    kampiIds.mockImplementation(() => null)
+    let mod: typeof import("../channels") | undefined
+    jest.isolateModules(() => {
+      mod = require("../channels")
+    })
+    await expect(mod!.autoLinkChannelIds(container().c)).resolves.toEqual([])
+    await expect(mod!.autoLinkChannelIds(container().c)).resolves.toEqual([])
+    expect(warn.mock.calls.map((x) => String(x[0]))).toEqual([
+      "[channel-link] brands.kampi has no usable sales_channel_ids; new products link to the default channel only",
+    ])
+    warn.mockRestore()
   })
 })
 
@@ -102,8 +117,8 @@ describe("autoLinkChannelIds with configured ids missing from this database", ()
     jest.isolateModules(() => {
       mod = require("../channels")
     })
-    await expect(mod!.autoLinkChannelIds(container({ existing: [] }).c)).resolves.toEqual(["sc_DEFAULT"])
-    await expect(mod!.autoLinkChannelIds(container({ existing: [] }).c)).resolves.toEqual(["sc_DEFAULT"])
+    await expect(mod!.autoLinkChannelIds(container({ existing: [] }).c)).resolves.toEqual([])
+    await expect(mod!.autoLinkChannelIds(container({ existing: [] }).c)).resolves.toEqual([])
     expect(warn).toHaveBeenCalledTimes(1)
     expect(String(warn.mock.calls[0][0])).toBe(
       "[channel-link] brands.kampi.sales_channel_ids [sc_A, sc_X] has no channel in this database; new products link to the default channel only"

@@ -52,7 +52,7 @@ describe("autoLinkChannelIds against a real config", () => {
 
   it("a block with a broken palette and no name still auto-links sc_A", async () => {
     const { autoLinkChannelIds } = loadWith({ sales_channel_ids: ["sc_A"], palette: { ink: "red" }, name: "" })
-    await expect(autoLinkChannelIds(container)).resolves.toEqual(["sc_DEFAULT", "sc_A"])
+    await expect(autoLinkChannelIds(container)).resolves.toEqual(["sc_A"])
   })
 
   it("a valid block with a blank tagline auto-links sc_A", async () => {
@@ -64,6 +64,6 @@ describe("autoLinkChannelIds against a real config", () => {
       from_name: "Example Store",
       tagline: "",
     })
-    await expect(autoLinkChannelIds(container)).resolves.toEqual(["sc_DEFAULT", "sc_A"])
+    await expect(autoLinkChannelIds(container)).resolves.toEqual(["sc_A"])
   })
 })

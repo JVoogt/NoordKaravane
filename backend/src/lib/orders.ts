@@ -205,9 +205,15 @@ async function sendStaffAlert(
 /**
  * Staff order alert (staff-new-order / staff-order-paid), see sendStaffAlert. The paid alert key also carries
  * paid/partial, so an alert for a capture that left the order not fully paid does not suppress the later paid one.
+ * storeDefault is the store default channel id when the caller already read it (null: unreadable); omitted, it is read here.
  */
-export async function notifyStaff(container: MedusaContainer, order: any, template: "staff-new-order" | "staff-order-paid") {
-  const defaultChannelId = await storeDefaultChannelId(container)
+export async function notifyStaff(
+  container: MedusaContainer,
+  order: any,
+  template: "staff-new-order" | "staff-order-paid",
+  storeDefault?: string | null
+) {
+  const defaultChannelId = storeDefault === undefined ? await storeDefaultChannelId(container) : storeDefault
   await sendStaffAlert(
     container,
     template,

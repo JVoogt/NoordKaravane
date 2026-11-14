@@ -266,10 +266,10 @@ describe("staff channel label comes from the real channel (P1 review)", () => {
 })
 
 describe("bank block colour", () => {
-  it("a Kampi EFT email uses the brand paper colour, not NK's #e8e0cc", () => {
+  it("a Kampi EFT bank panel is set off from the paper shell by a 1px border in the brand muted colour, not NK's #e8e0cc", () => {
     const { templates, orders } = loadWith(config())
     const r = templates.renderEmail("order-placed-eft", orders.orderEmailData(order("sc_A")))
     expect(r.html).not.toContain("#e8e0cc")
-    expect(r.html).toContain("background:#fcf6e3;width:100%;")
+    expect(r.html).toContain("background:#fcf6e3;border:1px solid #5a5034;width:100%;")
   })
 })
