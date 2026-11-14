@@ -7,6 +7,7 @@
 /* Kampi-only markup is scanned by its own entry (src/brands/kampi/utilities.css), so the NK bundle never grows. */
 @source not '../components/kampi';
 @source not '../brands/kampi';
+@source not '../content/kampi';
 
 /* ---------------------------------------------------------------
    Noord Karavane shop tokens. Dark workshop theme matching the landing page (site/index.html).

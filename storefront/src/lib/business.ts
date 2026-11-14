@@ -3,6 +3,7 @@ import path from 'node:path';
 import { env } from './env';
 import { BRAND, brand } from './brand';
 import { mergeBrandDisplay } from './brands';
+import { fillWith } from './fill';
 
 export interface Business {
   brand: string; domain: string; tagline: string;
@@ -61,16 +62,9 @@ export const business = new Proxy({} as Business, {
   get: (_t, k) => (loadBusiness() as unknown as Record<string, unknown>)[k as string],
 });
 
-const lookup = (obj: unknown, dotted: string): unknown =>
-  dotted.split('.').reduce<unknown>((o, k) => (o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined), obj);
-
-/** Replace {{key}} / {{a.b}} with business.json values. Unknown keys and placeholder-valued keys are left visible. */
+/** Replace {{key}} / {{a.b}} with business.json values, and {{zar:a.b}} with a formatted price (fill.ts). */
 export function fill(text: string): string {
-  const b = loadBusiness();
-  return text.replace(/\{\{\s*([a-z_][a-z0-9_.]*)\s*\}\}/gi, (m, key: string) => {
-    const v = lookup(b, key);
-    return typeof v === 'string' || typeof v === 'number' ? String(v) : m;
-  });
+  return fillWith(text, loadBusiness());
 }
 
 export const isPlaceholder = (v: unknown) => typeof v === 'string' && /\{\{.*\}\}/.test(v);
