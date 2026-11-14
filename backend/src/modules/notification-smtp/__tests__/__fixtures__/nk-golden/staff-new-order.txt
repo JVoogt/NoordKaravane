@@ -1,0 +1,25 @@
+New order NK3
+
+Awaiting EFT payment. Check the bank for reference NK3 before packing.
+
+- Gas regulator (Standard) [NK-GAS-1] x2  R500,00
+- Trauma kit [TFR-VEH-KIT] x1  R1 000,00
+Shipping (The Courier Guy): R130,00
+Total: R1 630,00
+
+Delivery: The Courier Guy
+
+Ship to:
+Jan Botha
+Example Kampeer
+1 Example Street
+Exampletown
+Gauteng
+0000
+
+Phone: 0820000000
+Email: jan@example.com
+
+Admin: https://admin.noordkaravane.co.za/app/orders/order_01ABC
+
+Noord Karavane shop

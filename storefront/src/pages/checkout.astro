@@ -3,15 +3,18 @@ import { u } from '~/lib/url';
 import Base from '~/layouts/Base.astro';
 import Checkout from '~/islands/Checkout.tsx';
 import { business } from '~/lib/business';
+import { brand } from '~/lib/brand';
+const KAMPI = brand.key === 'kampi';
+// The island never reads `bank`; on Kampi it is left out of the serialised props entirely (it names the seller's bank).
 import { getCatalogue, quoteOnlyHandles } from '~/lib/products';
 const b = business;
 const { products } = await getCatalogue();
 const quoteHandles = quoteOnlyHandles(products);
 ---
-<Base title="Checkout" description="Checkout at the Noord Karavane shop." path={u('/checkout')} noindex floatingChat={false}>
+<Base title="Checkout" description={KAMPI ? 'Checkout at Kampi Store.' : 'Checkout at the Noord Karavane shop.'} path={u('/checkout')} noindex floatingChat={false}>
   <div class="wrap pb-16 pt-10">
-    <p class="text-[0.95rem]"><a href={u('/cart')}>&larr; Back to cart</a></p>
+    <p class="text-[0.95rem]"><a href={u('/cart')}><Fragment set:html={KAMPI ? '' : '&larr; '} />Back to cart</a></p>
     <h1 class="display mb-8 mt-3 text-[clamp(2.4rem,7vw,4.2rem)]">Checkout</h1>
-    <Checkout client:load quoteHandles={quoteHandles} eftWindowHours={b.eft_payment_window_hours} leadTime={b.production_lead_time_days} freeShipping={b.shipping.free_shipping_threshold_zar} pudoMaxWeightG={b.shipping.pudo_max_weight_g} collectEnabled={b.shipping.collect_from_workshop} workshop={b.workshop} bank={{ account_name: b.bank.account_name, bank_name: b.bank.bank_name }} />
+    <Checkout client:load quoteHandles={quoteHandles} eftWindowHours={b.eft_payment_window_hours} leadTime={b.production_lead_time_days} freeShipping={b.shipping.free_shipping_threshold_zar} pudoMaxWeightG={b.shipping.pudo_max_weight_g} collectEnabled={b.shipping.collect_from_workshop} workshop={b.workshop} {...(KAMPI ? {} : { bank: { account_name: b.bank.account_name, bank_name: b.bank.bank_name } })} />
   </div>
 </Base>

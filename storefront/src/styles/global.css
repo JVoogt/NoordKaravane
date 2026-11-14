@@ -4,6 +4,8 @@
 @import '@fontsource/barlow/latin-600.css';
 @import '@fontsource/barlow/latin-700.css';
 @import 'tailwindcss';
+/* Per-brand Tailwind sources (alias in astro.config.mjs): the NK build never scans Kampi-only markup, so its bundle never grows. */
+@import '@brand-tw';
 
 /* ---------------------------------------------------------------
    Noord Karavane shop tokens. Dark workshop theme matching the landing page (site/index.html).

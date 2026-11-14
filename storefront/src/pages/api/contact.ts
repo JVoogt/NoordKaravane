@@ -3,6 +3,7 @@ import { u } from '~/lib/url';
 import { brevo, clientIp, isEmail, rateLimited, reply, verifyTurnstile } from '~/lib/forms';
 import { business } from '~/lib/business';
 import { env } from '~/lib/env';
+import { BRAND, brand } from '~/lib/brand';
 
 export const prerender = false;
 
@@ -29,7 +30,7 @@ export const POST: APIRoute = async (ctx) => {
   const to = env('CONTACT_TO') || business.email_general;
   const esc = (t: string) => t.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
   const err = await brevo('/smtp/email', {
-    sender: { name: 'Noord Karavane shop website', email: env('CONTACT_FROM') || 'orders@noordkaravane.co.za' }, // must be an authenticated Brevo sender
+    sender: { name: BRAND === 'kampi' ? `${brand.siteName} website` : 'Noord Karavane shop website', email: env('CONTACT_FROM') || 'orders@noordkaravane.co.za' }, // must be an authenticated Brevo sender
     to: [{ email: to }],
     replyTo: { email, name },
     subject: `[Contact] ${topic}${order ? ` (order ${order})` : ''}: ${name}`,

@@ -37,6 +37,15 @@ services:
       - "${BIND_IP:-192.168.0.120}:${PORT_WEB:-8552}:4321"
     deploy: { resources: { limits: { cpus: "0.75", memory: 256M } } }
 
+  # Kampi storefront in staging only on request: `--profile staging-kampi` (the staging-* make targets leave it out).
+  storefront-kampi:
+    container_name: nkshop-staging-storefront-kampi
+    image: nkshop-storefront-kampi:${IMAGE_TAG:-staging}
+    profiles: ["staging-kampi"]
+    ports: !override
+      - "${BIND_IP:-192.168.0.120}:${PORT_WEB_KAMPI:-8555}:4321"
+    deploy: { resources: { limits: { cpus: "0.75", memory: 256M } } }
+
   postgres:
     container_name: nkshop-staging-postgres
     deploy: { resources: { limits: { cpus: "1.0", memory: 384M } } }

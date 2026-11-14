@@ -1,8 +1,15 @@
 import { siteUrl } from './env';
 import { decodeEntities } from './format';
-import { business, whatsappNumber, isPlaceholder } from './business';
+import { business, brandBusiness, whatsappNumber, isPlaceholder } from './business';
+import { usable, shippingFacts } from './business-display';
 import { u } from './url';
+import { brand } from './brand';
 import type { Product } from './products';
+
+// Kampi Store (plan Decisions, "Product JSON-LD on Kampi"): the #org node is the seller, NK, with its legal name and
+// its own site; the WebSite node is "Kampi Store" published by it; Offer.seller points at it; Product.brand is the
+// store name. NK pages keep today's nodes exactly.
+const KAMPI = brand.key === 'kampi';
 
 export const abs = (p: string) => (/^https?:\/\//.test(p) ? p : siteUrl() + (p.startsWith('/') ? p : '/' + p));
 export const trunc = (s: string, n = 155) => { const t = s.replace(/\s+/g, ' ').trim(); return t.length <= n ? t : t.slice(0, n - 1).replace(/\s+\S*$/, '') + '…'; };
@@ -13,7 +20,16 @@ const leadDays = () => {
 };
 
 export function organizationLd() {
-  const sameAs = [business.instagram, business.facebook].filter((u) => u && !isPlaceholder(u));
+  if (KAMPI) {
+    return {
+      '@context': 'https://schema.org', '@type': 'Organization', '@id': siteUrl() + '/#org',
+      name: business.brand, url: `https://${business.domain}`,
+      ...(usable(business.legal_name) ? { legalName: business.legal_name } : {}),
+      ...(usable(business.email_general) ? { email: business.email_general } : {}),
+      address: { '@type': 'PostalAddress', streetAddress: business.workshop.address_1, addressLocality: business.workshop.city, addressRegion: business.workshop.province, postalCode: business.workshop.postal_code, addressCountry: 'ZA' },
+    };
+  }
+  const sameAs = [brandBusiness().instagram, brandBusiness().facebook].filter((u) => u && !isPlaceholder(u));
   const wa = whatsappNumber();
   return {
     '@context': 'https://schema.org', '@type': 'Organization', '@id': siteUrl() + '/#org',
@@ -27,7 +43,7 @@ export function organizationLd() {
 }
 
 export const websiteLd = () => ({
-  '@context': 'https://schema.org', '@type': 'WebSite', '@id': siteUrl() + '/#website', url: siteUrl(), name: business.brand, inLanguage: 'en-ZA',
+  '@context': 'https://schema.org', '@type': 'WebSite', '@id': siteUrl() + '/#website', url: siteUrl(), name: KAMPI ? brand.siteName : business.brand, inLanguage: 'en-ZA',
   publisher: { '@id': siteUrl() + '/#org' },
 });
 
@@ -39,12 +55,14 @@ export const breadcrumbLd = (items: { name: string; path: string }[]) => ({
 export function productLd(p: Product) {
   const url = abs(u(`/${p.handle}/`));
   const { min, max } = leadDays();
+  const courierFrom = shippingFacts(business).courierFromZar;
   const offerBase = {
     '@type': 'Offer', priceCurrency: 'ZAR', availability: 'https://schema.org/InStock', itemCondition: 'https://schema.org/NewCondition', url,
     seller: { '@id': siteUrl() + '/#org' },
     shippingDetails: {
       '@type': 'OfferShippingDetails', shippingDestination: { '@type': 'DefinedRegion', addressCountry: 'ZA' },
-      shippingRate: { '@type': 'MonetaryAmount', value: business.shipping.tcg_bands[0].price_zar, currency: 'ZAR' },
+      // Omitted (never a throw or NaN) when business.json has no first courier band; same object as before otherwise.
+      ...(courierFrom != null ? { shippingRate: { '@type': 'MonetaryAmount', value: courierFrom, currency: 'ZAR' } } : {}),
       deliveryTime: {
         '@type': 'ShippingDeliveryTime',
         handlingTime: { '@type': 'QuantitativeValue', minValue: min, maxValue: max, unitCode: 'DAY' },
@@ -70,7 +88,7 @@ export function productLd(p: Product) {
   return {
     '@context': 'https://schema.org', '@type': 'Product', '@id': url + '#product', name: p.title,
     description: trunc(p.description || p.title, 300), sku: p.variants[0]?.sku || p.handle, url,
-    image: p.images.map((i) => abs(i.src)), brand: { '@type': 'Brand', name: business.brand },
+    image: p.images.map((i) => abs(i.src)), brand: { '@type': 'Brand', name: KAMPI ? brand.siteName : business.brand },
     ...(colours.length ? { color: colours.join(', ') } : {}),
     ...(offers ? { offers } : {}),
   };

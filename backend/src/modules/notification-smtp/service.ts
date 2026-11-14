@@ -2,7 +2,8 @@ import { AbstractNotificationProviderService, MedusaError } from "@medusajs/fram
 import type { ProviderSendNotificationDTO, ProviderSendNotificationResultsDTO } from "@medusajs/framework/types"
 import nodemailer, { Transporter } from "nodemailer"
 import { renderEmail } from "./templates"
-import { getBusinessConfig } from "../../lib/business"
+import { brandByKey, getBusinessConfig } from "../../lib/business"
+import { fromHeader } from "./from"
 
 type Options = {
   host?: string
@@ -46,7 +47,8 @@ class SmtpNotificationProviderService extends AbstractNotificationProviderServic
       throw new MedusaError(MedusaError.Types.INVALID_DATA, "SMTP notification needs a recipient")
     }
     const { subject, html, text } = renderEmail(notification.template, (notification.data ?? {}) as Record<string, any>)
-    const from = notification.from || this.options_.from || "Noord Karavane <orders@noordkaravane.co.za>"
+    // Another brand (a Kampi order) keeps the authenticated address and shows its own display name.
+    const from = notification.from || fromHeader(this.options_.from, brandByKey((notification.data as Record<string, any> | undefined)?.brand))
 
     if (!this.transporter_) {
       this.logger_.warn(`[smtp] SMTP_HOST not set; not sending "${subject}" to ${notification.to}`)

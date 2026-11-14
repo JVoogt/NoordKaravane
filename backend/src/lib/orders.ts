@@ -1,6 +1,7 @@
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 import type { MedusaContainer } from "@medusajs/framework/types"
-import { adminUrl, formatZar, getBusinessConfig, shopUrl, staffAlertRecipientsWithDropped } from "./business"
+import { adminUrl, brandFor, formatZar, getBusinessConfig, orderChannel, staffAlertRecipientsWithDropped } from "./business"
+import { storeDefaultChannelId } from "./store-channel"
 import { dropshipLines, unusableDropshipLines } from "./dropship"
 import type { EmailData } from "../modules/notification-smtp/templates"
 
@@ -15,6 +16,7 @@ export const ORDER_FIELDS = [
   "metadata",
   "created_at",
   "payment_status",
+  "sales_channel_id",
   "items.id",
   "items.title",
   "items.product_title",
@@ -49,9 +51,11 @@ export async function getOrder(container: MedusaContainer, id: string): Promise<
   return data[0] ?? null
 }
 
+/** Customer email payload. brand and order_url follow the order's sales channel (brandFor): a Kampi order links to the Kampi store. */
 export function orderEmailData(order: any, extra: Partial<EmailData> = {}): EmailData {
   const money = (n: unknown) => formatZar(Number(n ?? 0))
   const ship = order.shipping_methods?.[0]
+  const brand = brandFor(order.sales_channel_id)
   return {
     display_id: order.display_id,
     reference: `NK${order.display_id}`,
@@ -66,7 +70,8 @@ export function orderEmailData(order: any, extra: Partial<EmailData> = {}): Emai
     shipping_total: order.shipping_total != null ? money(order.shipping_total) : undefined,
     shipping_method: ship?.name,
     pudo_locker: order.metadata?.pudo_locker ? String(order.metadata.pudo_locker) : undefined,
-    order_url: `${shopUrl()}/order/confirmed/${order.id}`,
+    order_url: `${brand.shopUrl}/order/confirmed/${order.id}`,
+    brand: brand.key,
     ...extra,
   }
 }
@@ -89,9 +94,16 @@ const supplierLines = (g: { supplier: { name: string }; lines: any[] }) =>
 /**
  * Staff alert payload: the customer email data plus SKUs, full ship-to, contact details, payment state,
  * dropship lines (and lines whose supplier has no usable email, so was not notified) and the admin link. Pure, so suppliers are passed in (config dropship_suppliers).
+ * Staff alerts are NK-branded for every order: brand is dropped (so the From header and shell are NK's) and
+ * channel_label names the channel the order came in on, from the real channel: the store default (defaultChannelId)
+ * is "NK", a configured Kampi id is "Kampi", anything else is "Unknown channel (<id>)" and warned.
  */
-export function staffOrderEmailData(order: any, suppliers: Record<string, { name: string; email: string }> = {}): EmailData {
-  const base = orderEmailData(order)
+export function staffOrderEmailData(
+  order: any,
+  suppliers: Record<string, { name: string; email: string }> = {},
+  defaultChannelId: string | null = null
+): EmailData {
+  const { brand: _brand, ...base } = orderEmailData(order)
   const a = order.shipping_address ?? {}
   const payments = (order.payment_collections ?? []).flatMap((pc: any) => pc.payments ?? [])
   const payfast = payments.some((p: any) => String(p.provider_id ?? "").startsWith("pp_payfast"))
@@ -108,10 +120,20 @@ export function staffOrderEmailData(order: any, suppliers: Record<string, { name
     payment_method: isEftOrder(order) ? "EFT" : payfast ? "PayFast" : payments[0]?.provider_id || "Unknown",
     payment_captured: payments.some((p: any) => !!p.captured_at),
     collect_from_workshop: md.collect_from_workshop === true || md.collect_from_workshop === "true",
+    channel_label: staffChannelLabel(order, defaultChannelId),
     admin_order_url: `${adminUrl()}/app/orders/${order.id}`,
     dropship_items: dropshipLines(order.items ?? [], suppliers).flatMap(supplierLines),
     dropship_unnotified: unusableDropshipLines(order.items ?? [], suppliers).flatMap(supplierLines),
   }
+}
+
+function staffChannelLabel(order: any, defaultChannelId: string | null): string {
+  const channel = orderChannel(order.sales_channel_id, defaultChannelId)
+  if (channel === "nk") return "NK"
+  if (channel === "kampi") return "Kampi"
+  const id = order.sales_channel_id || "none"
+  console.warn(`[staff-alert] order ${order.id} is on unknown sales channel ${id} (store default ${defaultChannelId ?? "unknown"})`)
+  return `Unknown channel (${id})`
 }
 
 /**
@@ -183,13 +205,20 @@ async function sendStaffAlert(
 /**
  * Staff order alert (staff-new-order / staff-order-paid), see sendStaffAlert. The paid alert key also carries
  * paid/partial, so an alert for a capture that left the order not fully paid does not suppress the later paid one.
+ * storeDefault is the store default channel id when the caller already read it (null: unreadable); omitted, it is read here.
  */
-export async function notifyStaff(container: MedusaContainer, order: any, template: "staff-new-order" | "staff-order-paid") {
+export async function notifyStaff(
+  container: MedusaContainer,
+  order: any,
+  template: "staff-new-order" | "staff-order-paid",
+  storeDefault?: string | null
+) {
+  const defaultChannelId = storeDefault === undefined ? await storeDefaultChannelId(container) : storeDefault
   await sendStaffAlert(
     container,
     template,
     order?.id,
-    (cfg) => staffOrderEmailData(order, cfg.dropship_suppliers ?? {}),
+    (cfg) => staffOrderEmailData(order, cfg.dropship_suppliers ?? {}, defaultChannelId),
     (d) => (template === "staff-order-paid" ? `${order?.id}:${d.payment_captured ? "paid" : "partial"}` : order?.id)
   )
 }

@@ -1,13 +1,15 @@
 ---
 import Base from '~/layouts/Base.astro';
 import { u, LANDING } from '~/lib/url';
+import { brand } from '~/lib/brand';
+const KAMPI = brand.key === 'kampi';
 Astro.response.status = 404;
 ---
 <Base title="Page not found" noindex>
   <section class="wrap section text-center">
     <h1 class="display text-[clamp(6rem,24vw,13rem)] text-wine">404</h1>
-    <p class="display mt-2 text-[clamp(1.8rem,4vw,2.8rem)]">This page took a wrong turn.</p>
-    <p class="mx-auto mt-3 max-w-[40ch] text-muted">The page you were after has moved, or never existed. The shop is still right here.</p>
-    <div class="mt-8 flex flex-wrap justify-center gap-3"><a class="btn btn--lg" href={u('/')}>Back to the shop</a><a class="btn btn--ghost btn--lg" href={LANDING}>Workshop &amp; servicing</a></div>
+    <p class="display mt-2 text-[clamp(1.8rem,4vw,2.8rem)]">{KAMPI ? 'This path leads nowhere.' : 'This page took a wrong turn.'}</p>
+    <p class="mx-auto mt-3 max-w-[40ch] text-muted">{KAMPI ? 'Happens to the best of us in the bush. The store is still right here.' : 'The page you were after has moved, or never existed. The shop is still right here.'}</p>
+    <div class="mt-8 flex flex-wrap justify-center gap-3"><a class="btn btn--lg" href={u('/')}>{KAMPI ? 'Back to the store' : 'Back to the shop'}</a><a class="btn btn--ghost btn--lg" href={brand.landing?.href ?? LANDING}><Fragment set:html={KAMPI ? 'Rent a caravan' : 'Workshop &amp; servicing'} /></a></div>
   </section>
 </Base>

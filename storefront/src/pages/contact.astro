@@ -5,6 +5,8 @@ import TurnstileField from '~/components/TurnstileField.astro';
 import { business, whatsappNumber, isPlaceholder } from '~/lib/business';
 import { breadcrumbLd } from '~/lib/seo';
 import { quoteMessage } from '~/lib/quote';
+import { brand } from '~/lib/brand';
+const KAMPI = brand.key === 'kampi';
 const b = business;
 const wa = whatsappNumber();
 const sent = Astro.url.searchParams.get('sent') === '1';
@@ -16,7 +18,7 @@ const productQ = (Astro.url.searchParams.get('product') || '').slice(0, 200);
 const prefill = topicPick === 'quote' && productQ ? quoteMessage(productQ) : '';
 if (sent || error) Astro.response.headers.set('Cache-Control', 'no-store');
 ---
-<Base title="Contact" description="Questions about a product, an order, fitting or collection? Message Noord Karavane by form, email or WhatsApp. We reply within two working days." path={u('/contact')} jsonld={[breadcrumbLd([{ name: 'Home', path: u('/') }, { name: 'Contact', path: u('/contact') }])]}>
+<Base title="Contact" description={KAMPI ? `Questions about gear, an order, delivery or collection? Message ${brand.siteName} by form or email${wa ? ' or WhatsApp' : ''}. We reply within two working days.` : 'Questions about a product, an order, fitting or collection? Message Noord Karavane by form, email or WhatsApp. We reply within two working days.'} path={u('/contact')} jsonld={[breadcrumbLd([{ name: 'Home', path: u('/') }, { name: 'Contact', path: u('/contact') }])]}>
   <div class="rail" aria-hidden="true"></div>
   <div class="wrap grid gap-12 pb-16 pt-12 lg:grid-cols-[1fr_1.1fr] lg:gap-20">
     <div>

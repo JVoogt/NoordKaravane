@@ -2,13 +2,15 @@
 import '~/styles/global.css';
 import Header from '~/components/Header.astro';
 import Footer from '~/components/Footer.astro';
+import KampiHeader from '~/components/kampi/Header.astro';
+import KampiFooter from '~/components/kampi/Footer.astro';
 import { abs, trunc, organizationLd, websiteLd } from '~/lib/seo';
 import { env, medusaUrl, publishableKey } from '~/lib/env';
-import { business } from '~/lib/business';
+import { business, brandBusiness } from '~/lib/business';
+import { brand } from '~/lib/brand';
 import { u } from '~/lib/url';
-import bebas from '@fontsource/bebas-neue/files/bebas-neue-latin-400-normal.woff2?url';
-import barlow from '@fontsource/barlow/files/barlow-latin-400-normal.woff2?url';
-import barlow600 from '@fontsource/barlow/files/barlow-latin-600-normal.woff2?url';
+// After global.css: the Kampi brand module brings its tokens and component layer, which must win over global.css.
+import { fontPreloads } from '@brand';
 
 interface Props {
   title: string;
@@ -21,12 +23,12 @@ interface Props {
   mainClass?: string;
   floatingChat?: boolean;  // floating WhatsApp chip; off on buy/checkout pages where it would cover the CTA
 }
-const { title, description = business.tagline, path, image, ogType = 'website', jsonld = [], noindex = false, mainClass = '', floatingChat = true } = Astro.props;
+const { title, description = brandBusiness().tagline, path, image, ogType = 'website', jsonld = [], noindex = false, mainClass = '', floatingChat = true } = Astro.props;
 const canonical = abs((path ?? Astro.url.pathname).replace(/(.)\/$/, '$1') === '/' ? '/' : (path ?? Astro.url.pathname));
 // drop the brand suffix when it would push the title past ~60 chars (Google truncates)
-const fullTitle = title.includes('Noord Karavane') || title.length > 44 ? title : `${title} | Noord Karavane`;
+const fullTitle = title.includes(brand.titleSuffix) || title.length > 44 ? title : `${title} | ${brand.titleSuffix}`;
 const desc = trunc(description);
-const og = abs(image || u('/og-default.png'));
+const og = abs(image || u(brand.ogDefault));
 const clientEnv = {
   medusaUrl: medusaUrl(),
   publishableKey: publishableKey(),
@@ -46,14 +48,12 @@ const ld = [organizationLd(), websiteLd(), ...jsonld];
     <meta name="description" content={desc} />
     <link rel="canonical" href={canonical} />
     {noindex && <meta name="robots" content="noindex, nofollow" />}
-    <meta name="theme-color" content="#0e0f11" />
-    <link rel="icon" href={u('/icon-192.png')} type="image/png" />
-    <link rel="apple-touch-icon" href={u('/apple-touch-icon.png')} />
-    <link rel="preload" href={bebas} as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href={barlow} as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href={barlow600} as="font" type="font/woff2" crossorigin />
+    <meta name="theme-color" content={brand.themeColor} />
+    <link rel="icon" href={u(brand.icon192)} type="image/png" />
+    <link rel="apple-touch-icon" href={u(brand.appleTouchIcon)} />
+    {fontPreloads.map((f) => <link rel="preload" href={f} as="font" type="font/woff2" crossorigin />)}
 
-    <meta property="og:site_name" content="Noord Karavane" />
+    <meta property="og:site_name" content={brand.siteName} />
     <meta property="og:locale" content="en_ZA" />
     <meta property="og:type" content={ogType} />
     <meta property="og:title" content={fullTitle} />
@@ -79,11 +79,11 @@ const ld = [organizationLd(), websiteLd(), ...jsonld];
   </head>
   <body>
     <a href="#main" class="skip-link">Skip to content</a>
-    <Header />
+    {brand.key === 'kampi' ? <KampiHeader /> : <Header />}
     <main id="main" class={mainClass} tabindex="-1">
       <slot />
     </main>
-    <Footer floatingChat={floatingChat} />
+    {brand.key === 'kampi' ? <KampiFooter floatingChat={floatingChat} /> : <Footer floatingChat={floatingChat} />}
     <script>
       import '~/scripts/consent';
       import '~/scripts/site';

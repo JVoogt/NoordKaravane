@@ -6,10 +6,12 @@
 # below. See traefik/nkshop.yml.example. No tunnel, no Caddy, no nginx.
 #
 # Images are built ON the Pi (no registry):  make build   (tags nkshop-*:<git-sha>, :latest, and keeps :prev)
-# Staging: compose.staging.yml (separate project, DB, volumes, ports 8552/8553).
+# Staging: compose.staging.yml (separate project, DB, volumes, ports 8552/8553; Kampi 8555 under profile staging-kampi).
 #
-# Memory budget (hard limits, running set): storefront 384 + server 768 + worker 512 + postgres 512
-#   + redis 192 + pgdump 32 = 2400 MB  (contract ceiling ~2.5 GB). The one-shot `migrate` job (768 MB)
+# Memory budget (hard limits, running set): storefront 384 + storefront-kampi 384 + server 768 + worker 512
+#   + postgres 512 + redis 192 + pgdump 32 = 2784 MB (ceiling ~2.8 GB, raised from ~2.5 GB on 2026-11-13 for the
+#   Kampi storefront; Pi then had 15 GiB total, 6.4 GiB available, swap 1.8 of 2.0 GiB used; stopping the Woo stack
+#   frees up to 1 984 MB). The one-shot `migrate` job (768 MB)
 #   only runs while server/worker are still waiting for it, so it does not stack on top of them
 #   at start. On a redeploy with the old server still running it briefly adds up to 768 MB.
 name: nkshop
@@ -216,6 +218,68 @@ services:
       medusa-server: { condition: service_healthy }
     healthcheck:
       # TCP-level check: independent of any storefront route, and busybox-safe.
+      test: ["CMD", "node", "-e", "require('net').connect(4321,'127.0.0.1').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    deploy:
+      resources:
+        limits: { cpus: "1.0", memory: 384M }
+
+  # Kampi Store (store.kampi.co.za): the same storefront code built with BRAND=kampi (base "/", Kampi look and copy),
+  # selling NK's catalogue through the Kampi sales channel. CONTRACTS.md "Kampi storefront" has the env mapping.
+  # BRAND is a build arg only: the runtime stage never carries it. Without it the Dockerfile builds NK, so
+  # `make build-storefront-kampi` reads the image's brand label back and fails unless it says kampi.
+  # Every KAMPI_* source uses a `:-` default, so an .env without them still parses for every NK target.
+  storefront-kampi:
+    build:
+      context: ../storefront
+      dockerfile: ${STOREFRONT_DOCKERFILE:-../infra/docker/storefront.Dockerfile}
+      additional_contexts:
+        config: ../config
+      args:
+        BRAND: kampi
+        PUBLIC_MEDUSA_URL: ${PUBLIC_MEDUSA_URL:?set PUBLIC_MEDUSA_URL}
+        PUBLIC_MEDUSA_PUBLISHABLE_KEY: ${KAMPI_PUBLIC_MEDUSA_PUBLISHABLE_KEY:-}
+        PUBLIC_SITE_URL: ${KAMPI_PUBLIC_SITE_URL:-https://store.kampi.co.za}
+        PUBLIC_GA4_ID: ${KAMPI_PUBLIC_GA4_ID:-}
+        PUBLIC_META_PIXEL_ID: ${KAMPI_PUBLIC_META_PIXEL_ID:-}
+        PUBLIC_TURNSTILE_SITE_KEY: ${KAMPI_PUBLIC_TURNSTILE_SITE_KEY:-}
+    image: nkshop-storefront-kampi:${IMAGE_TAG:-latest}
+    container_name: nkshop-storefront-kampi
+    restart: unless-stopped
+    <<: [*hardening, *logging]
+    user: "1000:1000"
+    read_only: true
+    tmpfs: ["/tmp"]
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: "4321"
+      TZ: ${TZ:-Africa/Johannesburg}
+      NODE_OPTIONS: ${STOREFRONT_NODE_OPTIONS:---max-old-space-size=256}
+      PUBLIC_MEDUSA_URL: ${PUBLIC_MEDUSA_URL}
+      PUBLIC_MEDUSA_PUBLISHABLE_KEY: ${KAMPI_PUBLIC_MEDUSA_PUBLISHABLE_KEY:-}
+      PUBLIC_SITE_URL: ${KAMPI_PUBLIC_SITE_URL:-https://store.kampi.co.za}
+      PUBLIC_GA4_ID: ${KAMPI_PUBLIC_GA4_ID:-}
+      PUBLIC_META_PIXEL_ID: ${KAMPI_PUBLIC_META_PIXEL_ID:-}
+      PUBLIC_TURNSTILE_SITE_KEY: ${KAMPI_PUBLIC_TURNSTILE_SITE_KEY:-}
+      TURNSTILE_SECRET: ${KAMPI_TURNSTILE_SECRET:-}
+      TURNSTILE_HOSTNAMES: ${KAMPI_TURNSTILE_HOSTNAMES:-store.kampi.co.za}
+      # Shared with NK: the contact form sends through NK's Brevo account. No BREVO_LIST_ID: Kampi has no newsletter.
+      CONTACT_TO: ${CONTACT_TO:-}
+      CONTACT_FROM: ${CONTACT_FROM:-}
+      BREVO_API_KEY: ${BREVO_API_KEY:-}
+      MEDUSA_INTERNAL_URL: http://medusa-server:9000
+    volumes:
+      - ../config:/config:ro
+    ports:
+      - "${BIND_IP:-192.168.0.120}:${PORT_WEB_KAMPI:-8554}:4321"
+    networks: [default]
+    depends_on:
+      medusa-server: { condition: service_healthy }
+    healthcheck:
       test: ["CMD", "node", "-e", "require('net').connect(4321,'127.0.0.1').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))"]
       interval: 20s
       timeout: 5s

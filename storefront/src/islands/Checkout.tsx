@@ -6,12 +6,19 @@ import { quoteHref, quoteLines } from '../lib/quote';
 import { errInfo, isNetworkError, optionsLoader, placeCheck, stopCopy, summaryTotals, type OptionsState } from '../lib/promo';
 import { cartLoadMsg } from '../lib/cart-load';
 import PromoCode from './PromoCode';
+import { clientCopy } from '@brand-copy';
+
+// Brand strings and Kampi-look classes come from @brand-copy (empty classes on NK); Vite inlines BRAND, so the
+// data-seller wrapper exists only in the Kampi bundle.
+const { ui } = clientCopy;
+const KAMPI = __BRAND__ === 'kampi';
 
 interface Props {
   quoteHandles: string[];
   eftWindowHours: number; leadTime: string; freeShipping: number; pudoMaxWeightG: number; collectEnabled: boolean;
   workshop: { address_1: string; city: string; province: string; postal_code: string };
-  bank: { account_name: string; bank_name: string };
+  /** Passed on NK only (unread here); the Kampi page leaves it out. */
+  bank?: { account_name: string; bank_name: string };
 }
 interface Opt {
   id: string; name: string; amount: number | null; price_type?: string; data?: Record<string, any> | null; provider_id?: string;
@@ -280,7 +287,7 @@ export default function Checkout(props: Props) {
   if (loading) return <div class="min-h-[28rem]" aria-busy="true"><p class="typed text-muted">Loading checkout...</p></div>;
   if (!backendAvailable()) return <div class="max-w-xl border-2 border-dashed border-ink/40 p-8"><p class="soft text-3xl">Preview mode.</p><p class="mt-2 text-muted">The shop backend is not connected, so checkout is switched off.</p></div>;
   if (loadErr) return <p class="err" role="alert">{loadErr} <a href={u('/cart')}>Back to cart</a></p>;
-  if (!cart || !cart.items.length) return <div class="max-w-xl"><p class="soft text-[clamp(2rem,5vw,3rem)]">Nothing to check out yet.</p><a class="btn btn--lg mt-6" href={u('/')}>Browse the shop</a></div>;
+  if (!cart || !cart.items.length) return <div class="max-w-xl"><p class="soft text-[clamp(2rem,5vw,3rem)]">Nothing to check out yet.</p><a class="btn btn--lg mt-6" href={u('/')}>{clientCopy.cartEmptyAction}</a></div>;
 
   const quoted = quoteLines(cart.items, props.quoteHandles);
   if (quoted.length) {
@@ -314,11 +321,11 @@ export default function Checkout(props: Props) {
       <ul class="grid gap-4">
         {cart.items.map((it) => (
           <li class="grid grid-cols-[3.75rem_1fr_auto] items-center gap-3">
-            <div class="relative aspect-square overflow-hidden bg-paper-3 outline outline-1 outline-ink/50">
+            <div class={'relative aspect-square overflow-hidden bg-paper-3 outline outline-1 outline-ink/50' + ui.well}>
               {it.thumbnail ? <img src={it.thumbnail} alt="" width="120" height="120" class="h-full w-full object-contain" /> : null}
               <span class="typed absolute -right-0 -top-0 grid min-w-5 place-items-center bg-ink px-1 text-[0.72rem] leading-5 text-paper">{it.quantity}</span>
             </div>
-            <div class="min-w-0"><p class="font-display text-[0.95rem] font-extrabold uppercase leading-tight">{it.product_title || it.title}</p><p class="text-[0.85rem] text-muted">{it.variant_title}</p></div>
+            <div class="min-w-0"><p class={'font-display text-[0.95rem] font-extrabold uppercase leading-tight' + ui.nocaps}>{it.product_title || it.title}</p><p class="text-[0.85rem] text-muted">{it.variant_title}</p></div>
             <p class="typed text-[0.95rem]">{zar(it.original_total ?? it.total)}</p>
           </li>
         ))}
@@ -336,7 +343,7 @@ export default function Checkout(props: Props) {
     <form onSubmit={place} noValidate class="grid gap-10 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:gap-16" aria-describedby={submitErr ? 'submit-err' : undefined}>
       <div class="grid gap-10">
         {/* Mobile: collapsed order summary on top */}
-        <details ref={summary} class="border-2 border-ink bg-paper-2 lg:hidden">
+        <details ref={summary} class={'border-2 border-ink bg-paper-2 lg:hidden' + ui.panel}>
           <summary class="flex min-h-14 cursor-pointer list-none items-center justify-between px-4 font-bold"><span>Order summary ({cart.items.reduce((n, i) => n + i.quantity, 0)})</span><span class="typed">{zar(totals?.total)}</span></summary>
           <div class="border-t border-ink/40 p-4"><Summary /></div>
         </details>
@@ -399,7 +406,7 @@ export default function Checkout(props: Props) {
           {shipErr && <p class="err" role="alert">{shipErr}</p>}
 
           {pudo && (
-            <div class="mt-2 border-2 border-ink bg-paper-2 p-4" data-field="locker">
+            <div class={'mt-2 border-2 border-ink bg-paper-2 p-4' + ui.panel} data-field="locker">
               <div class="field">
                 <label for="f-locker">Your Pudo locker</label>
                 <input id="f-locker" class="input" name="locker" value={f.locker} onInput={set('locker')} placeholder="e.g. Pudo Sandton City Mall, Level 1" aria-invalid={err('locker') ? 'true' : undefined} aria-describedby="h-locker" required />
@@ -429,7 +436,7 @@ export default function Checkout(props: Props) {
 
         <fieldset class="grid gap-3">
           <legend class="display mb-2 text-[1.7rem]">Almost there</legend>
-          <label class="flex items-start gap-3"><input type="checkbox" class="mt-1 size-5 shrink-0 accent-[var(--color-wine)]" checked={marketing} onChange={(e) => setMarketing((e.target as HTMLInputElement).checked)} /><span>Send me emails about new drops and offers. <span class="hint">Optional. Unsubscribe any time.</span></span></label>
+          {clientCopy.checkoutOptIn && <label class="flex items-start gap-3"><input type="checkbox" class="mt-1 size-5 shrink-0 accent-[var(--color-wine)]" checked={marketing} onChange={(e) => setMarketing((e.target as HTMLInputElement).checked)} /><span>Send me emails about new drops and offers. <span class="hint">Optional. Unsubscribe any time.</span></span></label>}
           <div data-field="terms">
             <label class="flex items-start gap-3"><input type="checkbox" class="mt-1 size-5 shrink-0 accent-[var(--color-wine)]" checked={terms} onChange={(e) => { setTerms((e.target as HTMLInputElement).checked); setErrors((p) => { const n = { ...p }; delete n.terms; return n; }); }} aria-invalid={err('terms') ? 'true' : undefined} aria-describedby={err('terms') ? 'e-terms' : undefined} />
               <span>I accept the <a href={u('/legal/terms')} target="_blank" rel="noopener">terms and conditions</a>, <a href={u('/legal/returns')} target="_blank" rel="noopener">returns policy</a> and <a href={u('/legal/privacy')} target="_blank" rel="noopener">privacy policy</a>. I understand my order is prepared after payment and ships within {props.leadTime}.</span>
@@ -448,10 +455,10 @@ export default function Checkout(props: Props) {
         </div>
       </div>
 
-      <aside class="hidden h-fit border-2 border-ink bg-paper-2 p-6 lg:sticky lg:top-28 lg:block" aria-labelledby="co-sum">
+      <aside class={'hidden h-fit border-2 border-ink bg-paper-2 p-6 lg:sticky lg:top-28 lg:block' + ui.panel} aria-labelledby="co-sum">
         <h2 id="co-sum" class="display mb-5 text-[1.5rem]">Your order</h2>
         <Summary />
-        <p class="mt-5 text-[0.9rem] text-muted">Noord Karavane, Pretoria North. <a href={u('/cart')}>Edit cart</a></p>
+        <p class="mt-5 text-[0.9rem] text-muted">{KAMPI ? <span data-seller>{clientCopy.checkoutCollectLine}</span> : clientCopy.checkoutCollectLine} <a href={u('/cart')}>Edit cart</a></p>
       </aside>
     </form>
   );

@@ -1,10 +1,14 @@
 import type { APIRoute } from 'astro';
 import { brevo, clientIp, isEmail, rateLimited, reply, verifyTurnstile } from '~/lib/forms';
 import { env } from '~/lib/env';
+import { brand } from '~/lib/brand';
 
 export const prerender = false;
 
 export const POST: APIRoute = async (ctx) => {
+  // No newsletter on a brand without one (Kampi, RD2): answer 404 before reading the form, so no Brevo call can
+  // happen (the list id falls back to NK's list 4 when BREVO_LIST_ID is unset).
+  if (!brand.newsletter) return new Response(null, { status: 404 });
   const form = await ctx.request.formData().catch(() => null);
   if (!form) return reply(ctx, false, 'That did not look like a form submission.');
   if (String(form.get('website') || '')) return reply(ctx, true, 'Thanks!'); // honeypot: pretend success

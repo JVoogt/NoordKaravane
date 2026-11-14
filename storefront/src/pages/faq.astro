@@ -3,6 +3,8 @@ import { u } from '~/lib/url';
 import Base from '~/layouts/Base.astro';
 import { getEntry } from '~/lib/content';
 import { parseFaq, faqLd, breadcrumbLd } from '~/lib/seo';
+import { brand } from '~/lib/brand';
+const KAMPI = brand.key === 'kampi';
 
 const entry = await getEntry('pages', 'faq');
 if (!entry) Astro.response.headers.set('Cache-Control', 'no-store');
@@ -20,7 +22,7 @@ const intro = entry ? entry.html.split(/<h[23]/)[0].replace(/<h1[^>]*>.*?<\/h1>/
       <div class="mt-10 border-t-2 border-ink">
         {qa.map((x, i) => (
           <details class="group border-b border-ink/40" open={i === 0}>
-            <summary class="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 py-3 font-display text-[1.2rem] font-extrabold uppercase leading-tight">
+            <summary class={'flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 py-3 font-display text-[1.2rem] font-extrabold uppercase leading-tight' + (KAMPI ? ' kampi-nocaps' : '')}>
               <span>{x.q}</span>
               <svg class="shrink-0 transition-transform group-open:rotate-45 motion-reduce:transition-none" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 4v16M4 12h16" /></svg>
             </summary>

@@ -11,6 +11,9 @@
 > - Cloudflare: the zone already exists and serves the live site. Add only `api.` and `admin.` records, an Access app on
 >   `admin.`, and cache rules for `/shop*`. Do NOT apply SR's automation scripts (removed on purpose).
 > - Payment is EFT only. Payfast stays disabled (`PAYFAST_ENABLED=false`).
+> - The same stack also runs the **Kampi Store** (`store.kampi.co.za`): container `nkshop-storefront-kampi`, port 8554
+>   (`PORT_WEB_KAMPI`; staging 8555). 8554 was free when planned, but run `ss -ltn` on the Pi before its first `up`
+>   and pick the next free port if it is taken. See "Kampi storefront" below.
 
 
 Host: Raspberry Pi 5, 16 GB, arm64, Docker 20.10 + Compose v5, **every docker call prefixed `DOCKER_API_VERSION=1.41`** (the Makefile does it; do it by hand too).
@@ -20,6 +23,7 @@ Edge: Cloudflare -> home IP -> shared Traefik v3 (`/home/voogiepi/docker/traefik
 | Container | Host port | Limit |
 |---|---|---|
 | nkshop-storefront | 192.168.0.120:8550 | 384 MB |
+| nkshop-storefront-kampi | `BIND_IP`:8554 (`PORT_WEB_KAMPI`) | 384 MB |
 | nkshop-medusa-server | 192.168.0.120:8551 | 768 MB |
 | nkshop-medusa-worker | none | 512 MB |
 | nkshop-postgres | none (internal net) | 512 MB |
@@ -27,7 +31,7 @@ Edge: Cloudflare -> home IP -> shared Traefik v3 (`/home/voogiepi/docker/traefik
 | nkshop-pgdump | none | 32 MB |
 | nkshop-migrate (one-shot) | none | 768 MB, only while it runs |
 
-Running total is 2400 MB. Staging (8552/8553) is about 1.5 GB more if started, so keep it stopped when not in use.
+Running total is 2784 MB (2400 MB before the Kampi storefront). Staging (8552/8553) is about 1.5 GB more if started, so keep it stopped when not in use.
 
 Run all `make` commands from `infra/` on the laptop (`make -C infra ...`). Port check on 2026-11-03: 8550 to 8553 were free on the Pi (8530 is kampi-mail).
 
@@ -48,7 +52,7 @@ All Medusa Redis modules (event bus/BullMQ, workflow engine, cache, locking) sha
 
 ### 0. Pre-flight
 ```bash
-ssh root@dockpi 'free -h; df -h /home; ss -ltn | grep -E ":854[0-3]" || echo "ports 8550-8553 free"'
+ssh dockpi 'free -h; df -h /home; ss -ltn | grep -E ":855[0-5]\b" || echo "ports 8550-8555 free"'
 ```
 Save the `free -h` output: you compare against it in step 9.
 
@@ -60,7 +64,7 @@ make -C infra env-init    # creates infra/.env (chmod 600) from .env.example if 
 
 ### 2. Fill in `.env` on the Pi
 ```bash
-ssh root@dockpi
+ssh dockpi
 cd /home/voogiepi/docker/nkshop/infra
 nano .env
 # secrets (hex, so no quoting problems):
@@ -105,7 +109,7 @@ curl -fsSI http://192.168.0.120:8550/ | head -1
 2. Install the route (Traefik reloads on its own):
 ```bash
 make -C infra route          # backs up any existing nkshop.yml, installs traefik/nkshop.yml.example
-ssh root@dockpi 'docker logs --tail 50 traefik 2>&1 | grep -iE "nkshop|error" || true'
+ssh dockpi 'docker logs --tail 50 traefik 2>&1 | grep -iE "nkshop|error" || true'
 ```
 3. Add the DNS records: apex, www, api, admin, all proxied, same origin IP the other DockPi domains use.
 
@@ -117,7 +121,7 @@ curl -s  https://api.noordkaravane.co.za/health
 curl -sI https://api.noordkaravane.co.za/admin/users | head -1   # 404 (not routed on api.)
 curl -sI https://admin.noordkaravane.co.za/app | head -3     # Cloudflare Access login redirect
 echo | openssl s_client -connect noordkaravane.co.za:443 -servername noordkaravane.co.za 2>/dev/null | openssl x509 -noout -issuer -dates   # Let's Encrypt via Cloudflare edge
-ssh root@dockpi 'docker logs traefik 2>&1 | grep -i "acme\|certificate" | tail'
+ssh dockpi 'docker logs traefik 2>&1 | grep -i "acme\|certificate" | tail'
 ```
 Through the orange cloud `openssl` shows Cloudflare's edge cert, not Let's Encrypt. To prove the origin cert, test with Cloudflare out of the way: `curl -sI --resolve noordkaravane.co.za:443:<home-ip> https://noordkaravane.co.za` (valid LE cert, Full strict will work). If issuance fails: grey-cloud the record, retry, re-enable.
 
@@ -125,7 +129,7 @@ Smoke test: browse a product, add to cart, run an EFT checkout, confirm the orde
 
 ### 9. Memory budget check
 ```bash
-ssh root@dockpi free -h                      # compare with step 0
+ssh dockpi free -h                      # compare with step 0
 make -C infra free                           # docker stats --no-stream for nkshop-* containers
 ```
 Expected: about 1.5 to 2.2 GB more "used" at idle; "available" must stay above ~2 GB. If it does not, lower the Node heaps (`MEDUSA_NODE_OPTIONS`, `STOREFRONT_NODE_OPTIONS`) or Postgres `shared_buffers`. The Pi already uses swap (1.2 of 2 GB at the time of writing); watch `si/so` in `vmstat 5`.
@@ -136,26 +140,31 @@ make -C infra pgdump-now        # writes infra/backups/nkshop-<timestamp>.dump a
 ```
 
 ## Redeploy
+`HOST` defaults to the ssh alias `dockpi` (`root@dockpi` does not resolve). Every `build*` target and `staging-build` runs `sync` first, and `sync` copies the checkout you run it from into the **production** tree on the Pi (`rsync --delete`). So run them only from a merged checkout (a clean deploy worktree of `main`), never from a feature branch. Run `make -C infra sync-check` first: it changes nothing and prints only the files `sync` would delete on the Pi. The exclude list keeps the Pi-only files (both `business.json` copies, `.env*`, backups, `/infra/cloudflare/`, any `*.bak*` file, `/web/.impeccable/`, and a worktree's `.git` file via `--exclude='/.git'`); `sync` refuses to run from a worktree if that last exclude is ever removed. Read every `*deleting` line before you sync. `sync` (so every `build*` target too) also runs the same dry run itself first and refuses, with a non-zero exit and the offending paths, if any path it would overwrite, create or delete matches `SYNC_PROTECTED` (`business.json`, `.env` / `.env.local` / `.env.production` / `.env.staging`, `cloudflare/`, `*.bak*`, `.impeccable/`, `backups/`, the top-level `.git`, `infra/.last_tag`, `infra/build-*.log`; `*.example` and `*.template` files are exempt). `SYNC_PROTECTED` is fixed in the Makefile: setting it on the command line or through `make -e` refuses, and an invalid regex refuses. That regex is separate from the exclude list on purpose: a typo in an exclude stops the sync instead of deleting the file.
+
+`:prev` check around a build: record the image ids first (`ssh dockpi 'DOCKER_API_VERSION=1.41 docker image inspect --format "{{.Id}}" nkshop-backend:latest nkshop-storefront:latest'`). After the build, `docker image inspect --format "{{.Id}}" nkshop-<image>:prev` must equal the recorded id; if it does not (two builds in a row), `docker tag <recorded id> nkshop-<image>:prev` by hand.
 ```bash
 make -C infra pgdump-now        # restore point BEFORE any deploy (migrations are not reversible)
-ssh root@dockpi free -h
-make -C infra build             # sync + tag :prev + build both images as :<git-sha> and :latest
+ssh dockpi free -h
+make -C infra sync-check        # what sync would delete on the Pi (must be nothing Pi-only)
+make -C infra build             # sync + tag :prev + build all three images as :<git-sha> and :latest
 make -C infra up                # migrate runs first, then server/worker/storefront are recreated
 make -C infra ps && make -C infra logs S=medusa-server
 ```
 Storefront-only change: `make -C infra build-storefront && make -C infra up`. Backend-only: `build-backend`. The `up` only recreates containers whose image changed.
-Tidy old images now and then: `ssh root@dockpi "DOCKER_API_VERSION=1.41 docker images 'nkshop-*'"`, then `docker rmi nkshop-backend:<old-sha>`. Never run a blanket `docker system prune` on this host.
+Tidy old images now and then: `ssh dockpi "DOCKER_API_VERSION=1.41 docker images 'nkshop-*'"`, then `docker rmi nkshop-backend:<old-sha>`. Never run a blanket `docker system prune` on this host.
 
 ## Rollback
 ```bash
 make -C infra rollback      # retags nkshop-*:prev -> :latest, recreates migrate/server/worker/storefront
 ```
+The Kampi storefront is rolled back too when `nkshop-storefront-kampi:prev` exists; its first deploy has none, and that never blocks NK's rollback.
 `:prev` is whatever `:latest` was before the last `make build`. Building twice in a row without deploying makes `:prev` an undeployed image: check `docker images` and tag by hand if needed: `docker tag nkshop-backend:<sha> nkshop-backend:latest`.
 **Database**: Medusa has no down-migrations. If the bad release ran a migration that the old code cannot handle, restore the pre-deploy dump (below) after rolling the images back. Note the `migrate` job runs on every `up`, including during rollback; it is a no-op when the schema is already current, and the old code will normally tolerate a newer schema only if the migration was additive.
 
 ## Restore from a pg_dump
 ```bash
-ssh root@dockpi 'ls -lht /home/voogiepi/docker/nkshop/infra/backups'
+ssh dockpi 'ls -lht /home/voogiepi/docker/nkshop/infra/backups'
 make -C infra restore DUMP=backups/nkshop-20261103-0130.dump
 ```
 The script asks you to type `restore`, stops server/worker/storefront, drops and recreates the database, `pg_restore`s the dump, flushes Redis (queued jobs referred to the old state), and brings everything back up (the migrate job then applies any newer migrations). Afterwards check admin login and a recent order.
@@ -179,6 +188,77 @@ Always: edit `infra/.env` on the Pi (`chmod 600`), then `make -C infra up` (comp
 - Cloudflare Access: review allowed emails when anyone leaves.
 Rotate immediately if `.env` is ever pasted anywhere or the Azure backup account is exposed.
 
+## Kampi storefront
+`store.kampi.co.za` is the same storefront code built with `BRAND=kampi` (base `/`, Kampi look), selling NK's catalogue through the Kampi sales channel. Compose service `storefront-kampi`, container `nkshop-storefront-kampi`, image `nkshop-storefront-kampi:<sha>|latest|prev`, port `PORT_WEB_KAMPI` (default 8554). Contracts, config schema and the env mapping: `CONTRACTS.md`, "Kampi storefront".
+
+**BRAND is a build arg, never runtime.** Compose passes `BRAND: kampi`; the Dockerfile defaults to `nk`, so a build that loses the arg silently produces the NK store. `make build` and `make build-storefront-kampi` read the image label `org.noordkaravane.storefront.brand` back and fail unless it says `kampi`. Check by hand with `docker image inspect -f '{{index .Config.Labels "org.noordkaravane.storefront.brand"}}' nkshop-storefront-kampi:latest`. A hand build outside compose needs `--build-context config=../config --build-arg BRAND=kampi` (the guard reads `config/business.example.json` from that context; `infra/docker/storefront.Dockerfile` also copies `config/business.json`). `docker exec nkshop-storefront-kampi printenv BRAND` prints nothing, and that is correct.
+
+### First deploy (after the PR is merged, from a deploy worktree of `main`)
+```bash
+ssh dockpi 'ss -ltn | grep -E ":855[45]\b" || echo "8554/8555 free"'   # else set PORT_WEB_KAMPI to a free port
+make -C infra pgdump-now
+make -C infra sync-check && make -C infra sync
+make -C infra build-backend      # then the next line: start only the named backend services
+ssh dockpi 'cd /home/voogiepi/docker/nkshop/infra && DOCKER_API_VERSION=1.41 docker compose up -d migrate medusa-server medusa-worker'
+make -C infra kampi-channel      # prints KAMPI_SALES_CHANNEL_ID, KAMPI_PUBLISHABLE_KEY and a kampi-channel {...} summary
+```
+1. **Config.** Back up and edit both `business.json` copies (`config/` and `backend/src/config/`) with the real `brands.kampi` block: `sales_channel_ids` = [the printed id], `name`, `shop_url`, `logo_url`, `palette`, `from_name`, and the optional display keys you have. **Leave an optional key out** rather than setting it to `""`. `python3 -m json.tool` on both, then `ssh dockpi 'cd /home/voogiepi/docker/nkshop/infra && DOCKER_API_VERSION=1.41 docker compose restart medusa-server medusa-worker'`.
+2. **Positive probe** (a quiet log proves nothing: the config is read lazily). In both containers:
+   ```bash
+   ssh dockpi 'for c in nkshop-medusa-server nkshop-medusa-worker; do
+     DOCKER_API_VERSION=1.41 docker exec -w /app "$c" node -e '\''const b=require("./src/lib/business.js");const id=process.argv[1];console.log(JSON.stringify({kampi_valid:b.kampiBrandConfig() !== null,brand:b.brandFor(id).key,has_id:b.kampiChannelIds().includes(id)}))'\'' "<sales channel id>"
+   done'
+   ```
+   (Run from the laptop. The `'\''` pairs keep the inner `node -e '...'` script single-quoted once it reaches the Pi.)
+   Both must print `{"kampi_valid":true,"brand":"kampi","has_id":true}`, or stop and fix the block.
+3. **`.env`** (back up, keep `chmod 600`): `STORE_CORS` += `,https://store.kampi.co.za`; `KAMPI_PUBLIC_MEDUSA_PUBLISHABLE_KEY` = the printed key; the other `KAMPI_*` keys as `.env.example` describes. Recreate `medusa-server` (a restart does not re-read `.env`): `ssh dockpi 'cd /home/voogiepi/docker/nkshop/infra && DOCKER_API_VERSION=1.41 docker compose up -d medusa-server'`.
+4. `make -C infra build-storefront-kampi` (the brand check runs inside it), then `make -C infra up` and `make -C infra ps`. Build the Kampi image before the first `up`: otherwise `up` would build it itself, without the brand check.
+   If the Kampi build or its brand check fails, NK is not blocked: `make build` would stop at that point **before any `:latest` retag** (NK's included, because of `set -e`), so deploy NK with `make -C infra build-backend` and `make -C infra build-storefront` instead, then start only the NK services by name: `ssh dockpi 'cd /home/voogiepi/docker/nkshop/infra && DOCKER_API_VERSION=1.41 docker compose up -d medusa-server medusa-worker storefront'`, and fix the Kampi image separately. Not `make -C infra up`: on a first deploy there is no `nkshop-storefront-kampi` image yet, so `up` would compose-build it without the brand check.
+5. LAN checks: `curl -s http://<BIND_IP>:8554/healthz`; `/` answers 200 and contains `Kampi Store`. Scripted POSTs from the LAN get 403 from Astro's origin check (the LAN host is not in `security.allowedDomains`); test forms through the real hostname.
+
+### Preview on the real hostname, then the switch (homelab runbook, never `make route`)
+- Template: `infra/traefik/kampi-store.yml.example` (synced to the Pi under `/home/voogiepi/docker/nkshop/infra/traefik/`), installed by hand as `kampi-store.yml` in the Traefik dynamic dir (owner `voogiepi`, mode 644). Before installing, no file in the dynamic dir may already use a `kampi-store` name.
+- **Substitutions (Tasks 4.3 and 5.3), on the Pi only, never committed:**
+  - `REPLACE_WITH_TOKEN`: the preview cookie value, `openssl rand -hex 16`;
+  - `REPLACE_WITH_PI_LAN_IP`: `BIND_IP` from `infra/.env`;
+  - the port `8554` in the service URL, if `PORT_WEB_KAMPI` in `infra/.env` is not 8554.
+  The block below does all three. Run it in a shell on the Pi (`ssh dockpi`) as `voogiepi`:
+```bash
+# kampi-store.yml: preview file (Task 4.3)
+D=/home/voogiepi/docker
+cd "$D/traefik/config/dynamic"
+LAN_IP=$(sed -n 's/^BIND_IP=\([0-9.]*\).*/\1/p' "$D/nkshop/infra/.env")
+PORT=$(sed -n 's/^PORT_WEB_KAMPI=\([0-9]*\).*/\1/p' "$D/nkshop/infra/.env"); PORT=${PORT:-8554}
+TOKEN=$(openssl rand -hex 16)
+sed -e "s/REPLACE_WITH_PI_LAN_IP/$LAN_IP/" -e "s/:8554\"/:$PORT\"/" -e "s/REPLACE_WITH_TOKEN/$TOKEN/" \
+  "$D/nkshop/infra/traefik/kampi-store.yml.example" > ../kampi-store.yml.new
+if [ -n "$LAN_IP" ] && ! grep -q REPLACE_WITH ../kampi-store.yml.new; then
+  chmod 644 ../kampi-store.yml.new && mv ../kampi-store.yml.new kampi-store.yml
+  echo "preview cookie: kampi_preview=$TOKEN"   # keep it in the password manager, never in git
+else
+  echo "STOP: BIND_IP not found or a placeholder is left in ../kampi-store.yml.new"
+fi
+```
+- Preview phase (as shipped): router `kampi-store-preview` (priority 300) matches only a request whose `Cookie` header holds `kampi_preview=<token>`; everyone else still reaches the old store through `kampi-shop.yml`. Set the cookie for `store.kampi.co.za` in the browser to test.
+- Switch (Task 5.3): delete the `PREVIEW ROUTER` block and strip the `#S ` prefixes with the template header's `sed` line (both addresses anchored to the whole marker line; the unanchored form also matched the header and broke the YAML). The three public routers (priority 200) then win over `kampi-shop.yml`; `shop.kampi.co.za` answers 301 to `store.kampi.co.za`. The same shell on the Pi:
+```bash
+# kampi-store.yml: switch (Task 5.3)
+cd /home/voogiepi/docker/traefik/config/dynamic
+sed -e '/^ *# --- PREVIEW ROUTER BEGIN ---$/,/^ *# --- PREVIEW ROUTER END ---$/d' -e 's/^#S //' kampi-store.yml > ../kampi-store.yml.switch
+if grep -q -e '^#S' -e 'kampi-store-preview' ../kampi-store.yml.switch; then
+  echo "STOP: the switch file still has preview lines"
+else
+  chmod 644 ../kampi-store.yml.switch && mv ../kampi-store.yml.switch kampi-store.yml
+  mkdir -p ../dynamic-archive && mv kampi-shop.yml "../dynamic-archive/kampi-shop.yml.pre-nk-cutover-$(date +%Y%m%d)"
+fi
+```
+- Route rollback: copy the archived `kampi-shop.yml` back into the dynamic dir (start the old store if it was stopped), then move `kampi-store.yml` out. Traefik reloads by itself; check `docker logs --since 2m traefik` after each step.
+
+### Redeploy and rollback
+- Kampi-only change: `make -C infra sync-check && make -C infra build-storefront-kampi && make -C infra up`. `make -C infra build` builds all three images (the Kampi one last, then the brand check).
+- `make -C infra rollback` retags `nkshop-storefront-kampi:prev` too when it exists. Kampi only: `docker tag nkshop-storefront-kampi:prev nkshop-storefront-kampi:latest && docker compose up -d --force-recreate storefront-kampi`.
+- A `business.json` change needs only a restart of `medusa-server` and `medusa-worker`, then the probe above. A `KAMPI_PUBLIC_*` change needs `make -C infra build-storefront-kampi && make -C infra up`.
+
 ## Staging
 ```bash
 make -C infra env-init      # creates .env.staging from .env.staging.example; edit it on the Pi
@@ -187,9 +267,10 @@ make -C infra staging-create-admin-user EMAIL=owner@example.com
 ```
 Uncomment the staging blocks in `traefik/nkshop.yml.example`, `make route`, add DNS and Access. Separate containers (`nkshop-staging-*`), Postgres/Redis volumes (`nkshop-staging_pg_data`), ports 8552/8553. No nightly dump and no real Cloudflare/Meta credentials. Stop it when done: `make staging-down` (volumes kept).
 As with production, the staging storefront needs `PUBLIC_MEDUSA_PUBLISHABLE_KEY` from the staging DB before `staging-build` is useful (build, migrate, seed, read key, rebuild).
+The Kampi storefront is not part of staging unless asked for: `nkshop-staging-storefront-kampi` (port `PORT_WEB_KAMPI=8555` in `.env.staging`) sits behind the compose profile `staging-kampi`, which the `staging-*` targets do not pass. Build and start it by hand with `--profile staging-kampi` added to the `DCS` command line.
 
 ## Incident checklist
-1. Is it the Pi? `ssh root@dockpi uptime; free -h; df -h /; dmesg -T | tail` (OOM killer lines mention the container). Is Traefik up (`docker ps | grep traefik`)?
+1. Is it the Pi? `ssh dockpi uptime; free -h; df -h /; dmesg -T | tail` (OOM killer lines mention the container). Is Traefik up (`docker ps | grep traefik`)?
 2. Is it Cloudflare? Status page; try `curl --resolve noordkaravane.co.za:443:<home-ip> -I https://noordkaravane.co.za` to bypass it. 521/522 means Cloudflare cannot reach the origin (home internet, port forward, Traefik, or the IP changed: update the A records).
 3. `make ps`: which container is unhealthy or restarting? `make logs S=medusa-server` (also in Loki/Grafana: promtail already ships every container's json log by container name).
 4. Site up but checkout broken: `medusa-server` and `medusa-worker` logs, Redis (`docker compose exec redis redis-cli -a "$REDIS_PASSWORD" info memory`; `used_memory` near 160 MB with noeviction means writes are failing: investigate what is filling it, then restart the worker), Postgres connections.

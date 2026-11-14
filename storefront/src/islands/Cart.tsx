@@ -6,6 +6,9 @@ import { errInfo } from '../lib/promo';
 import { zar } from './format';
 import { quoteHref, quoteLines } from '../lib/quote';
 import PromoCode from './PromoCode';
+import { clientCopy } from '@brand-copy';
+
+const { ui } = clientCopy;
 
 export default function Cart({ freeShipping, quoteHandles }: { freeShipping: number; quoteHandles: string[] }) {
   const [cart, setCart] = useState<CartT | null>(null);
@@ -43,9 +46,10 @@ export default function Cart({ freeShipping, quoteHandles }: { freeShipping: num
   if (!items.length) {
     return (
       <div class="max-w-xl py-6">
-        <p class="soft text-[clamp(2rem,5vw,3rem)]">Your cart is empty. Nothing to edit yet.</p>
+        <p class="soft text-[clamp(2rem,5vw,3rem)]">{clientCopy.cartEmptyTitle}</p>
+        {clientCopy.cartEmptyBody && <p class="mt-3 text-muted">{clientCopy.cartEmptyBody}</p>}
         {error && <p class="err mt-3" role="alert">{error}</p>}
-        <a class="btn btn--lg mt-6" href={u('/')}>Browse the shop</a>
+        <a class="btn btn--lg mt-6" href={u('/')}>{clientCopy.cartEmptyAction}</a>
       </div>
     );
   }
@@ -66,11 +70,11 @@ export default function Cart({ freeShipping, quoteHandles }: { freeShipping: num
         <ul class="border-t-2 border-ink">
           {items.map((it) => (
             <li class="grid grid-cols-[5.5rem_1fr] gap-4 border-b border-ink/40 py-5 sm:grid-cols-[7rem_1fr_auto]" aria-busy={busyId === it.id}>
-              <a href={it.product_handle ? `/shop/${it.product_handle}/` : '#'} class="block aspect-square overflow-hidden bg-paper-3 outline outline-1 outline-ink/50">
+              <a href={it.product_handle ? u(`/${it.product_handle}/`) : '#'} class={'block aspect-square overflow-hidden bg-paper-3 outline outline-1 outline-ink/50' + ui.well}>
                 {it.thumbnail ? <img src={it.thumbnail} alt="" width="224" height="224" class="h-full w-full object-contain" loading="lazy" /> : null}
               </a>
               <div class="min-w-0">
-                <h2 class="font-display text-[1.15rem] font-extrabold uppercase leading-tight"><a class="no-underline hover:text-wine" href={it.product_handle ? `/shop/${it.product_handle}/` : '#'}>{it.product_title || it.title}</a></h2>
+                <h2 class={'font-display text-[1.15rem] font-extrabold uppercase leading-tight' + ui.nocaps}><a class="no-underline hover:text-wine" href={it.product_handle ? u(`/${it.product_handle}/`) : '#'}>{it.product_title || it.title}</a></h2>
                 <p class="mt-1 text-[0.95rem] text-muted">{it.variant_title || it.variant?.options?.map((o) => o.value).join(' / ')}</p>
                 <p class="typed mt-1 text-[0.95rem]">{zar(it.unit_price)} each</p>
                 {isQuote(it) && <p class="mt-1 text-[0.9rem] font-bold text-wine-lit">Quote only: we quote delivery for this item.</p>}
@@ -89,7 +93,7 @@ export default function Cart({ freeShipping, quoteHandles }: { freeShipping: num
         </ul>
       </div>
 
-      <aside class="h-fit border-2 border-ink bg-paper-2 p-6 lg:sticky lg:top-28" aria-labelledby="sum-title">
+      <aside class={'h-fit border-2 border-ink bg-paper-2 p-6 lg:sticky lg:top-28' + ui.panel} aria-labelledby="sum-title">
         <h2 id="sum-title" class="display text-[1.6rem]">Order summary</h2>
         <dl class="mt-5 grid gap-2 text-[1rem]">
           <div class="flex justify-between"><dt>Subtotal</dt><dd class="typed">{zar(subtotal)}</dd></div>

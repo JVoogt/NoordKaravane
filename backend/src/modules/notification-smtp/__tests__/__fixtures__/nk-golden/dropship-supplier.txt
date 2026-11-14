@@ -1,0 +1,12 @@
+Hi Example Supplier,
+
+Order NK3 has been paid. Please fulfil and ship directly to the customer:
+
+1 x Trauma kit (Vehicle) [TFR-VEH-KIT]
+
+Ship to: Jan Botha, 1 Example Street, Exampletown, 0000
+Shipping method chosen: The Courier Guy
+
+Please reply with the tracking number once it is on its way.
+
+Noord Karavane

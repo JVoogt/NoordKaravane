@@ -2,11 +2,14 @@
 # Everything executes on DockPi over ssh; every docker call carries DOCKER_API_VERSION=1.41.
 # Images are built ON the Pi (arm64, no registry). `make help` lists targets.
 
-HOST        ?= root@dockpi
+# The ssh alias from ~/.ssh/config (`root@dockpi` does not resolve).
+HOST        ?= dockpi
 OWNER       ?= voogiepi
 REMOTE_DIR  ?= /home/voogiepi/docker/nkshop
 INFRA       := $(REMOTE_DIR)/infra
 TRAEFIK_DYN ?= /home/voogiepi/docker/traefik/config/dynamic
+# Where `sync` and `sync-check` copy to. Override only to dry-run against a local scratch dir.
+SYNC_DEST   ?= $(HOST):$(REMOTE_DIR)/
 ROOT        := $(abspath ..)
 
 # Image tag for this build: git short sha, or a timestamp when the repo is not a git checkout.
@@ -21,20 +24,13 @@ S           ?=
 # Build one image at a time: a Pi 5 with ~7GB free must not run two Node builds in parallel.
 export COMPOSE_PARALLEL_LIMIT := 1
 
-.DEFAULT_GOAL := help
-.PHONY: help sync env-init build build-backend build-storefront up down restart logs ps migrate seed \
-        create-admin-user rollback publishable-key route route-diff pgdump-now restore free \
-        staging-build staging-up staging-down staging-logs staging-ps staging-migrate staging-seed \
-        staging-create-admin-user staging-publishable-key staging-pgdump-now staging-restore
-
-help:
-	@echo "Production : sync env-init build up down restart logs ps migrate seed create-admin-user rollback publishable-key route pgdump-now restore free"
-	@echo "Staging    : staging-build staging-up staging-down staging-logs staging-ps staging-migrate staging-seed staging-create-admin-user staging-pgdump-now staging-restore"
-	@echo "Variables  : HOST=$(HOST) TAG=$(TAG) S=<service> (logs)  EMAIL=<admin email> (create-admin-user)  DUMP=<file under infra/> (restore)"
-
-# ---------------------------------------------------------------- code + env
-sync:
-	rsync -az --delete --human-readable \
+# rsync excludes shared by `sync` and `sync-check` (one list, so the two never drift). Excluded paths are never
+# deleted on the Pi by --delete, so everything that only lives on the Pi must be matched here:
+#   - the business.json copies, .env files and backups;
+#   - /infra/cloudflare/ (Pi-only notes), /web/.impeccable/ (tool cache), any *.bak* file (covers the `*.bak-*`
+#     and `*.bak.*` backups made by hand on the Pi);
+#   - /.git: in a git worktree .git is a FILE (gitdir: ...), which the '.git/' directory pattern does not match.
+SYNC_EXCLUDES := \
 	  --exclude='node_modules/' --exclude='.git/' --exclude='/source-assets/' --exclude='*.zip' \
 	  --exclude='.medusa/' --exclude='dist/' --exclude='.astro/' --exclude='.DS_Store' \
 	  --exclude='.git/' --exclude='node_modules/' --exclude='/social-media-posts/' --exclude='.env' --exclude='.env.local' --exclude='.env.production' --exclude='/infra/.env.staging' \
@@ -42,9 +38,58 @@ sync:
 	  --exclude='/config/business.json' --exclude='/backend/src/config/business.json' \
 	  --exclude='/infra/.last_tag' --exclude='/infra/build-*.log' \
 	  --exclude='/.cc10x/' --exclude='/.claude/' --exclude='/.remember/' --exclude='/.impeccable/' \
-	  $(ROOT)/ $(HOST):$(REMOTE_DIR)/
+	  --exclude='/infra/cloudflare/' --exclude='*.bak*' --exclude='/web/.impeccable/' --exclude='/.git'
+
+# Refuses to sync from a git worktree (.git is a file) unless the exclude list covers that file: rsync --delete would
+# otherwise copy it over the Pi tree as a broken .git.
+SYNC_GUARD = $(if $(findstring --exclude='/.git',$(SYNC_EXCLUDES)),true,[ ! -f $(ROOT)/.git ] || { echo "refusing to sync: $(ROOT)/.git is a file (git worktree) and SYNC_EXCLUDES lacks --exclude='/.git'"; exit 1; })
+
+# Fail-closed preflight for `sync` (and every build* target, which all depend on it): the same dry run as
+# `sync-check`, then a refusal if any path it would SEND (create or overwrite: `<`/`>`/`c` itemize lines) or DELETE
+# (`*deleting`) matches SYNC_PROTECTED. `.example` / `.template` files are carved out (they ship from the repo). The
+# regex is deliberately independent of SYNC_EXCLUDES, so a typo or a dropped exclude cannot also silence the check that
+# would catch it. Paths are normalised first: a symlink line (`cL`/`>L`/`<L`) loses its ` -> target`, a directory its
+# trailing `/`, so `$`-anchored entries and the carve-out see the bare path (a protected name that is a symlink to an
+# `.example` still refuses). Dir entries end `(/|$)` to match the directory itself. SYNC_PROTECTED, SYNC_PREFLIGHT and
+# SYNC_DRYRUN are refused in the `sync` recipe itself when they come from the command line or `make -e` (an override
+# of SYNC_PREFLIGHT cannot remove that check); a regex grep rejects (exit 2) refuses too.
+SYNC_PROTECTED := business\.json|(^|/)\.env($$|\.(local|production|staging)$$)|(^|/)cloudflare(/|$$)|\.bak|(^|/)\.impeccable(/|$$)|(^|/)backups(-staging)?(/|$$)|^\.git(/|$$)|^infra/\.last_tag$$|^infra/build-.*\.log$$
+SYNC_DRYRUN = rsync -azn --delete --itemize-changes $(SYNC_EXCLUDES) $(ROOT)/ $(SYNC_DEST)
+SYNC_PREFLIGHT = out=$$($(SYNC_DRYRUN)) || exit $$?; \
+	  bad=$$(printf '%s\n' "$$out" | sed -n -E -e '/^(\*deleting|[<>c][fdLDS])/!d' -e '/^[<>c]L/s/ -> .*$$//' -e 's/^[^ ]+ +//' -e 's,/$$,,' -e p | grep -Ev '\.(example|template)$$' | grep -E '$(SYNC_PROTECTED)'); rc=$$?; \
+	  [ $$rc -le 1 ] || { echo "refusing to sync: SYNC_PROTECTED is not a valid regex (grep exit $$rc)"; exit 1; }; \
+	  [ -z "$$bad" ] || { echo "refusing to sync: the dry run would overwrite or delete protected Pi-only paths (check SYNC_EXCLUDES):"; \
+	  printf '%s\n' "$$bad" | sed 's/^/  /'; exit 1; }
+
+# Runs on the Pi after the Kampi image build: the Dockerfile defaults BRAND to nk, so a build that lost the BRAND arg
+# would silently produce an NK store. The image label records the brand it was really built as.
+KAMPI_BRAND_CHECK = b=$$($(DOCKER) image inspect -f "{{index .Config.Labels \"org.noordkaravane.storefront.brand\"}}" nkshop-storefront-kampi:$(TAG)) && [ "$$b" = kampi ] || { echo "nkshop-storefront-kampi:$(TAG) was built as brand [$$b], not kampi: check BRAND in docker-compose.yml"; exit 1; }
+
+.DEFAULT_GOAL := help
+.PHONY: help sync sync-check env-init build build-backend build-storefront build-storefront-kampi kampi-channel up down restart logs ps migrate seed \
+        create-admin-user rollback publishable-key route route-diff pgdump-now restore free \
+        staging-build staging-up staging-down staging-logs staging-ps staging-migrate staging-seed \
+        staging-create-admin-user staging-publishable-key staging-pgdump-now staging-restore
+
+help:
+	@echo "Production : sync sync-check env-init build up down restart logs ps migrate seed create-admin-user rollback publishable-key route pgdump-now restore free"
+	@echo "Kampi      : build-storefront-kampi (nkshop-storefront-kampi) kampi-channel (Kampi sales channel + key)"
+	@echo "Staging    : staging-build staging-up staging-down staging-logs staging-ps staging-migrate staging-seed staging-create-admin-user staging-pgdump-now staging-restore"
+	@echo "Variables  : HOST=$(HOST) TAG=$(TAG) S=<service> (logs)  EMAIL=<admin email> (create-admin-user)  DUMP=<file under infra/> (restore)"
+
+# ---------------------------------------------------------------- code + env
+sync:
+	@$(SYNC_GUARD)
+	@$(foreach v,SYNC_PROTECTED SYNC_PREFLIGHT SYNC_DRYRUN,$(if $(filter-out file,$(origin $v)),echo "refusing to sync: $v comes from the $(origin $v); it is fixed in the Makefile"; exit 1;)) $(SYNC_PREFLIGHT)
+	rsync -az --delete --human-readable $(SYNC_EXCLUDES) $(ROOT)/ $(SYNC_DEST)
 	$(SSH) 'mkdir -p $(INFRA)/backups $(INFRA)/backups-staging && chown -R $(OWNER):$(OWNER) $(REMOTE_DIR) && \
 	  for f in $(INFRA)/.env $(INFRA)/.env.staging; do [ -f $$f ] && chmod 600 $$f; done; true'
+
+# Dry run of `sync`: prints only the files it would DELETE on the Pi, changes nothing. Read it before every sync.
+sync-check:
+	@$(SYNC_GUARD)
+	@out=$$($(SYNC_DRYRUN)) || exit $$?; \
+	  printf '%s\n' "$$out" | grep '^\*deleting' || echo "sync-check: nothing would be deleted"
 
 # create infra/.env (and .env.staging) from the examples if missing, then edit them on the Pi
 env-init:
@@ -55,10 +100,11 @@ env-init:
 # Tags: nkshop-<image>:<TAG> (immutable), :latest (what compose runs), :prev (the :latest before this build).
 build: sync
 	$(SSH) '$(IN_INFRA) set -e; \
-	  for i in backend storefront; do $(DOCKER) image inspect nkshop-$$i:latest >/dev/null 2>&1 && $(DOCKER) tag nkshop-$$i:latest nkshop-$$i:prev || true; done; \
+	  for i in backend storefront storefront-kampi; do $(DOCKER) image inspect nkshop-$$i:latest >/dev/null 2>&1 && $(DOCKER) tag nkshop-$$i:latest nkshop-$$i:prev || true; done; \
 	  IMAGE_TAG=$(TAG) $(DC) build migrate; \
 	  IMAGE_TAG=$(TAG) $(DC) build storefront; \
-	  for i in backend storefront; do $(DOCKER) tag nkshop-$$i:$(TAG) nkshop-$$i:latest; done; \
+	  IMAGE_TAG=$(TAG) $(DC) build storefront-kampi; $(KAMPI_BRAND_CHECK); \
+	  for i in backend storefront storefront-kampi; do $(DOCKER) tag nkshop-$$i:$(TAG) nkshop-$$i:latest; done; \
 	  echo "built tag $(TAG)"; $(DOCKER) images "nkshop-*"'
 
 # The storefront needs PUBLIC_MEDUSA_PUBLISHABLE_KEY at build time, so on a first deploy: build-backend, migrate,
@@ -72,6 +118,13 @@ build-storefront: sync
 	$(SSH) '$(IN_INFRA) set -e; \
 	  $(DOCKER) image inspect nkshop-storefront:latest >/dev/null 2>&1 && $(DOCKER) tag nkshop-storefront:latest nkshop-storefront:prev || true; \
 	  IMAGE_TAG=$(TAG) $(DC) build storefront; $(DOCKER) tag nkshop-storefront:$(TAG) nkshop-storefront:latest'
+
+# Kampi Store image (BRAND=kampi). Needs KAMPI_PUBLIC_MEDUSA_PUBLISHABLE_KEY in .env (from `make kampi-channel`).
+build-storefront-kampi: sync
+	$(SSH) '$(IN_INFRA) set -e; \
+	  $(DOCKER) image inspect nkshop-storefront-kampi:latest >/dev/null 2>&1 && $(DOCKER) tag nkshop-storefront-kampi:latest nkshop-storefront-kampi:prev || true; \
+	  IMAGE_TAG=$(TAG) $(DC) build storefront-kampi; $(KAMPI_BRAND_CHECK); \
+	  $(DOCKER) tag nkshop-storefront-kampi:$(TAG) nkshop-storefront-kampi:latest'
 
 up:
 	$(SSH) '$(IN_INFRA) $(DC) up -d --remove-orphans && $(DC) ps'
@@ -95,6 +148,11 @@ free:
 migrate:
 	$(SSH) '$(IN_INFRA) $(DC) run --rm migrate'
 
+# Creates (once) the Kampi sales channel and its publishable key, links every product, prints a summary line.
+# Idempotent. The key goes into .env as KAMPI_PUBLIC_MEDUSA_PUBLISHABLE_KEY (CONTRACTS.md, Kampi storefront).
+kampi-channel:
+	$(SSH) '$(IN_INFRA) $(DC) run --rm migrate npx medusa exec ./src/scripts/setup-kampi-channel.js'
+
 # Reads ../catalogue/products.json (mounted at /catalogue). Safe to re-run only if the seed script is idempotent.
 seed:
 	$(SSH) '$(IN_INFRA) $(DC) run --rm migrate npx medusa exec ./src/scripts/seed.js'
@@ -112,11 +170,13 @@ staging-publishable-key:
 	$(SSH) '$(IN_INFRA) ./scripts/publishable-key.sh staging'
 
 # Retag :prev as :latest and recreate. (A DB migration is NOT undone: see RUNBOOK.md rollback.)
+# The Kampi image is rolled back only when it has a :prev (its first deploy has none); that never blocks NK's rollback.
 rollback:
 	$(SSH) '$(IN_INFRA) set -e; \
 	  for i in backend storefront; do $(DOCKER) image inspect nkshop-$$i:prev >/dev/null 2>&1 || { echo "no :prev image for $$i"; exit 1; }; done; \
 	  for i in backend storefront; do $(DOCKER) tag nkshop-$$i:prev nkshop-$$i:latest; done; \
-	  $(DC) up -d --remove-orphans --force-recreate migrate medusa-server medusa-worker storefront; $(DC) ps'
+	  K=; if $(DOCKER) image inspect nkshop-storefront-kampi:prev >/dev/null 2>&1; then $(DOCKER) tag nkshop-storefront-kampi:prev nkshop-storefront-kampi:latest; K=storefront-kampi; else echo "no :prev image for storefront-kampi: left as is"; fi; \
+	  $(DC) up -d --remove-orphans --force-recreate migrate medusa-server medusa-worker storefront $$K; $(DC) ps'
 
 # ---------------------------------------------------------------- traefik route
 route:

@@ -1,0 +1,9 @@
+A payment was captured but no order is linked to it. The customer may have paid while the order was not created. Check the payment with the provider and find the cart or customer in the admin before contacting them.
+
+Payment: pay_01EXAMPLE
+Amount: R1 630,00
+Provider: pp_payfast_payfast
+
+Admin: https://admin.noordkaravane.co.za/app/orders
+
+Noord Karavane shop

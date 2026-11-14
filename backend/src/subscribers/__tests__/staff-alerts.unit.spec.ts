@@ -34,7 +34,7 @@ type Graph = { payment?: any[]; order_payment_collection?: any[]; order?: any[] 
  * Fake Medusa container. createNotifications mimics @medusajs/notification 2.22: a repeat idempotency_key whose
  * earlier row succeeded is skipped without sending or throwing, and the single-object call returns undefined.
  */
-function fakeContainer(o: any, failFor: (to: string) => boolean = () => false, graph: Graph = {}) {
+function fakeContainer(o: any, failFor: (to: string) => boolean = () => false, graph: Graph = {}, store?: "ok" | "fails") {
   const sent: { to: string; template: string; data: any; idempotency_key?: string }[] = []
   const logger = { info: jest.fn(), warn: jest.fn(), error: jest.fn() }
   const query = {
@@ -63,6 +63,13 @@ function fakeContainer(o: any, failFor: (to: string) => boolean = () => false, g
       if (key === ContainerRegistrationKeys.QUERY) return query
       if (key === ContainerRegistrationKeys.LOGGER) return logger
       if (key === Modules.NOTIFICATION) return notification
+      if (key === Modules.STORE && store)
+        return {
+          listStores: async () => {
+            if (store === "fails") throw new Error("store down")
+            return [{ id: "store_1", default_sales_channel_id: "sc_DEFAULT" }]
+          },
+        }
       throw new Error(`unexpected resolve ${key}`)
     },
   }
@@ -72,6 +79,26 @@ function fakeContainer(o: any, failFor: (to: string) => boolean = () => false, g
 const logged = (fn: jest.Mock) => fn.mock.calls.map((c) => String(c[0])).join("\n")
 
 beforeEach(() => getBusinessConfig.mockImplementation(() => fixture))
+
+describe("staff alert channel label", () => {
+  beforeEach(() => jest.spyOn(console, "warn").mockImplementation(() => {}))
+  afterEach(() => jest.restoreAllMocks())
+
+  it("an order on the store default channel is labelled NK", async () => {
+    const { container, sent } = fakeContainer({ ...order("pp_eft_eft", null), sales_channel_id: "sc_DEFAULT" }, undefined, {}, "ok")
+    await orderPlacedHandler({ event: { data: { id: "order_01ABC" } }, container } as any)
+    expect(sent.filter((s) => s.template === "staff-new-order").map((s) => s.data.channel_label)).toEqual(["NK", "NK"])
+  })
+
+  it("the store lookup failing still sends the staff alert, labelled Unknown", async () => {
+    const { container, sent } = fakeContainer({ ...order("pp_eft_eft", null), sales_channel_id: "sc_DEFAULT" }, undefined, {}, "fails")
+    await orderPlacedHandler({ event: { data: { id: "order_01ABC" } }, container } as any)
+    expect(sent.filter((s) => s.template === "staff-new-order").map((s) => s.data.channel_label)).toEqual([
+      "Unknown channel (sc_DEFAULT)",
+      "Unknown channel (sc_DEFAULT)",
+    ])
+  })
+})
 
 describe("order.placed staff alerts", () => {
   it("sends the customer EFT email first, then one staff email per recipient", async () => {

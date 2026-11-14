@@ -1,5 +1,6 @@
 import { defineCollection, z } from 'astro:content';
 import { glob } from 'astro/loaders';
+import { resolveBrandKey } from './lib/brands';
 
 const schema = z.object({
   title: z.string(),
@@ -9,7 +10,10 @@ const schema = z.object({
 });
 
 // Written by other workstreams (legal: E, pages: F). Both may be empty at build time.
-const legal = defineCollection({ loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/legal' }), schema });
-const pages = defineCollection({ loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/pages' }), schema });
+// Content roots per brand (plan DD6): nk ./src/content/{legal,pages}, kampi ./src/content/kampi/{legal,pages}.
+// __BRAND__ is inlined by Vite's define, so the choice is made at build time and never read at runtime.
+const root = resolveBrandKey(__BRAND__) === 'kampi' ? './src/content/kampi' : './src/content';
+const legal = defineCollection({ loader: glob({ pattern: '**/*.{md,mdx}', base: `${root}/legal` }), schema });
+const pages = defineCollection({ loader: glob({ pattern: '**/*.{md,mdx}', base: `${root}/pages` }), schema });
 
 export const collections = { legal, pages };

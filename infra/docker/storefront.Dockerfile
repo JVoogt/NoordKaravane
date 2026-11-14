@@ -17,6 +17,11 @@ RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 COPY . .
 # business.json is read relative to the app dir as ../config/business.json
 COPY --from=config business.json /config/business.json
+# `npm run build` runs scripts/guard.mjs first, which resolves Kampi {{tokens}} against ../config/business.example.json.
+COPY --from=config business.example.json /config/business.example.json
+# BRAND (nk or kampi) is build-time only: vite.define inlines it, and the runtime stage must not carry it.
+ARG BRAND=nk
+ENV BRAND=$BRAND
 ARG PUBLIC_MEDUSA_URL
 ARG PUBLIC_MEDUSA_PUBLISHABLE_KEY
 ARG PUBLIC_SITE_URL
@@ -34,6 +39,10 @@ RUN npm run build
 
 FROM node:22-alpine AS runtime
 ENV NODE_ENV=production HOST=0.0.0.0 PORT=4321
+# The brand this image was built as, read back by `make build-storefront-kampi` (it fails unless this says kampi).
+# A label, not ENV: the runtime never sees BRAND.
+ARG BRAND=nk
+LABEL org.noordkaravane.storefront.brand=$BRAND
 WORKDIR /app
 COPY --from=deps /src/node_modules ./node_modules
 COPY --from=build /src/dist ./dist

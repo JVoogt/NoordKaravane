@@ -1,0 +1,45 @@
+---
+// Kampi Store home hero (DESIGN.md 5.5 A2 and A3, brand-copy.md section 3): the olive field with the two-tone caps
+// head, and Kampi's own Foldaway Camp Fan standing on it as a cream tag. The tag's title is a <p>, so headings step
+// h1, h2, h3. If the featured product is not in the catalogue, the right column shows three plain facts instead.
+import type { Product } from '~/lib/products';
+import { loadBusiness } from '~/lib/business';
+import { shippingFacts } from '~/lib/business-display';
+import { brand } from '~/lib/brand';
+import { zar } from '~/lib/format';
+import { u } from '~/lib/url';
+interface Props { products: Product[] }
+const { products } = Astro.props;
+const p = brand.heroFeature ? products.find((x) => x.handle === brand.heroFeature) : undefined;
+const img = p?.images[0];
+const landing = brand.landing;
+const ship = shippingFacts(loadBusiness());
+---
+<section data-ground="olive" aria-labelledby="hero-title">
+  <div class="wrap grid gap-10 pb-14 pt-12 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] lg:items-center lg:gap-16 lg:pb-16 lg:pt-14">
+    <div class="min-w-0">
+      <h1 id="hero-title" class="display display--caps break-words text-[clamp(2.3rem,8.6vw,5rem)]">Gear up<br /><span class="text-[var(--kampi-sand-light)]">for the wild</span></h1>
+      <p class="mt-5 max-w-[42ch] text-[1.15rem] leading-relaxed">Caravan, camping and braai gear, delivered countrywide or collected in Pretoria North.</p>
+      <div class="mt-8 flex flex-wrap gap-3">
+        <a class="btn btn--lg" href="#products">Shop the gear</a>
+        {landing && <a class="btn btn--ghost btn--lg" href={landing.href}>{landing.label}</a>}
+      </div>
+    </div>
+    {p ? (
+      <figure class="mx-auto w-full max-w-[15rem] sm:max-w-[21rem] lg:mr-0">
+        <a href={u(`/${p.handle}/`)} class="frame group" data-gtm-item={p.handle}>
+          <div class="frame__photo">{img && <img src={img.src} alt={img.alt} width="800" height="800" loading="eager" fetchpriority="high" decoding="async" />}</div>
+          <div class="mt-3 flex items-baseline justify-between gap-3"><p class="frame__title">{p.title}</p><p class="typed shrink-0 text-[1.02rem] font-bold">{p.price != null ? `${p.priceMax && p.priceMax !== p.price ? 'from ' : ''}${zar(p.price)}` : ''}</p></div>
+        </a>
+        <figcaption class="mt-3 text-[0.92rem]">Kampi’s own fan. It folds into its 22 cm base and charges off USB-C.</figcaption>
+      </figure>
+    ) : (
+      <ul class="grid gap-3 text-[0.98rem]">
+        {ship.freeOverZar != null && <li class="border-l-2 border-[var(--kampi-sand-light)] pl-4"><strong>Free delivery over {zar(ship.freeOverZar)}</strong>{ship.freeMaxKg != null && ` on parcels up to ${ship.freeMaxKg} kg`}</li>}
+        <li class="border-l-2 border-[var(--kampi-sand-light)] pl-4"><strong>Collect free</strong> in Pretoria North</li>
+        <li class="border-l-2 border-[var(--kampi-sand-light)] pl-4"><strong>Pay by EFT</strong> from your banking app</li>
+      </ul>
+    )}
+  </div>
+</section>
+<div class="rail" aria-hidden="true"></div>

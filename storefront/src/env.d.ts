@@ -1,4 +1,6 @@
 /// <reference types="astro/client" />
+/** Build-time brand (nk or kampi), inlined by vite.define from BRAND (astro.config.mjs). Never read at runtime. */
+declare const __BRAND__: string;
 interface ImportMetaEnv {
   readonly PUBLIC_SITE_URL?: string;
   readonly PUBLIC_MEDUSA_URL?: string;

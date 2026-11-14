@@ -1,0 +1,50 @@
+---
+// Kampi Store header (DESIGN.md 5.5 A1, brand-copy.md section 2). NK's structure and nav, Kampi material:
+// a three-fact strap (the seller span carries data-seller), the Kampi logo plus "Store", a solid cream bar (no glass).
+import { MAIN_NAV } from '~/lib/nav';
+import { business, loadBusiness } from '~/lib/business';
+import { shippingFacts } from '~/lib/business-display';
+import { brand } from '~/lib/brand';
+import { zar } from '~/lib/format';
+import { u } from '~/lib/url';
+const path = Astro.url.pathname;
+const cur = (href: string) => (href === u('/') ? (path === u('/').replace(/\/$/, '') || path === u('/') || path.startsWith(u('/category/')) ? 'page' : undefined) : path === href || path.startsWith(href + '/') ? 'page' : undefined);
+const landing = brand.landing;
+const ship = shippingFacts(loadBusiness());
+const navLink = 'relative inline-flex min-h-11 items-center px-3 text-[0.9rem] font-medium text-muted no-underline hover:text-ink aria-[current=page]:text-ink after:absolute after:inset-x-3 after:bottom-1.5 after:h-[2px] after:origin-left after:scale-x-0 after:bg-wine after:transition-transform hover:after:scale-x-100 aria-[current=page]:after:scale-x-100 motion-reduce:after:transition-none';
+---
+<div class="bg-wine text-paper">
+  <p class="wrap flex flex-wrap justify-center gap-x-7 gap-y-1 py-2 text-center text-[0.85rem] font-medium"><span class="max-sm:hidden" data-seller>Sold and fulfilled by {business.brand}</span>{ship.freeOverZar != null && <span>Free delivery over {zar(ship.freeOverZar)}</span>}<span>Pay by EFT</span></p>
+</div>
+<header class="sticky top-0 z-50 border-b border-ink-3 bg-paper">
+  <div class="wrap flex h-[4.25rem] items-center justify-between gap-4">
+    <a href={u('/')} class="flex min-h-11 items-center gap-3 no-underline" aria-label={`${brand.siteName}, home`}>
+      <img src={u(brand.logo.header)} alt="" width="119" height="40" class="h-10 w-auto" />
+      <span class="border-l border-ink-3 pl-3 text-[0.95rem] font-bold leading-none">Store</span>
+    </a>
+
+    <nav class="hidden items-center gap-1 lg:flex" aria-label="Main">
+      {MAIN_NAV.map((l) => <a href={l.href} aria-current={cur(l.href)} class={navLink}>{l.label}</a>)}
+      {landing && <a href={landing.href} class="inline-flex min-h-11 items-center px-3 text-[0.9rem] font-medium text-muted no-underline hover:text-ink">{landing.label}</a>}
+    </nav>
+
+    <div class="flex items-center gap-1">
+      <a href={u('/cart')} class="relative inline-flex min-h-11 min-w-11 items-center justify-center gap-2 px-2 text-[0.9rem] font-medium no-underline" aria-label="Cart">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1.2 11.2a1.5 1.5 0 0 1-1.5 1.3H7.7a1.5 1.5 0 0 1-1.5-1.3L5 8Z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg>
+        <span class="hidden sm:inline">Cart</span>
+        <span data-cart-count class="typed grid min-w-5 place-items-center rounded-full bg-wine px-1.5 text-[0.75rem] font-bold leading-5 text-paper" hidden>0</span>
+      </a>
+      <details class="relative lg:hidden" data-menu>
+        <summary class="inline-flex min-h-11 min-w-11 cursor-pointer list-none items-center justify-center" aria-label="Menu">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+        </summary>
+        <nav class="fixed inset-x-0 top-[calc(4.25rem+2.25rem)] z-50 max-h-[calc(100svh-6.5rem)] overflow-y-auto border-b border-ink-3 bg-paper-2 px-[var(--gutter)] pb-6 pt-2" aria-label="Mobile">
+          <ul>
+            {MAIN_NAV.map((l) => <li><a href={l.href} class="flex min-h-12 items-center border-b border-ink-3 font-display text-[1.4rem] no-underline">{l.label}</a></li>)}
+            {landing && <li><a href={landing.href} class="flex min-h-12 items-center font-display text-[1.4rem] no-underline">{landing.label}</a></li>}
+          </ul>
+        </nav>
+      </details>
+    </div>
+  </div>
+</header>
