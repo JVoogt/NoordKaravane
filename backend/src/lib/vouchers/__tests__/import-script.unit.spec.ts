@@ -67,6 +67,17 @@ afterEach(() => {
 })
 
 describe("import-vouchers script", () => {
+  it("a write failure after joining an open-ended campaign lists it as campaigns_open_ended in the failure log", async () => {
+    writeRows([row("testwoo1"), row("testwoo2")])
+    findOrCreateCampaign.mockResolvedValue({ id: "camp_open", ends_at: null })
+    createVoucherPromotion.mockResolvedValueOnce({ id: "p1", code: "TESTWOO1" }).mockRejectedValueOnce(new Error("db down"))
+    await expect(importVouchers({ container } as any)).rejects.toThrow("db down")
+    const line = String(logger.error.mock.calls.map((c: any[]) => c[0]).find((l: string) => l.startsWith("vouchers.import failed ")))
+    expect(JSON.parse(line.slice("vouchers.import failed ".length))).toEqual(
+      expect.objectContaining({ created: 1, campaigns_extended: [], campaigns_open_ended: ["import-woo-2031-07-15"] })
+    )
+  })
+
   it("L1: never extends an existing open-ended campaign (ends_at null), matching the dry run", async () => {
     writeRows([row("testwoo1")])
     findOrCreateCampaign.mockResolvedValue({ id: "camp_open", ends_at: null })
@@ -120,6 +131,7 @@ describe("import-vouchers script", () => {
           failed_campaign: "import-woo-2031-07-15",
           failed_code: "TESTWOO2",
           campaigns_extended: ["import-woo-2031-07-15"],
+          campaigns_open_ended: [],
           message: "db down",
         })
     )

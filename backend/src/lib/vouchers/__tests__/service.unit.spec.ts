@@ -77,7 +77,7 @@ function fake(init: { promotions?: Promo[]; campaigns?: Camp[]; links?: any[]; o
         return { data: (init.links ?? []).filter((l) => match(l.promotion_id, args.filters?.promotion_id)) }
       if (args.entity === "order") return { data: (init.orders ?? []).filter((o) => match(o.id, args.filters?.id)) }
       // An order's originating cart mirrors the order (a checkout order) unless `cart` overrides it; `cart: null` means
-      // no order_cart link (a draft order, converted or not).
+      // no order_cart link (a draft order, converted or not); `cartMissing: true` keeps the link but the cart cannot be read.
       if (args.entity === "order_cart")
         return {
           data: (init.orders ?? []).filter((o) => o.cart !== null && match(o.id, args.filters?.order_id)).map((o) => ({ order_id: o.id, cart_id: `cart_${o.id}` })),
@@ -85,7 +85,7 @@ function fake(init: { promotions?: Promo[]; campaigns?: Camp[]; links?: any[]; o
       if (args.entity === "cart")
         return {
           data: (init.orders ?? [])
-            .filter((o) => o.cart !== null && match(`cart_${o.id}`, args.filters?.id))
+            .filter((o) => o.cart !== null && !o.cartMissing && match(`cart_${o.id}`, args.filters?.id))
             .map((o) => ({ id: `cart_${o.id}`, items: o.items, shipping_methods: o.shipping_methods, ...(o.cart ?? {}) })),
         }
       return { data: [] }
@@ -498,6 +498,47 @@ describe("voucherReport", () => {
     const reportCall = f.promotion.listPromotions.mock.calls.find((c: any[]) => c[0]?.campaign_id) as any[]
     expect(reportCall[1]).toEqual(expect.objectContaining({ withDeleted: true }))
     expect(reportCall[1].select).toEqual(expect.arrayContaining(["deleted_at"]))
+  })
+
+  it("warns once, naming every order whose linked cart cannot be read, and does not count those orders", async () => {
+    const f = fake({
+      campaigns: camps,
+      promotions: [{ id: "p1", code: "A", campaign_id: "c_nov", metadata: { value_zar: 50 } }],
+      links: [
+        { order_id: "o1", promotion_id: "p1" },
+        { order_id: "o2", promotion_id: "p1" },
+        { order_id: "o3", promotion_id: "p1" },
+      ],
+      orders: [
+        { id: "o1", status: "pending", cartMissing: true, ...adj("A") },
+        { id: "o2", status: "pending", cartMissing: true, ...adj("A") },
+        { id: "o3", status: "pending", ...adj("A") },
+      ],
+    })
+    expect(await voucherReport(f.container, { program: "test-prog", month: "2026-11" })).toEqual({ issued: 1, redeemed: 1, discount_value_zar: 50 })
+    expect(f.logger.warn).toHaveBeenCalledTimes(1)
+    expect(f.logger.warn).toHaveBeenCalledWith(
+      "vouchers.report cart not found, orders not counted " +
+        JSON.stringify({
+          program: "test-prog",
+          month: "2026-11",
+          missing: [
+            { order_id: "o1", cart_id: "cart_o1" },
+            { order_id: "o2", cart_id: "cart_o2" },
+          ],
+        })
+    )
+  })
+
+  it("does not warn when every linked cart is found", async () => {
+    const f = fake({
+      campaigns: camps,
+      promotions: [{ id: "p1", code: "A", campaign_id: "c_nov", metadata: { value_zar: 50 } }],
+      links: [{ order_id: "o1", promotion_id: "p1" }],
+      orders: [{ id: "o1", status: "pending", ...adj("A") }],
+    })
+    await voucherReport(f.container, { program: "test-prog", month: "2026-11" })
+    expect(f.logger.warn).not.toHaveBeenCalled()
   })
 
   it("returns zeros without querying links when no campaign matches", async () => {

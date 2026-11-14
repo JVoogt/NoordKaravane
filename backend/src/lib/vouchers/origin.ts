@@ -3,9 +3,11 @@
  *
  * Medusa 2.22.2 `completeCartWorkflow` registers promotion usage from the CART's line-item and shipping-method
  * adjustments, with the cart's customer and email, and links the order to that cart (`order_cart`) in the same step.
- * A completed cart is frozen (`validateCartStep` refuses every cart workflow once `completed_at` is set), so its
- * adjustments stay what usage was registered for, whatever later happens to the ORDER's adjustments (an order edit,
- * claim or exchange with `carry_over_promotions`). An order without the link (a draft order, converted or not)
+ * A completed cart's adjustments are frozen (`validateCartStep` refuses every cart workflow that touches items,
+ * shipping or promotions once `completed_at` is set), so they stay what usage was registered for, whatever later
+ * happens to the ORDER's adjustments (an order edit, claim or exchange with `carry_over_promotions`). The cart's
+ * customer and email are NOT frozen: `transferCartCustomerWorkflow` has no completed check and can change both. That
+ * only matters for per-attribute campaign budgets keyed on customer or email, which vouchers do not use. An order without the link (a draft order, converted or not)
  * registered no usage and has no entry here.
  */
 export type OriginCart = {

@@ -25,29 +25,31 @@ const programSchema = z.object({
 })
 
 /**
- * DD4. Validates business.json `voucher_programs`. An invalid entry is dropped with a reason in `errors`; never throws.
+ * DD4. Validates business.json `voucher_programs`. An invalid entry is dropped and reported in `errors` as `{name, reason}`; never throws.
  * Unknown keys (such as `_note`) on a program are ignored.
  */
-export function parseVoucherPrograms(raw: unknown): { programs: Record<string, VoucherProgram>; errors: string[] } {
+export type DroppedProgram = { name: string; reason: string }
+
+export function parseVoucherPrograms(raw: unknown): { programs: Record<string, VoucherProgram>; errors: DroppedProgram[] } {
   const programs: Record<string, VoucherProgram> = {}
-  const errors: string[] = []
+  const errors: DroppedProgram[] = []
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return { programs, errors }
   for (const [name, value] of Object.entries(raw as Record<string, unknown>)) {
     if (name.startsWith("_")) continue
     if (!PROGRAM_NAME.test(name)) {
-      errors.push(`${name}: invalid program name`)
+      errors.push({ name, reason: "invalid program name" })
       continue
     }
     const parsed = programSchema.safeParse(value)
     if (!parsed.success) {
-      errors.push(`${name}: ${parsed.error.issues.map((i) => `${i.path.join(".") || "(root)"} ${i.message}`).join("; ")}`)
+      errors.push({ name, reason: parsed.error.issues.map((i) => `${i.path.join(".") || "(root)"} ${i.message}`).join("; ") })
       continue
     }
     const p = parsed.data
     const hasDays = p.validity_days !== undefined
     const hasEnd = p.ends_at !== undefined
     if (hasDays === hasEnd) {
-      errors.push(`${name}: needs exactly one of validity_days or ends_at (got ${hasDays ? "both" : "neither"})`)
+      errors.push({ name, reason: `needs exactly one of validity_days or ends_at (got ${hasDays ? "both" : "neither"})` })
       continue
     }
     programs[name] = {
@@ -72,12 +74,12 @@ const loggedErrors = new Set<string>()
  */
 export function getVoucherProgram(name: string): VoucherProgram | null {
   const { programs, errors } = parseVoucherPrograms(getBusinessConfig().voucher_programs)
-  for (const e of errors) {
-    if (loggedErrors.has(e)) continue
-    loggedErrors.add(e)
-    const name = e.slice(0, e.indexOf(":"))
+  for (const dropped of errors) {
+    const detail = `${dropped.name}: ${dropped.reason}`
+    if (loggedErrors.has(detail)) continue
+    loggedErrors.add(detail)
     console.error(
-      `[vouchers] voucher_programs entry dropped, program "${name}" is OFF until fixed (fix business.json, then restart the server and the worker): ${e}`
+      `[vouchers] voucher_programs entry dropped, program "${dropped.name}" is OFF until fixed (fix business.json, then restart the server and the worker): ${detail}`
     )
   }
   const p = programs[name]

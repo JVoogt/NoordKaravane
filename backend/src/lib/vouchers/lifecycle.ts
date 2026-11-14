@@ -83,22 +83,28 @@ export async function revertOrderVoucherUsage(container: MedusaContainer, orderI
     return { reverted: [], skipped: [] }
   }
 
+  // The order's own adjustment codes. Never reverted from; logged only to explain a skip.
+  const orderCodeSet = new Set<string>()
+  for (const holder of [...((order.items ?? []) as Adjusted[]), ...((order.shipping_methods ?? []) as Adjusted[])])
+    for (const a of holder?.adjustments ?? []) if (a?.code) orderCodeSet.add(a.code)
+  const orderCodes = [...orderCodeSet]
+
   const { carts, missing } = await originatingCarts(query, [orderId])
   const origin = carts.get(orderId)
   if (!origin) {
     if (missing.length) {
-      logger.warn("vouchers.revert skipped (cart not found) " + JSON.stringify(missing[0]))
+      logger.warn("vouchers.revert skipped (cart not found) " + JSON.stringify({ ...missing[0], codes: orderCodes }))
       return { reverted: [], skipped: [] }
     }
-    // Not a cart order: nothing was registered. The order's own codes are logged only to explain the skip.
-    const orderCodes = new Set<string>()
-    for (const holder of [...((order.items ?? []) as Adjusted[]), ...((order.shipping_methods ?? []) as Adjusted[])])
-      for (const a of holder?.adjustments ?? []) if (a?.code) orderCodes.add(a.code)
-    const codes = [...orderCodes]
-    if (codes.length) logger.info("vouchers.revert skipped (not a cart order) " + JSON.stringify({ order_id: orderId, codes }))
-    return { reverted: [], skipped: codes }
+    // Not a cart order: nothing was registered.
+    if (orderCodes.length) logger.info("vouchers.revert skipped (not a cart order) " + JSON.stringify({ order_id: orderId, codes: orderCodes }))
+    return { reverted: [], skipped: orderCodes }
   }
-  if (!origin.amounts.size) return { reverted: [], skipped: [] }
+  if (!origin.amounts.size) {
+    // The cart carried no code at completion, so nothing was registered. Codes only on the order came later (an edit).
+    if (orderCodes.length) logger.info("vouchers.revert skipped (no cart adjustments) " + JSON.stringify({ order_id: orderId, codes: orderCodes }))
+    return { reverted: [], skipped: [] }
+  }
   const codes = [...origin.amounts.keys()]
 
   const promotionModule = container.resolve(Modules.PROMOTION) as any

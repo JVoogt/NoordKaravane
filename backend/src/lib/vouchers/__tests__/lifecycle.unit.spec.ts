@@ -227,7 +227,9 @@ describe("revertOrderVoucherUsage", () => {
     const f = fake({ promotions: usedA, cartMissing: true, order: order({ items: [{ adjustments: [{ code: "A", amount: 5 }] }] }) })
     expect(await revertOrderVoucherUsage(f.container, "order_1")).toEqual({ reverted: [], skipped: [] })
     expect(f.promotion.revertUsage).not.toHaveBeenCalled()
-    expect(f.logger.warn).toHaveBeenCalledWith("vouchers.revert skipped (cart not found) " + JSON.stringify({ order_id: "order_1", cart_id: "cart_1" }))
+    expect(f.logger.warn).toHaveBeenCalledWith(
+      "vouchers.revert skipped (cart not found) " + JSON.stringify({ order_id: "order_1", cart_id: "cart_1", codes: ["A"] })
+    )
   })
 
   it("is a no-op without adjustment codes (no call, no log)", async () => {
@@ -277,6 +279,7 @@ describe("revertOrderVoucherUsage", () => {
     expect(await revertOrderVoucherUsage(f.container, "order_1")).toEqual({ reverted: [], skipped: [] })
     expect(f.promotion.revertUsage).not.toHaveBeenCalled()
     expect(f.promotions[0].used).toBe(1)
+    expect(f.logger.info).toHaveBeenCalledWith("vouchers.revert skipped (no cart adjustments) " + JSON.stringify({ order_id: "order_1", codes: ["X"] }))
   })
 
   it("RD6: reverts a cart code even when an order edit removed it from the order, with the cart's customer context", async () => {

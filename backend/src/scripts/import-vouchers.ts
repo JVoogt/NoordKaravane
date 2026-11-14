@@ -100,6 +100,7 @@ export default async function importVouchers({ container }: ExecArgs) {
           failed_campaign: failedCampaign,
           failed_code: failedCode,
           campaigns_extended: campaignsExtended,
+          campaigns_open_ended: campaignsOpenEnded,
           message: String(e?.message ?? e),
         })
     )

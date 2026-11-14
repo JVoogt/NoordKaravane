@@ -225,7 +225,12 @@ export async function voucherReport(
     })
     for (const o of data as any[]) if (o.status !== "canceled" && o.status !== "draft" && !o.is_draft_order) orders.set(o.id, o)
   }
-  const { carts } = await originatingCarts(query, [...orders.keys()])
+  const { carts, missing } = await originatingCarts(query, [...orders.keys()])
+  // An order linked to a cart that cannot be read is not counted; say so once per report, not once per order.
+  if (missing.length)
+    container
+      .resolve(ContainerRegistrationKeys.LOGGER)
+      .warn("vouchers.report cart not found, orders not counted " + JSON.stringify({ program: args.program, month: args.month, missing }))
   const cartCodes = new Map([...carts].map(([orderId, c]) => [orderId, new Set([...c.amounts.keys()].map((k) => k.toUpperCase()))]))
 
   const byId = new Map(promotions.map((p) => [p.id, p]))

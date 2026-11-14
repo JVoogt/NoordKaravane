@@ -32,14 +32,14 @@ describe("parseVoucherPrograms", () => {
   it("drops a program with both validity_days and ends_at", () => {
     const r = parseVoucherPrograms({ both: { ...good, ends_at: "2031-07-15T23:59:59+02:00" } })
     expect(r.programs).toEqual({})
-    expect(r.errors.join(" ")).toMatch(/both/)
+    expect(r.errors).toEqual([{ name: "both", reason: expect.stringMatching(/both/) }])
   })
 
   it("drops a program with neither validity_days nor ends_at", () => {
     const { validity_days: _v, ...neither } = good
     const r = parseVoucherPrograms({ neither })
     expect(r.programs).toEqual({})
-    expect(r.errors.join(" ")).toMatch(/neither/)
+    expect(r.errors).toEqual([{ name: "neither", reason: expect.stringMatching(/neither/) }])
   })
 
   it("drops a bad prefix (lowercase, too long, underscore)", () => {
@@ -47,7 +47,7 @@ describe("parseVoucherPrograms", () => {
       const r = parseVoucherPrograms({ p: { ...good, code_prefix } })
       expect(r.programs).toEqual({})
       expect(r.errors).toHaveLength(1)
-      expect(r.errors[0]).toMatch(/^p: /)
+      expect(r.errors[0]).toEqual({ name: "p", reason: expect.stringMatching(/^code_prefix /) })
     }
   })
 
@@ -63,6 +63,11 @@ describe("parseVoucherPrograms", () => {
     expect(parseVoucherPrograms({ p: { ...good, validity_days: 366 } }).programs).toEqual({})
     expect(parseVoucherPrograms({ p: { ...good, monthly_cap: 0 } }).programs).toEqual({})
     expect(parseVoucherPrograms({ p: { ...good, enabled: "yes" } }).programs).toEqual({})
+  })
+
+  it("returns each dropped entry as {name, reason}, keeping a name that contains a colon intact", () => {
+    const r = parseVoucherPrograms({ "a:b": good })
+    expect(r.errors).toEqual([{ name: "a:b", reason: "invalid program name" }])
   })
 
   it("keeps the valid programs when another one is invalid", () => {
@@ -105,6 +110,14 @@ describe("getVoucherProgram", () => {
     getVoucherProgram("clear-bad")
     expect(errSpy).toHaveBeenCalledWith(
       expect.stringMatching(/^\[vouchers\] voucher_programs entry dropped, program "clear-bad" is OFF until fixed \(fix business\.json, then restart the server and the worker\): clear-bad: code_prefix /)
+    )
+  })
+
+  it("names a dropped program whose key contains a colon in full, not cut at the colon", () => {
+    fixture = { voucher_programs: { "x:y": good } }
+    getVoucherProgram("x:y")
+    expect(errSpy).toHaveBeenCalledWith(
+      '[vouchers] voucher_programs entry dropped, program "x:y" is OFF until fixed (fix business.json, then restart the server and the worker): x:y: invalid program name'
     )
   })
 
