@@ -9,6 +9,9 @@ import { PROMO_COPY, appliedCodes, droppedCodes, normalisePromoCode, promoErrorC
  * a quantity change); `onBusy` tells the parent while a code request is in flight, so it locks its own cart changes and
  * two responses can never land out of order.
  */
+/** What the log keeps from a failed code request: never the message (it can echo the code the shopper typed). */
+const errInfo = (e: unknown) => { const x = e as { status?: number; name?: string } | null | undefined; return { status: x?.status, name: x?.name }; };
+
 export default function PromoCode({ cart, onCart, idPrefix, announceDrops = true, disabled = false, onBusy }: {
   cart: Cart; onCart: (c: Cart) => void; idPrefix: string; announceDrops?: boolean; disabled?: boolean; onBusy?: (busy: boolean) => void;
 }) {
@@ -22,6 +25,12 @@ export default function PromoCode({ cart, onCart, idPrefix, announceDrops = true
   const shown = useRef<string[] | null>(null);
   // Bumped after a Remove: focus goes back to the field (or the "Have a code?" button) once the chip has gone.
   const [refocus, setRefocus] = useState(0);
+  // onBusy is called in step with the request (true before it, false after it), never from an effect that runs a
+  // render later. The refs let the unmount cleanup release the parent's lock with the latest callback.
+  const inFlight = useRef(false);
+  const busyCb = useRef(onBusy);
+  busyCb.current = onBusy;
+  const lock = (on: boolean) => { inFlight.current = on; busyCb.current?.(on); };
 
   const codes = appliedCodes(cart);
   const code = normalisePromoCode(raw);
@@ -47,7 +56,7 @@ export default function PromoCode({ cart, onCart, idPrefix, announceDrops = true
     if (refocus) (open ? input.current : toggle.current)?.focus();
   }, [refocus]);
 
-  useEffect(() => { onBusy?.(!!busy); }, [busy]);
+  useEffect(() => () => { if (inFlight.current) busyCb.current?.(false); }, []);
 
   function handOver(fresh: Cart) {
     shown.current = appliedCodes(fresh);
@@ -60,7 +69,7 @@ export default function PromoCode({ cart, onCart, idPrefix, announceDrops = true
     const pre = promoPrecheck(cart, code);
     if (pre === 'one_code') { setMsg(PROMO_COPY.one_code); return; }
     if (pre === 'already_applied') { setMsg(PROMO_COPY.already_applied); return; }
-    setBusy('apply');
+    setBusy('apply'); lock(true);
     try {
       const fresh = await applyPromo(cart.id, code);
       const outcome = promoOutcome(fresh, code);
@@ -68,24 +77,24 @@ export default function PromoCode({ cart, onCart, idPrefix, announceDrops = true
       if (outcome === 'applied') { setRaw(''); focusToggle.current = true; setOpen(false); }
       else setMsg(outcome === 'inactive' ? PROMO_COPY.inactive : PROMO_COPY.not_applied);
     } catch (e) {
-      console.error('[promo] apply failed', e);
+      console.error('[promo] apply failed', errInfo(e));
       setMsg(promoErrorCopy(e));
     } finally {
-      setBusy(null);
+      setBusy(null); lock(false);
     }
   }
 
   async function remove(c: string) {
     if (busy || disabled) return;
-    setMsg(''); setBusy(c);
+    setMsg(''); setBusy(c); lock(true);
     try {
       handOver(await removePromo(cart.id, c));
       setRefocus((n) => n + 1);
     } catch (e) {
-      console.error('[promo] remove failed', e);
+      console.error('[promo] remove failed', errInfo(e));
       setMsg(promoErrorCopy(e));
     } finally {
-      setBusy(null);
+      setBusy(null); lock(false);
     }
   }
 

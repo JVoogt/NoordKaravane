@@ -1,9 +1,9 @@
 import { u } from '../lib/url';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
-import { backendAvailable, client, errMsg, ga4Items, getCart, publishCount, reloadCart, setCartId, type Cart } from '../scripts/cart-client';
+import { backendAvailable, client, errMsg, ga4Items, getCart, publishCount, reloadCart, setCartId, setShippingMethod, type Cart } from '../scripts/cart-client';
 import { zar } from './format';
 import { quoteHref, quoteLines } from '../lib/quote';
-import { PROMO_COPY, droppedCodes } from '../lib/promo';
+import { PROMO_COPY, droppedCodes, isNetworkError } from '../lib/promo';
 import PromoCode from './PromoCode';
 
 interface Props {
@@ -12,7 +12,11 @@ interface Props {
   workshop: { address_1: string; city: string; province: string; postal_code: string };
   bank: { account_name: string; bank_name: string };
 }
-interface Opt { id: string; name: string; amount: number; price_type?: string; data?: Record<string, any> | null; provider_id?: string }
+interface Opt {
+  id: string; name: string; amount: number | null; price_type?: string; data?: Record<string, any> | null; provider_id?: string;
+  /** The last price run for this option failed: the amount shown (if any) is the previous one and is not confirmed. */
+  unconfirmed?: boolean;
+}
 interface Provider { id: string }
 
 const PUDO_MAP = 'https://www.pudo.co.za/where-to-find-us.php';
@@ -33,10 +37,13 @@ export default function Checkout(props: Props) {
   const [loading, setLoading] = useState(true);
   const [loadErr, setLoadErr] = useState('');
   const [opts, setOpts] = useState<Opt[]>([]);
+  const [optsState, setOptsState] = useState<'loading' | 'ready' | 'failed'>('loading');
   const [providers, setProviders] = useState<string[]>([EFT]);
   const [f, setF] = useState<F>(EMPTY);
   const [shipId, setShipId] = useState('');
   const [shipBusy, setShipBusy] = useState(false);
+  // A delivery choice the shop refused, shown by the delivery options (not by Place order).
+  const [shipErr, setShipErr] = useState('');
   const [pay, setPay] = useState(EFT);
   const [marketing, setMarketing] = useState(false);
   const [terms, setTerms] = useState(false);
@@ -65,13 +72,10 @@ export default function Checkout(props: Props) {
         const sm = c.shipping_methods?.[0];
         // CONTRACT: a Pudo method chosen earlier must not survive a cart that has since become too heavy. Make the customer re-pick.
         if (sm && !(/pudo/i.test(sm.name || '') && cartWeightG(c) > props.pudoMaxWeightG)) setShipId(sm.shipping_option_id);
-        const [so, pp] = await Promise.allSettled([
-          client().store.fulfillment.listCartOptions({ cart_id: c.id }),
+        const [, pp] = await Promise.allSettled([
+          loadOptions(c.id),
           client().store.payment.listPaymentProviders({ region_id: c.region_id }),
         ]);
-        if (so.status === 'fulfilled') {
-          await priceOptions(c.id, (((so.value as any).shipping_options ?? []) as Opt[]).filter((x) => props.collectEnabled || !isCollect(x)));
-        }
         if (pp.status === 'fulfilled') {
           const ids = ((pp.value as any).payment_providers as Provider[]).map((p) => p.id);
           const avail = [EFT, PAYFAST].filter((x) => ids.includes(x));
@@ -82,14 +86,25 @@ export default function Checkout(props: Props) {
           tracked.current = true;
           window.nkTrack?.('begin_checkout', { currency: 'ZAR', value: c.total, items: ga4Items(c), meta_event_id: eventId() });
         }
-      } catch (e) { setLoadErr(errMsg(e)); } finally { setLoading(false); }
+      } catch (e) { console.error('[checkout] load failed', e); setLoadErr(errMsg(e)); } finally { setLoading(false); }
     })();
   }, []);
+
+  /** Lists the delivery options for this cart and prices them. Never throws: a failure shows a Try again action. */
+  async function loadOptions(cartId: string) {
+    setOptsState('loading');
+    try {
+      const so = (await client().store.fulfillment.listCartOptions({ cart_id: cartId })) as any;
+      await priceOptions(cartId, ((so.shipping_options ?? []) as Opt[]).filter((x) => props.collectEnabled || !isCollect(x)));
+      setOptsState('ready');
+    } catch (e) { console.error('[checkout] delivery options failed', e); setOptsState('failed'); }
+  }
 
   /**
    * Calculated options (ours all are) carry no price in the listing: ask Medusa to calculate each for this cart. Run
    * again after a code changes the cart (a discount can take the courier's basis under the free-delivery threshold), so
-   * the options not selected never show a stale price. The latest run wins.
+   * the options not selected never show a stale price. The latest run wins. A failed price keeps the previous amount
+   * but is flagged as unconfirmed; place() still stops if the total moves.
    */
   async function priceOptions(cartId: string, listed: Opt[]) {
     const run = ++priceSeq.current;
@@ -97,8 +112,8 @@ export default function Checkout(props: Props) {
       if (o.price_type !== 'calculated') return o;
       try {
         const r = (await client().store.fulfillment.calculate(o.id, { cart_id: cartId })) as any;
-        return { ...o, amount: r.shipping_option?.amount ?? null };
-      } catch (e) { console.error('[checkout] delivery price failed', o.id, e); return o; }
+        return { ...o, amount: r.shipping_option?.amount ?? null, unconfirmed: false };
+      } catch (e) { console.error('[checkout] delivery price failed', o.id, e); return { ...o, unconfirmed: true }; }
     }));
     if (run === priceSeq.current) setOpts(priced);
   }
@@ -120,16 +135,25 @@ export default function Checkout(props: Props) {
   // The cart's own delivery method (the summary and the option labels read the same one) and its pre-discount fee.
   const cartOptionId = cart?.shipping_methods?.[0]?.shipping_option_id;
   const cartShip = cart ? cart.original_shipping_total ?? cart.shipping_total : 0;
+  // What a refused delivery choice falls back to: the cart's own method, unless it is a Pudo the parcel is too heavy for.
+  const cartMethod = cart?.shipping_methods?.[0];
+  const keepShipId = cartMethod && !(/pudo/i.test(cartMethod.name || '') && heavy) ? cartMethod.shipping_option_id : '';
   const set = (k: string) => (e: Event) => { const v = (e.target as HTMLInputElement).value; setF((p) => ({ ...p, [k]: v })); if (errors[k]) setErrors((p) => { const n = { ...p }; delete n[k]; return n; }); };
 
   async function chooseShipping(o: Opt) {
     if (!cart || promoBusy) return;
-    setShipId(o.id); setShipBusy(true); setSubmitErr(''); setPlaceStop(false);
+    setShipId(o.id); setShipErr(''); setSubmitErr(''); setPlaceStop(false);
+    setErrors((p) => { const n = { ...p }; delete n.shipping; return n; });
+    // The shop accepts Pudo only once the locker is on the cart: place() saves the locker first, then adds the method.
+    if (isPudo(o)) return;
+    setShipBusy(true);
     try {
-      const { cart: c } = await client().store.cart.addShippingMethod(cart.id, { option_id: o.id, data: {} });
-      setCart({ ...cart, ...(c as unknown as Cart), items: cart.items.length ? (c as any).items ?? cart.items : cart.items });
-      setErrors((p) => { const n = { ...p }; delete n.shipping; return n; });
-    } catch (e) { setSubmitErr(errMsg(e, 'We could not set that delivery method.')); } finally { setShipBusy(false); }
+      setCart(await setShippingMethod(cart.id, o.id));
+    } catch (e) {
+      console.error('[checkout] delivery method failed', o.id, e);
+      setShipId(keepShipId);
+      setShipErr(isNetworkError(e) ? errMsg(e) : 'We could not set that delivery method.');
+    } finally { setShipBusy(false); }
   }
 
   const totals = useMemo(() => {
@@ -233,6 +257,7 @@ export default function Checkout(props: Props) {
       setCartId(null); publishCount(null);
       window.location.assign(u(`/order/confirmed/${encodeURIComponent(o.id)}`));
     } catch (err) {
+      console.error('[checkout] place order failed', err);
       setSubmitErr(errMsg(err, 'We could not place your order. Please try again.'));
       setPlacing(false);
     }
@@ -287,7 +312,7 @@ export default function Checkout(props: Props) {
       <dl class="mt-5 grid gap-2 border-t-2 border-ink pt-4">
         <div class="flex justify-between"><dt>Subtotal</dt><dd class="typed">{zar(cart.original_item_total ?? cart.item_total ?? cart.subtotal)}</dd></div>
         {cart.discount_total > 0 && <div class="flex justify-between"><dt>Discount</dt><dd class="typed">&minus;{zar(cart.discount_total)}</dd></div>}
-        <div class="flex justify-between"><dt>Delivery</dt><dd class="typed">{totals?.ship == null ? 'choose below' : totals.ship === 0 ? 'Free' : zar(totals.ship)}</dd></div>
+        <div class="flex justify-between"><dt>Delivery</dt><dd class="typed">{totals?.ship == null ? (selected ? 'Price not available' : 'choose below') : totals.ship === 0 ? 'Free' : zar(totals.ship)}</dd></div>
         <div class="flex items-baseline justify-between border-t border-ink/40 pt-3 text-[1.2rem] font-bold"><dt>Total <span class="hint font-normal">incl. VAT where applicable</span></dt><dd class="typed text-[1.5rem]" aria-live="polite">{zar(totals?.total)}</dd></div>
       </dl>
     </div>
@@ -330,23 +355,31 @@ export default function Checkout(props: Props) {
 
         <fieldset class="grid gap-3" data-field="shipping" aria-describedby={err('shipping') ? 'e-ship' : undefined}>
           <legend class="display mb-2 text-[1.7rem]">Delivery method</legend>
-          {opts.length === 0 && <p class="hint">Loading delivery options...</p>}
+          {optsState === 'loading' && opts.length === 0 && <p class="hint">Loading delivery options...</p>}
+          {optsState === 'failed' && (
+            <p class="err" role="alert">We could not load delivery options. <button type="button" class="link min-h-11 px-1" onClick={() => loadOptions(cart.id)}>Try again</button></p>
+          )}
           {heavy && opts.some(isPudo) && <p class="hint">This order is too big for a Pudo locker, so locker delivery is not offered.</p>}
           {visibleOpts.map((o) => {
             // The cart's own (pre-discount) price for its method wins over the listing price, the same method the summary reads.
-            const amount = cartOptionId === o.id ? cartShip : o.amount;
+            const own = cartOptionId === o.id;
+            const amount = own ? cartShip : o.amount;
             const free = amount === 0;
+            // The cart's own price is authoritative; a listing price from a failed re-price is not confirmed.
+            const unconfirmed = !own && !!o.unconfirmed;
             return (
               <label class={'choice' + (shipId === o.id ? ' is-on' : '')}>
                 <input type="radio" name="shipping" value={o.id} checked={shipId === o.id} onChange={() => chooseShipping(o)} disabled={shipBusy || placing || promoBusy} />
                 <span class="choice__body">
-                  <span class="flex items-baseline justify-between gap-3"><strong class="font-display text-[1.05rem] uppercase">{o.name}</strong><span class="typed font-bold">{free ? 'Free' : zar(amount)}</span></span>
-                  <span class="text-[0.92rem] text-muted">{isPudo(o) ? 'Small parcels only. Collect from a Pudo locker near you, any time of day.' : isCollect(o) ? 'Free. Collect from 252 General Beyers Street, Pretoria North, Mon to Thu 08:00 to 16:00, Fri 08:00 to 14:00. We contact you when it is ready.' : 'Delivered to your door by The Courier Guy. Price depends on parcel size.'}{isCollect(o) ? '' : <> Free over {zar(props.freeShipping)} for parcels up to 5 kg.</>}</span>
+                  <span class="flex items-baseline justify-between gap-3"><strong class="font-display text-[1.05rem] uppercase">{o.name}</strong><span class="typed font-bold">{amount == null ? 'Price not available' : free ? 'Free' : zar(amount)}</span></span>
+                  <span class="text-[0.92rem] text-muted">{isPudo(o) ? 'Small parcels only. Collect from a Pudo locker near you, any time of day.' : isCollect(o) ? `Free. Collect from ${props.workshop.address_1}, ${props.workshop.city}, Mon to Thu 08:00 to 16:00, Fri 08:00 to 14:00. We contact you when it is ready.` : 'Delivered to your door by The Courier Guy. Price depends on parcel size.'}{isCollect(o) ? '' : <> Free over {zar(props.freeShipping)} for parcels up to 5 kg.</>}</span>
+                  {unconfirmed && <span class="hint">We could not confirm this price. It is checked again when you place your order.</span>}
                 </span>
               </label>
             );
           })}
           {err('shipping') && <p id="e-ship" class="err">{err('shipping')}</p>}
+          {shipErr && <p class="err" role="alert">{shipErr}</p>}
 
           {pudo && (
             <div class="mt-2 border-2 border-ink bg-paper-2 p-4" data-field="locker">
