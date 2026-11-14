@@ -1,0 +1,1 @@
+Payment pay_01EXAMPLE captured with no order: check it

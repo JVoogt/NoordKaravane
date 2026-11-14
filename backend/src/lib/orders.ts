@@ -1,6 +1,6 @@
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 import type { MedusaContainer } from "@medusajs/framework/types"
-import { adminUrl, formatZar, getBusinessConfig, shopUrl, staffAlertRecipientsWithDropped } from "./business"
+import { adminUrl, brandFor, formatZar, getBusinessConfig, staffAlertRecipientsWithDropped } from "./business"
 import { dropshipLines, unusableDropshipLines } from "./dropship"
 import type { EmailData } from "../modules/notification-smtp/templates"
 
@@ -15,6 +15,7 @@ export const ORDER_FIELDS = [
   "metadata",
   "created_at",
   "payment_status",
+  "sales_channel_id",
   "items.id",
   "items.title",
   "items.product_title",
@@ -49,9 +50,11 @@ export async function getOrder(container: MedusaContainer, id: string): Promise<
   return data[0] ?? null
 }
 
+/** Customer email payload. brand and order_url follow the order's sales channel (brandFor): a Kampi order links to the Kampi store. */
 export function orderEmailData(order: any, extra: Partial<EmailData> = {}): EmailData {
   const money = (n: unknown) => formatZar(Number(n ?? 0))
   const ship = order.shipping_methods?.[0]
+  const brand = brandFor(order.sales_channel_id)
   return {
     display_id: order.display_id,
     reference: `NK${order.display_id}`,
@@ -66,7 +69,8 @@ export function orderEmailData(order: any, extra: Partial<EmailData> = {}): Emai
     shipping_total: order.shipping_total != null ? money(order.shipping_total) : undefined,
     shipping_method: ship?.name,
     pudo_locker: order.metadata?.pudo_locker ? String(order.metadata.pudo_locker) : undefined,
-    order_url: `${shopUrl()}/order/confirmed/${order.id}`,
+    order_url: `${brand.shopUrl}/order/confirmed/${order.id}`,
+    brand: brand.key,
     ...extra,
   }
 }
@@ -89,9 +93,11 @@ const supplierLines = (g: { supplier: { name: string }; lines: any[] }) =>
 /**
  * Staff alert payload: the customer email data plus SKUs, full ship-to, contact details, payment state,
  * dropship lines (and lines whose supplier has no usable email, so was not notified) and the admin link. Pure, so suppliers are passed in (config dropship_suppliers).
+ * Staff alerts are NK-branded for every order: brand is dropped (so the From header and shell are NK's) and
+ * channel_label names the channel the order came in on.
  */
 export function staffOrderEmailData(order: any, suppliers: Record<string, { name: string; email: string }> = {}): EmailData {
-  const base = orderEmailData(order)
+  const { brand: _brand, ...base } = orderEmailData(order)
   const a = order.shipping_address ?? {}
   const payments = (order.payment_collections ?? []).flatMap((pc: any) => pc.payments ?? [])
   const payfast = payments.some((p: any) => String(p.provider_id ?? "").startsWith("pp_payfast"))
@@ -108,6 +114,7 @@ export function staffOrderEmailData(order: any, suppliers: Record<string, { name
     payment_method: isEftOrder(order) ? "EFT" : payfast ? "PayFast" : payments[0]?.provider_id || "Unknown",
     payment_captured: payments.some((p: any) => !!p.captured_at),
     collect_from_workshop: md.collect_from_workshop === true || md.collect_from_workshop === "true",
+    channel_label: brandFor(order.sales_channel_id).key === "kampi" ? "Kampi" : "NK",
     admin_order_url: `${adminUrl()}/app/orders/${order.id}`,
     dropship_items: dropshipLines(order.items ?? [], suppliers).flatMap(supplierLines),
     dropship_unnotified: unusableDropshipLines(order.items ?? [], suppliers).flatMap(supplierLines),

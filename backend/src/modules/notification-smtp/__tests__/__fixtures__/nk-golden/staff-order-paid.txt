@@ -1,0 +1,30 @@
+Payment is in for order NK3. Next steps:
+
+1. Pack the items.
+2. Book the courier for The Courier Guy.
+3. In the admin, create the fulfilment and mark it shipped with the tracking number. That emails the customer.
+
+We are emailing Example Supplier to ship these lines directly. Do not pack them. If no tracking number arrives, check with them:
+1 x Trauma kit [TFR-VEH-KIT]
+
+- Gas regulator (Standard) [NK-GAS-1] x2  R500,00
+- Trauma kit [TFR-VEH-KIT] x1  R1 000,00
+Shipping (The Courier Guy): R130,00
+Total: R1 630,00
+
+Delivery: The Courier Guy
+
+Ship to:
+Jan Botha
+Example Kampeer
+1 Example Street
+Exampletown
+Gauteng
+0000
+
+Phone: 0820000000
+Email: jan@example.com
+
+Admin: https://admin.noordkaravane.co.za/app/orders/order_01ABC
+
+Noord Karavane shop
