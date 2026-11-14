@@ -1,6 +1,8 @@
 // Storefront guard (plan Task 2.3, DD12): no em dash anywhere in the storefront, and no raw-number prices in Kampi
 // copy. Plain Node, no imports from src. Same em dash rules as web/scripts/guard.mjs.
 // Scope: storefront/src, storefront/public (text files) and storefront/scripts. GUARD_ROOT points it at a test tree.
+// Also: every {{token}} in Kampi copy resolves against ../config/business.example.json (GUARD_BUSINESS_EXAMPLE
+// overrides the path; the Docker build stage copies it to /config). Runs before every `npm run build`.
 import { readdirSync, readFileSync, statSync, existsSync } from 'node:fs';
 import { join, relative, extname, resolve, dirname, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -44,13 +46,43 @@ function kampiBlockLines(lines) {
   return out;
 }
 
+// Kampi content, components and brand copy fill {{key}} and {{zar:key}} from business.json (src/lib/fill.ts). Every
+// token there must resolve against the example config's shape: zar to a finite number, plain to a string or number.
+// Same token pattern as fill.ts, so an Astro object literal ({{ a: 1 }}) is not a token.
+const TOKEN = /\{\{\s*(zar:)?([a-z_][a-z0-9_.]*)\s*\}\}/gi;
+const hasTokens = (r) => isKampiFile(r) || r.startsWith('src/components/kampi/');
+const EXAMPLE_PATH = process.env.GUARD_BUSINESS_EXAMPLE ? resolve(process.env.GUARD_BUSINESS_EXAMPLE) : resolve(ROOT, '..', 'config', 'business.example.json');
+let example = null;
+try {
+  example = JSON.parse(readFileSync(EXAMPLE_PATH, 'utf8'));
+} catch (e) {
+  console.error(`storefront guard: cannot read ${EXAMPLE_PATH} to resolve Kampi {{tokens}} (${e.code || e.message})`);
+  process.exit(1);
+}
+const lookup = (dotted) => dotted.split('.').reduce((o, k) => (o && typeof o === 'object' ? o[k] : undefined), example);
+function tokenProblem(zarToken, key) {
+  const v = lookup(key);
+  if (zarToken) return typeof v === 'number' && Number.isFinite(v) ? null : `{{zar:${key}}} is not a number in business.example.json`;
+  return typeof v === 'string' || typeof v === 'number' ? null : `unresolved token {{${key}}} (no string or number in business.example.json)`;
+}
+
 const failures = [];
+let tokens = 0;
 const files = ['src', 'public', 'scripts'].flatMap((d) => walk(join(ROOT, d)));
 for (const f of files) {
   const r = rel(f);
   const lines = readFileSync(f, 'utf8').split('\n');
   const kampiLines = r === 'src/lib/brands.ts' ? kampiBlockLines(lines) : null;
+  // Without the block the raw-price check would silently skip every Kampi line in brands.ts.
+  if (kampiLines && kampiLines.size === 0) failures.push(`${r}: kampi block not found in STORE_BRANDS (guard cannot check its prices)`);
   lines.forEach((line, i) => {
+    if (hasTokens(r)) {
+      for (const t of line.matchAll(TOKEN)) {
+        tokens++;
+        const p = tokenProblem(!!t[1], t[2]);
+        if (p) failures.push(`${r}:${i + 1}: ${p}`);
+      }
+    }
     if (line.includes(EM_DASH)) failures.push(`${r}:${i + 1}: em dash`);
     const m = line.match(EM_DASH_ENTITY);
     if (m) failures.push(`${r}:${i + 1}: em dash entity ${JSON.stringify(m[0])}`);
@@ -72,4 +104,4 @@ if (failures.length) {
   console.error(`storefront guard: ${failures.length} problem(s) in ${files.length} files`);
   process.exit(1);
 }
-console.log(`storefront guard: clean (${files.length} files)`);
+console.log(`storefront guard: clean (${files.length} files, ${tokens} Kampi tokens resolved)`);

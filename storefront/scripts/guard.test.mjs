@@ -20,8 +20,11 @@ function tree(files) {
   }
   return root;
 }
-function run(root) {
-  const r = spawnSync(process.execPath, [GUARD], { env: { ...process.env, GUARD_ROOT: root }, encoding: 'utf8' });
+// Token checks resolve against the repo's real example config unless a test overrides the path.
+const EXAMPLE = join(HERE, '../../config/business.example.json');
+function run(root, extraEnv = {}) {
+  const env = { ...process.env, GUARD_ROOT: root, GUARD_BUSINESS_EXAMPLE: EXAMPLE, ...extraEnv };
+  const r = spawnSync(process.execPath, [GUARD], { env, encoding: 'utf8' });
   rmSync(root, { recursive: true, force: true });
   return { code: r.status, out: (r.stdout || '') + (r.stderr || '') };
 }
@@ -66,6 +69,51 @@ test('fails on a raw price inside the Kampi STORE_BRANDS block, not in the NK bl
   const r = run(tree({ ...clean, 'src/lib/brands.ts': brands('Free delivery', `Free over ${UNSPACED}`) }));
   assert.notEqual(r.code, 0);
   assert.match(r.out, /src\/lib\/brands\.ts:6: raw price/);
+});
+
+test('fails when src/lib/brands.ts exists but its STORE_BRANDS kampi block is not found (no silent self-disable)', () => {
+  for (const [name, body] of [
+    ['no STORE_BRANDS', 'export const BRANDS = {\n  kampi: {\n    tagline: \'x\',\n  },\n};\n'],
+    ['no kampi block', 'export const STORE_BRANDS = {\n  nk: {\n    tagline: \'x\',\n  },\n};\n'],
+  ]) {
+    const r = run(tree({ ...clean, 'src/lib/brands.ts': body }));
+    assert.notEqual(r.code, 0, name);
+    assert.match(r.out, /src\/lib\/brands\.ts: .*kampi block/, name);
+  }
+});
+
+// REM-FIX 5: every {{...}} token in Kampi content and components resolves against config/business.example.json.
+test('passes when every Kampi token resolves (zar to a number, plain to a scalar); Astro object literals are not tokens', () => {
+  const r = run(tree({
+    ...clean,
+    'src/content/kampi/legal/terms.md': 'Sold by {{legal_name}}, {{ workshop.city }}. Free over {{zar:shipping.free_shipping_threshold_zar}}, from {{zar:shipping.tcg_bands.0.price_zar}}.\n',
+    'src/components/kampi/X.astro': '<div style={{ color: "red" }}>{{eft_payment_window_hours}}</div>\n',
+  }));
+  assert.equal(r.code, 0, r.out);
+});
+
+for (const [name, where, text, why] of [
+  ['an unknown key in Kampi content', 'src/content/kampi/legal/terms.md', 'Hi {{no_such.key}}.', /unresolved token \{\{no_such\.key\}\}/],
+  ['a zar token on a string', 'src/content/kampi/pages/shipping.md', 'Free over {{zar:legal_name}}.', /\{\{zar:legal_name\}\} is not a number/],
+  ['a plain token on an object', 'src/components/kampi/Footer.astro', '<p>{{shipping}}</p>', /unresolved token \{\{shipping\}\}/],
+  ['an unknown key in Kampi brand copy', 'src/brands/kampi/copy.ts', "export const a = '{{nope}}';", /unresolved token \{\{nope\}\}/],
+]) {
+  test(`fails on ${name}`, () => {
+    const r = run(tree({ ...clean, [where]: `x\n${text}\n` }));
+    assert.notEqual(r.code, 0, r.out);
+    assert.match(r.out, new RegExp(`${where.replace(/[./]/g, '\\$&')}:2: `));
+    assert.match(r.out, why);
+  });
+}
+
+test('NK content tokens are not checked against the example (NK fills its own keys today)', () => {
+  assert.equal(run(tree({ ...clean, 'src/content/pages/about.md': 'Hi {{no_such.key}}.\n' })).code, 0);
+});
+
+test('fails closed when config/business.example.json cannot be read', () => {
+  const r = run(tree(clean), { GUARD_BUSINESS_EXAMPLE: '/nonexistent/business.example.json' });
+  assert.notEqual(r.code, 0);
+  assert.match(r.out, /business\.example\.json/);
 });
 
 test('fails when it scanned zero files', () => {

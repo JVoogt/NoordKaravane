@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "astro dev --host",
-    "build": "astro build",
+    "build": "node scripts/guard.mjs && astro build",
     "start": "node ./dist/server/entry.mjs",
     "preview": "astro preview",
     "check": "astro check && node scripts/guard.mjs",

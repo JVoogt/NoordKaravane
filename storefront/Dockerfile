@@ -2,7 +2,8 @@
 # Noord Karavane shop storefront (served under /shop; BRAND=kampi builds Kampi Store at /): Astro 5 SSR (@astrojs/node standalone). Multi-stage, node:22-alpine, non-root, linux/arm64 safe
 # (alpine images are multi-arch; no native modules are used). Built natively on DockPi:
 #   DOCKER_API_VERSION=1.41 docker compose build storefront
-# Build context: this directory (storefront/). business.json is NOT baked in: mount it at /config/business.json (read-only)
+# Build context: this directory (storefront/), plus the `config` context (../config) for the guard's example config only.
+# business.json is NOT baked in: mount it at /config/business.json (read-only)
 # or set BUSINESS_CONFIG_PATH. See README.md.
 
 FROM node:22-alpine AS deps
@@ -15,6 +16,9 @@ WORKDIR /src
 COPY package.json package-lock.json ./
 RUN npm ci --ignore-scripts
 COPY . .
+# `npm run build` runs scripts/guard.mjs first, which resolves Kampi {{tokens}} against ../config/business.example.json.
+# Compose passes the `config` context (../config); a hand build adds `--build-context config=../config`.
+COPY --from=config business.example.json /config/business.example.json
 # BRAND (nk or kampi) is build-time only: vite.define inlines it, and the runtime stage must not carry it.
 ARG BRAND=nk
 ENV BRAND=$BRAND

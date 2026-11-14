@@ -17,6 +17,8 @@ RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 COPY . .
 # business.json is read relative to the app dir as ../config/business.json
 COPY --from=config business.json /config/business.json
+# `npm run build` runs scripts/guard.mjs first, which resolves Kampi {{tokens}} against ../config/business.example.json.
+COPY --from=config business.example.json /config/business.example.json
 # BRAND (nk or kampi) is build-time only: vite.define inlines it, and the runtime stage must not carry it.
 ARG BRAND=nk
 ENV BRAND=$BRAND
