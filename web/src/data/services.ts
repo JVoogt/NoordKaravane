@@ -20,7 +20,7 @@ export const SERVICES: Readonly<Record<ServiceSlug, ServiceMeta>> = Object.freez
     name: 'Caravan service',
     need: 'Due for a service, or heading off on a trip',
     blurb: 'Bearings repacked, brakes stripped and set, coupler, lights and 12 V electrics tested, and a written report at the end.',
-    tag: 'From R949',
+    tag: 'From R1 090',
   },
   repairs: {
     slug: 'repairs',

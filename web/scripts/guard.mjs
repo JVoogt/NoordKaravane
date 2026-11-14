@@ -11,7 +11,7 @@ const DIST_MODE = process.argv.includes('--dist');
 const EM_DASH = String.fromCharCode(0x2014);
 const TEXT_EXT = new Set(['.ts', '.mjs', '.js', '.astro', '.md', '.css', '.json', '.html', '.txt', '.xml', '.svg']);
 const FORBIDDEN = ['17:00', 'Mon-Fri 08', 'Mon–Fri', 'Mon to Fri', 'aggregateRating', 'business.json'];
-const UNSPACED_PRICES = ['R1980', 'R1499', 'R2299'];
+const UNSPACED_PRICES = ['R1980', 'R1090', 'R1720', 'R2620'];
 
 function walk(dir, out = []) {
   if (!existsSync(dir)) return out;

@@ -66,16 +66,16 @@ describe('orgNode', () => {
 
   it('has the spaced price range', () => {
     expect(org.priceRange).toBe(priceRange());
-    expect(JSON.stringify(org)).toContain('"priceRange":"R949 - R2 299"');
+    expect(JSON.stringify(org)).toContain('"priceRange":"R1 090 - R2 620"');
   });
 });
 
 describe('priceRange', () => {
-  it('is exactly R949 - R2 299 and derived from AXLE_OPTIONS', () => {
+  it('is exactly R1 090 - R2 620 and derived from AXLE_OPTIONS', () => {
     const prices = AXLE_OPTIONS.map((a) => a.price);
-    expect(priceRange()).toBe('R949 - R2 299');
+    expect(priceRange()).toBe('R1 090 - R2 620');
     expect(priceRange()).toBe(fmtR(Math.min(...prices)) + ' - ' + fmtR(Math.max(...prices)));
-    for (const bad of ['R2299', 'R1499', 'R1980']) expect(priceRange()).not.toContain(bad);
+    for (const bad of ['R2620', 'R1720', 'R1980']) expect(priceRange()).not.toContain(bad);
   });
 });
 
@@ -131,7 +131,7 @@ describe('faqNode', () => {
     expect(f['@type']).toBe('FAQPage');
     expect(f.mainEntity.map((m: Obj) => m.name)).toEqual(['First?', 'Cost?']);
     expect(f.mainEntity.map((m: Obj) => m.acceptedAnswer.text)).toEqual(items.map(faqPlainText));
-    expect(f.mainEntity[1].acceptedAnswer.text).toBe('From R1 499.');
+    expect(f.mainEntity[1].acceptedAnswer.text).toBe('From R1 720.');
   });
 });
 

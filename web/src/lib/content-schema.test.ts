@@ -63,7 +63,7 @@ describe('service frontmatter schema', () => {
     expect(serviceSchema.safeParse({ ...base, priceFrom: { id: 'unbraked-1', from: true } }).success).toBe(true);
     expect(serviceSchema.safeParse({ ...base, priceFrom: { id: 'lift-kit', from: false } }).success).toBe(true);
     expect(serviceSchema.safeParse({ ...base, priceFrom: { id: 'nope', from: true } }).success).toBe(false);
-    expect(serviceSchema.safeParse({ ...base, priceFrom: { amount: 949, from: true } }).success).toBe(false);
+    expect(serviceSchema.safeParse({ ...base, priceFrom: { amount: 1090, from: true } }).success).toBe(false);
   });
 
   it('priceAmount resolves the id from pricing.ts and throws on an unknown one', () => {

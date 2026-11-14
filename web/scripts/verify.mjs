@@ -43,19 +43,19 @@ const PROSE_HOURS = 'Monday to Thursday 08:00 to 16:00 and Friday 08:00 to 14:00
 const FORBIDDEN_STRINGS = ['17:00', 'Mon-Fri 08', 'Mon–Fri'];
 
 // Oracle: the only price amounts the site may state.
-const PRICE_AMOUNTS = new Set([949, 1499, 2299, 1980, 850, 1200]);
-const PRICE_RANGE = 'R949 - R2 299';
+const PRICE_AMOUNTS = new Set([1090, 1720, 2620, 1980, 850, 1200]);
+const PRICE_RANGE = 'R1 090 - R2 620';
 // Oracle: which amounts each page may state anywhere (visible text, title, meta, JSON-LD). Related cards show the
-// Caravan service tag (R949); the org node on Home and Find us carries priceRange (R949 - R2 299); Solar and
+// Caravan service tag (R1 090); the org node on Home and Find us carries priceRange (R1 090 - R2 620); Solar and
 // Recoveries state no price of their own, and Solar has no related card that carries one.
 const ROUTE_PRICES = {
-  '/': [949, 1980, 2299],
-  '/services/caravan-service/': [949, 1499, 2299, 1980, 850, 1200],
-  '/services/repairs/': [949],
+  '/': [1090, 1980, 2620],
+  '/services/caravan-service/': [1090, 1720, 2620, 1980, 850, 1200],
+  '/services/repairs/': [1090],
   '/services/solar-electrical/': [],
-  '/services/recoveries/': [949],
-  '/services/lift-kits/': [1980, 949],
-  '/find-us/': [949, 2299],
+  '/services/recoveries/': [1090],
+  '/services/lift-kits/': [1980, 1090],
+  '/find-us/': [1090, 2620],
 };
 
 // Oracle: the WhatsApp message each page's primary CTA and header CTA must carry (decoded text parameter).
@@ -636,7 +636,7 @@ for (const route of have) {
   if (pages.has(CARAVAN)) {
     const root = pages.get(CARAVAN).root;
     const prices = root.querySelectorAll('#pricing .board .price').map((p) => `${squash(p.querySelector('h3')?.text ?? '')}=${squash(p.querySelector('.amt')?.text ?? '')}`);
-    report(JSON.stringify(prices) === JSON.stringify(['Single axle, no brakes=R949from', 'Single axle with brakes=R1 499from', 'Double axle with brakes=R2 299from']), '16 pages', `${CARAVAN} packages are three rows of one price board`, prices.join(' | ') || 'no #pricing .board .price');
+    report(JSON.stringify(prices) === JSON.stringify(['Single axle, no brakes=R1 090from', 'Single axle with brakes=R1 720from', 'Double axle with brakes=R2 620from']), '16 pages', `${CARAVAN} packages are three rows of one price board`, prices.join(' | ') || 'no #pricing .board .price');
     const rep = root.querySelector('#inspection-report .rep');
     const stamp = rep?.querySelector('.rep-foot img');
     report(!!rep && rep.querySelectorAll('.rep-evid img').length === 4 && rep.querySelectorAll('.rep-finding').length === 3 && (stamp?.getAttribute('alt') ?? '').includes('083 334 9357') && visibleText(rep).includes('Example format, no customer data shown'), '16 pages', `${CARAVAN} inspection report is the Home page's job card (three findings, four photos, the stamp, labelled as an example)`, rep ? `${rep.querySelectorAll('.rep-finding').length} finding(s), ${rep.querySelectorAll('.rep-evid img').length} photo(s)` : 'no #inspection-report .rep');

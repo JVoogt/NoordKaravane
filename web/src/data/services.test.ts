@@ -12,7 +12,7 @@ const EXPECTED = {
     name: 'Caravan service',
     need: 'Due for a service, or heading off on a trip',
     blurb: 'Bearings repacked, brakes stripped and set, coupler, lights and 12 V electrics tested, and a written report at the end.',
-    tag: 'From R949',
+    tag: 'From R1 090',
   },
   repairs: {
     name: 'Caravan repairs',
@@ -71,7 +71,7 @@ describe('SERVICES keyed by the one slug list', () => {
       for (const text of [s.name, s.need, s.blurb, s.tag]) {
         expect(text).not.toContain(EM_DASH);
         expect(text).not.toContain('17:00');
-        expect(text).not.toMatch(/R1980|R1499|R2299/);
+        expect(text).not.toMatch(/R1980|R1720|R2620/);
       }
     }
   });

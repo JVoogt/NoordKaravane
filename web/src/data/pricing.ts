@@ -4,10 +4,10 @@ export type AxleId = 'unbraked-1' | 'braked-1' | 'braked-2' | 'other';
 export type AddonId = 'lift-kit' | 'pre-trip' | 'water-test' | 'solar-quote';
 
 export const AXLE_OPTIONS: ReadonlyArray<{ id: AxleId; label: string; price: number }> = Object.freeze([
-  { id: 'unbraked-1', label: 'Single, unbraked', price: 949 },
-  { id: 'braked-1', label: 'Single, braked', price: 1499 },
-  { id: 'braked-2', label: 'Double, braked', price: 2299 },
-  { id: 'other', label: 'Not sure', price: 1499 },
+  { id: 'unbraked-1', label: 'Single, unbraked', price: 1090 },
+  { id: 'braked-1', label: 'Single, braked', price: 1720 },
+  { id: 'braked-2', label: 'Double, braked', price: 2620 },
+  { id: 'other', label: 'Not sure', price: 1720 },
 ]);
 
 /** A price of 0 (the free solar quote) renders as POA wherever it is shown. */
