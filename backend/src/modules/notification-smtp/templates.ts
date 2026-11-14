@@ -184,6 +184,12 @@ function button(t: Theme, href: string, label: string): string {
 <a href="${esc(href)}" style="display:inline-block;padding:12px 26px;font-family:${t.body};font-size:14px;letter-spacing:1px;text-transform:uppercase;color:${t.onAccent};font-weight:bold;text-decoration:none;">${esc(label)}</a></td></tr></table>`
 }
 
+/** Another brand's customer emails link to the order page on that brand's store; NK's emails stay as they are. */
+function orderLink(t: Theme, d: EmailData): { html: string; text: string } {
+  if (t.brand.key === "nk" || !d.order_url) return { html: "", text: "" }
+  return { html: button(t, d.order_url, "View your order"), text: `View your order: ${d.order_url}\n\n` }
+}
+
 function bankBlock(t: Theme, ref: string): { html: string; text: string } {
   const b = getBusinessConfig().bank
   const C = t.c
@@ -262,6 +268,7 @@ export function renderEmail(template: string, d: EmailData): { subject: string; 
   switch (template) {
     case "order-placed-eft": {
       const bank = bankBlock(t, ref)
+      const link = orderLink(t, d)
       const html = shell(
         t,
         `Order ${ref} is in. Pay by EFT within ${windowH} hours to lock it in.`,
@@ -273,14 +280,16 @@ export function renderEmail(template: string, d: EmailData): { subject: string; 
           itemsTable(t, d) +
           (d.pudo_locker ? p(`Delivering to Pudo locker: <strong>${esc(d.pudo_locker)}</strong>`) : "") +
           p(`Once we see the money, we'll email you and your order goes into preparation (${esc(b.production_lead_time_days)}). Unpaid orders are released after ${windowH} hours, but you can always order again.`) +
+          link.html +
           p(`Safe travels.`)
       )
-      const text = `${hiText}\n\nThank you for your order ${ref}. We start packing your order once your payment lands.\n\nPlease pay by EFT within ${windowH} hours, using your order number as the reference:\n\n${bank.text}\n\n${itemsText(d)}\n${d.pudo_locker ? `\nPudo locker: ${d.pudo_locker}\n` : ""}\nOnce we see the money we'll email you and your order goes into preparation (${b.production_lead_time_days}). Unpaid orders are released after ${windowH} hours.\n\nSafe travels.\n${signOff(t)}`
+      const text = `${hiText}\n\nThank you for your order ${ref}. We start packing your order once your payment lands.\n\nPlease pay by EFT within ${windowH} hours, using your order number as the reference:\n\n${bank.text}\n\n${itemsText(d)}\n${d.pudo_locker ? `\nPudo locker: ${d.pudo_locker}\n` : ""}\nOnce we see the money we'll email you and your order goes into preparation (${b.production_lead_time_days}). Unpaid orders are released after ${windowH} hours.\n\n${link.text}Safe travels.\n${signOff(t)}`
       return { subject: `Order ${ref}: pay by EFT to lock it in`, html, text }
     }
     case "eft-reminder": {
       const bank = bankBlock(t, ref)
       const left = d.hours_left ?? windowH - b.eft_reminder_after_hours
+      const link = orderLink(t, d)
       const html = shell(
         t,
         `Order ${ref} is still waiting on payment.`,
@@ -289,12 +298,14 @@ export function renderEmail(template: string, d: EmailData): { subject: string; 
           p(`Order <strong>${esc(ref)}</strong> hasn't been paid yet. We'll hold it for roughly <strong>${left} more hours</strong>, then release it.`) +
           bank.html +
           itemsTable(t, d) +
-          p(`Already paid? Lovely. It can take a little while to reflect, and you don't need to do anything. If you've changed your mind, no stress.`)
+          p(`Already paid? Lovely. It can take a little while to reflect, and you don't need to do anything. If you've changed your mind, no stress.`) +
+          link.html
       )
-      const text = `${hiText}\n\nOrder ${ref} hasn't been paid yet. We'll hold it for roughly ${left} more hours, then release it.\n\n${bank.text}\n\n${itemsText(d)}\n\nAlready paid? You don't need to do anything.\n\n${signOff(t)}`
+      const text = `${hiText}\n\nOrder ${ref} hasn't been paid yet. We'll hold it for roughly ${left} more hours, then release it.\n\n${bank.text}\n\n${itemsText(d)}\n\nAlready paid? You don't need to do anything.\n\n${link.text}${signOff(t)}`
       return { subject: `Reminder: order ${ref} is waiting for payment`, html, text }
     }
     case "payment-received": {
+      const link = orderLink(t, d)
       const html = shell(
         t,
         `Payment received for ${ref}. Your order is being prepared.`,
@@ -302,9 +313,10 @@ export function renderEmail(template: string, d: EmailData): { subject: string; 
         p(hi) +
           p(`We've received your payment for order <strong>${esc(ref)}</strong>. Your order is now <strong>being prepared</strong>.`) +
           itemsTable(t, d) +
-          p(`Preparing your order takes <strong>${esc(b.production_lead_time_days)}</strong> before it ships. We'll email you the tracking details the moment it's on its way.`)
+          p(`Preparing your order takes <strong>${esc(b.production_lead_time_days)}</strong> before it ships. We'll email you the tracking details the moment it's on its way.`) +
+          link.html
       )
-      const text = `${hiText}\n\nWe've received your payment for order ${ref}. Your order is now being prepared.\n\n${itemsText(d)}\n\nPreparing your order takes ${b.production_lead_time_days} before it ships. We'll email you tracking details the moment it's on its way.\n\n${signOff(t)}`
+      const text = `${hiText}\n\nWe've received your payment for order ${ref}. Your order is now being prepared.\n\n${itemsText(d)}\n\nPreparing your order takes ${b.production_lead_time_days} before it ships. We'll email you tracking details the moment it's on its way.\n\n${link.text}${signOff(t)}`
       return { subject: `Payment received for ${ref}: now being prepared`, html, text }
     }
     case "order-shipped": {

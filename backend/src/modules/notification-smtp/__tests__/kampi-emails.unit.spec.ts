@@ -273,3 +273,31 @@ describe("bank block colour", () => {
     expect(r.html).toContain("background:#fcf6e3;border:1px solid #5a5034;width:100%;")
   })
 })
+
+describe("Kampi customer emails link to the order page (Behaviour Contract 1)", () => {
+  const LINKED = ["order-placed-eft", "eft-reminder", "payment-received"] as const
+  const URL = "https://store.example.test/order/confirmed/order_01ABC"
+
+  it.each(LINKED)("%s: a Kampi order has a View your order button and text link", (t) => {
+    const { templates, orders } = loadWith(config())
+    const r = templates.renderEmail(t, { ...GOLDEN_DATA[t], ...orders.orderEmailData(order("sc_A")) })
+    expect(r.html).toContain(`href="${URL}"`)
+    expect(r.html).toContain("View your order")
+    expect(r.text).toContain(`View your order: ${URL}`)
+  })
+
+  it.each(LINKED)("%s: an NK order renders no order link (NK emails unchanged)", (t) => {
+    const { templates, orders } = loadWith(config())
+    const r = templates.renderEmail(t, { ...GOLDEN_DATA[t], ...orders.orderEmailData(order("sc_WEBSHOP")) })
+    expect(r.html).not.toContain("/order/confirmed/")
+    expect(r.text).not.toContain("/order/confirmed/")
+  })
+
+  it("a Kampi email without an order_url renders no order link", () => {
+    const { templates } = loadWith(config())
+    const { order_url: _u, ...d } = GOLDEN_DATA["order-placed-eft"] as any
+    const r = templates.renderEmail("order-placed-eft", { ...d, brand: "kampi" })
+    expect(r.html).not.toContain("View your order")
+    expect(r.text).not.toContain("View your order")
+  })
+})

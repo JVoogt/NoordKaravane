@@ -18,7 +18,7 @@ Astro `base: "/shop"`. Only `/shop*` is routed to Astro; every other path on the
 | category | `/shop/category/<handle>/` (parent categories include their children) |
 | product | `/shop/<handle>/`  (feeds and the Cloudflare purge already assume this) |
 | cart / checkout | `/shop/cart`, `/shop/checkout` |
-| order confirmed | `/shop/order/confirmed/<order id>`  (linked from every EFT email) |
+| order confirmed | `/shop/order/confirmed/<order id>`  (where checkout lands; NK emails do not link it) |
 | sitemap | `/shop/sitemap.xml`  (the root `site/sitemap.xml` must reference it; root `robots.txt` too) |
 Because `/shop/<handle>/` is a catch-all, reserved first segments are `cart`, `checkout`, `order`, `category`, `search`, `sitemap.xml`, `products` (images). No product handle may equal one of them (validate in phase 3).
 Backend code must build storefront links with `shopUrl()` (`backend/src/lib/business.ts`), never bare `siteUrl()`.
@@ -226,7 +226,7 @@ Container `nkshop-storefront-kampi`, image `nkshop-storefront-kampi` (`:<sha>`, 
 | product | `/<handle>/` |
 | category | `/category/<handle>/` |
 | cart / checkout | `/cart`, `/checkout` |
-| order confirmed | `/order/confirmed/<id>` |
+| order confirmed | `/order/confirmed/<id>` (linked from the Kampi order-placed, EFT-reminder and payment-received emails) |
 | sitemap / robots | `/sitemap.xml`, `/robots.txt` |
 - `RESERVED_HANDLES` (`storefront/src/lib/format.ts`) adds the old Woo first segments: `product`, `product-category`, `product-tag`, `shop`, `my-account`, `terms-conditions`, `privacy-policy`, `refund_returns`, `home`, `feed`, `page`, `sitemap_index.xml`. No product handle may equal one.
 - Old Woo URLs answer 301 (Kampi build only) per the table in `storefront/src/lib/woo-redirects.ts` (`wooRedirect`, frozen lists of the Woo product slugs and categories). `node storefront/scripts/redirect-smoke.mjs <origin>` checks them against a running Kampi build.
