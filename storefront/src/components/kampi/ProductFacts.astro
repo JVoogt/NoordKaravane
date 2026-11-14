@@ -2,14 +2,16 @@
 // Kampi product fact list (DESIGN.md 5.5 A5, brand-copy.md section 4; JP 2026-11-14 decision 10): sentence-case labels,
 // Pay, Get it, Returns, and the Fitting row kept as the seller's service (it names NK, so it sits in data-seller).
 import { business } from '~/lib/business';
+import { shippingFacts } from '~/lib/business-display';
 import { zar } from '~/lib/format';
 import { u } from '~/lib/url';
 const b = business;
+const ship = shippingFacts(b);
 const label = 'w-24 shrink-0 text-[0.88rem] font-bold text-muted';
 ---
 <ul class="mt-8 grid gap-3 border-t border-ink-3 pt-6 text-[0.98rem]">
   <li class="flex gap-3"><span class={label}>Pay</span><span><strong>EFT, explained simply.</strong> Place your order and we show you the banking details and your reference. Pay within {b.eft_payment_window_hours} hours and we get it ready. <a href={u('/how-to-order')}>How it works</a>.</span></li>
-  <li class="flex gap-3"><span class={label}>Get it</span><span>Courier from {zar(b.shipping.tcg_bands[0].price_zar)} by parcel size, small parcels to a Pudo locker, free over {zar(b.shipping.free_shipping_threshold_zar)}, or <strong>collect free</strong> in Pretoria North. <a href={u('/shipping')}>Delivery details</a>.</span></li>
+  <li class="flex gap-3"><span class={label}>Get it</span><span>{ship.courierFromZar != null ? `Courier from ${zar(ship.courierFromZar)} by parcel size` : 'Courier by parcel size'}, small parcels to a Pudo locker{ship.freeOverZar != null && `, free over ${zar(ship.freeOverZar)}`}, or <strong>collect free</strong> in Pretoria North. <a href={u('/shipping')}>Delivery details</a>.</span></li>
   <li class="flex gap-3"><span class={label}>Returns</span><span>Seven days to change your mind, six months on faults. <a href={u('/legal/returns')}>Refunds and returns</a>.</span></li>
   <li class="flex gap-3"><span class={label}>Fitting</span><span><span data-seller>{b.brand} can fit it at its workshop in Pretoria North.</span> <a href={u('/contact?topic=fitting')}>Ask about fitting</a>.</span></li>
 </ul>

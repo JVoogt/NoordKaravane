@@ -3,10 +3,12 @@
 // (tokens.css #footer): light logo, Kampi line and blurb, the seller line in data-seller, NK's legal identity in
 // <address>, Kampi's own socials (brands.kampi only), a dot-free pay line. No newsletter (RD2).
 import { LEGAL_LINKS, HELP_LINKS } from '~/lib/nav';
-import { business, brandBusiness, isPlaceholder, whatsappNumber, sellerName } from '~/lib/business';
+import { loadBusiness, brandBusiness, isPlaceholder, whatsappNumber, sellerName } from '~/lib/business';
+import { footerIdentity } from '~/lib/business-display';
 import { brand } from '~/lib/brand';
 import { u } from '~/lib/url';
-const b = business;
+// NK's legal identity (the seller), each segment shown only once its value is usable (DD4, P17).
+const id = footerIdentity(loadBusiness());
 const own = brandBusiness();
 const { floatingChat = true } = Astro.props as { floatingChat?: boolean };
 const wa = floatingChat ? whatsappNumber() : null;
@@ -60,9 +62,9 @@ const landing = brand.landing;
   <div class="wrap border-t border-ink-3 py-8">
     <div class="grid gap-8 lg:grid-cols-[1.6fr_1fr]">
       <address class="text-[0.85rem] leading-relaxed text-muted not-italic">
-        <strong class="text-ink">{b.legal_name}</strong>. Reg. no. {b.registration_number}. VAT no. {b.vat_number}.<br />
-        {b.physical_address}. Tel {b.phone}.<br />
-        <a href={`mailto:${b.email_general}`} class="text-ink">{b.email_general}</a>. Information Officer: {b.information_officer}.<br />
+        {(id.name || id.ids.length > 0) && <>{id.name && <><strong class="text-ink">{id.name}</strong>.{id.ids.length > 0 && ' '}</>}{id.ids.join(' ')}<br /></>}
+        {id.contact.length > 0 && <>{id.contact.join(' ')}<br /></>}
+        {(id.email || id.officer) && <>{id.email && <><a href={`mailto:${id.email}`} class="text-ink">{id.email}</a>.{id.officer && ' '}</>}{id.officer}<br /></>}
         Prices in ZAR, VAT inclusive.
       </address>
       <div class="flex flex-wrap items-start gap-2 lg:justify-end">

@@ -1,6 +1,7 @@
 import { siteUrl } from './env';
 import { decodeEntities } from './format';
 import { business, brandBusiness, whatsappNumber, isPlaceholder } from './business';
+import { usable, shippingFacts } from './business-display';
 import { u } from './url';
 import { brand } from './brand';
 import type { Product } from './products';
@@ -9,7 +10,6 @@ import type { Product } from './products';
 // its own site; the WebSite node is "Kampi Store" published by it; Offer.seller points at it; Product.brand is the
 // store name. NK pages keep today's nodes exactly.
 const KAMPI = brand.key === 'kampi';
-const usable = (v: unknown): v is string => typeof v === 'string' && !!v.trim() && !isPlaceholder(v) && !v.includes('REPLACE_ME');
 
 export const abs = (p: string) => (/^https?:\/\//.test(p) ? p : siteUrl() + (p.startsWith('/') ? p : '/' + p));
 export const trunc = (s: string, n = 155) => { const t = s.replace(/\s+/g, ' ').trim(); return t.length <= n ? t : t.slice(0, n - 1).replace(/\s+\S*$/, '') + '…'; };
@@ -55,12 +55,14 @@ export const breadcrumbLd = (items: { name: string; path: string }[]) => ({
 export function productLd(p: Product) {
   const url = abs(u(`/${p.handle}/`));
   const { min, max } = leadDays();
+  const courierFrom = shippingFacts(business).courierFromZar;
   const offerBase = {
     '@type': 'Offer', priceCurrency: 'ZAR', availability: 'https://schema.org/InStock', itemCondition: 'https://schema.org/NewCondition', url,
     seller: { '@id': siteUrl() + '/#org' },
     shippingDetails: {
       '@type': 'OfferShippingDetails', shippingDestination: { '@type': 'DefinedRegion', addressCountry: 'ZA' },
-      shippingRate: { '@type': 'MonetaryAmount', value: business.shipping.tcg_bands[0].price_zar, currency: 'ZAR' },
+      // Omitted (never a throw or NaN) when business.json has no first courier band; same object as before otherwise.
+      ...(courierFrom != null ? { shippingRate: { '@type': 'MonetaryAmount', value: courierFrom, currency: 'ZAR' } } : {}),
       deliveryTime: {
         '@type': 'ShippingDeliveryTime',
         handlingTime: { '@type': 'QuantitativeValue', minValue: min, maxValue: max, unitCode: 'DAY' },

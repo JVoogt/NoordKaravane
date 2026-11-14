@@ -3,7 +3,8 @@
 // head, and Kampi's own Foldaway Camp Fan standing on it as a cream tag. The tag's title is a <p>, so headings step
 // h1, h2, h3. If the featured product is not in the catalogue, the right column shows three plain facts instead.
 import type { Product } from '~/lib/products';
-import { business } from '~/lib/business';
+import { loadBusiness } from '~/lib/business';
+import { shippingFacts } from '~/lib/business-display';
 import { brand } from '~/lib/brand';
 import { zar } from '~/lib/format';
 import { u } from '~/lib/url';
@@ -12,6 +13,7 @@ const { products } = Astro.props;
 const p = brand.heroFeature ? products.find((x) => x.handle === brand.heroFeature) : undefined;
 const img = p?.images[0];
 const landing = brand.landing;
+const ship = shippingFacts(loadBusiness());
 ---
 <section data-ground="olive" aria-labelledby="hero-title">
   <div class="wrap grid gap-10 pb-14 pt-12 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] lg:items-center lg:gap-16 lg:pb-16 lg:pt-14">
@@ -33,7 +35,7 @@ const landing = brand.landing;
       </figure>
     ) : (
       <ul class="grid gap-3 text-[0.98rem]">
-        <li class="border-l-2 border-[var(--kampi-sand-light)] pl-4"><strong>Free delivery over {zar(business.shipping.free_shipping_threshold_zar)}</strong> on parcels up to {business.shipping.free_shipping_max_weight_g / 1000} kg</li>
+        {ship.freeOverZar != null && <li class="border-l-2 border-[var(--kampi-sand-light)] pl-4"><strong>Free delivery over {zar(ship.freeOverZar)}</strong>{ship.freeMaxKg != null && ` on parcels up to ${ship.freeMaxKg} kg`}</li>}
         <li class="border-l-2 border-[var(--kampi-sand-light)] pl-4"><strong>Collect free</strong> in Pretoria North</li>
         <li class="border-l-2 border-[var(--kampi-sand-light)] pl-4"><strong>Pay by EFT</strong> from your banking app</li>
       </ul>

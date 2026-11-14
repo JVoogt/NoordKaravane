@@ -2,17 +2,19 @@
 // Kampi Store header (DESIGN.md 5.5 A1, brand-copy.md section 2). NK's structure and nav, Kampi material:
 // a three-fact strap (the seller span carries data-seller), the Kampi logo plus "Store", a solid cream bar (no glass).
 import { MAIN_NAV } from '~/lib/nav';
-import { business } from '~/lib/business';
+import { business, loadBusiness } from '~/lib/business';
+import { shippingFacts } from '~/lib/business-display';
 import { brand } from '~/lib/brand';
 import { zar } from '~/lib/format';
 import { u } from '~/lib/url';
 const path = Astro.url.pathname;
 const cur = (href: string) => (href === u('/') ? (path === u('/').replace(/\/$/, '') || path === u('/') || path.startsWith(u('/category/')) ? 'page' : undefined) : path === href || path.startsWith(href + '/') ? 'page' : undefined);
 const landing = brand.landing;
+const ship = shippingFacts(loadBusiness());
 const navLink = 'relative inline-flex min-h-11 items-center px-3 text-[0.9rem] font-medium text-muted no-underline hover:text-ink aria-[current=page]:text-ink after:absolute after:inset-x-3 after:bottom-1.5 after:h-[2px] after:origin-left after:scale-x-0 after:bg-wine after:transition-transform hover:after:scale-x-100 aria-[current=page]:after:scale-x-100 motion-reduce:after:transition-none';
 ---
 <div class="bg-wine text-paper">
-  <p class="wrap flex flex-wrap justify-center gap-x-7 gap-y-1 py-2 text-center text-[0.85rem] font-medium"><span class="max-sm:hidden" data-seller>Sold and fulfilled by {business.brand}</span><span>Free delivery over {zar(business.shipping.free_shipping_threshold_zar)}</span><span>Pay by EFT</span></p>
+  <p class="wrap flex flex-wrap justify-center gap-x-7 gap-y-1 py-2 text-center text-[0.85rem] font-medium"><span class="max-sm:hidden" data-seller>Sold and fulfilled by {business.brand}</span>{ship.freeOverZar != null && <span>Free delivery over {zar(ship.freeOverZar)}</span>}<span>Pay by EFT</span></p>
 </div>
 <header class="sticky top-0 z-50 border-b border-ink-3 bg-paper">
   <div class="wrap flex h-[4.25rem] items-center justify-between gap-4">
