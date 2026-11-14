@@ -52,7 +52,7 @@ All Medusa Redis modules (event bus/BullMQ, workflow engine, cache, locking) sha
 
 ### 0. Pre-flight
 ```bash
-ssh dockpi 'free -h; df -h /home; ss -ltn | grep -E ":854[0-3]" || echo "ports 8550-8553 free"'
+ssh dockpi 'free -h; df -h /home; ss -ltn | grep -E ":855[0-5]\b" || echo "ports 8550-8555 free"'
 ```
 Save the `free -h` output: you compare against it in step 9.
 

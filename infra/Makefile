@@ -48,13 +48,15 @@ SYNC_GUARD = $(if $(findstring --exclude='/.git',$(SYNC_EXCLUDES)),true,[ ! -f $
 # `sync-check`, then a refusal if any path it would SEND (create or overwrite: `<`/`>`/`c` itemize lines) or DELETE
 # (`*deleting`) matches SYNC_PROTECTED. `.example` / `.template` files are carved out (they ship from the repo). The
 # regex is deliberately independent of SYNC_EXCLUDES, so a typo or a dropped exclude cannot also silence the check that
-# would catch it. A plain := (an environment value cannot replace it) plus a refusal when it comes from the command line
-# or `make -e`; a regex grep rejects (exit 2) refuses too.
-SYNC_PROTECTED := business\.json|(^|/)\.env($$|\.(local|production|staging)$$)|(^|/)cloudflare/|\.bak|(^|/)\.impeccable/|(^|/)backups(-staging)?/|^\.git(/|$$)|^infra/\.last_tag$$|^infra/build-.*\.log$$
+# would catch it. Paths are normalised first: a symlink line (`cL`/`>L`/`<L`) loses its ` -> target`, a directory its
+# trailing `/`, so `$`-anchored entries and the carve-out see the bare path (a protected name that is a symlink to an
+# `.example` still refuses). Dir entries end `(/|$)` to match the directory itself. SYNC_PROTECTED, SYNC_PREFLIGHT and
+# SYNC_DRYRUN are refused in the `sync` recipe itself when they come from the command line or `make -e` (an override
+# of SYNC_PREFLIGHT cannot remove that check); a regex grep rejects (exit 2) refuses too.
+SYNC_PROTECTED := business\.json|(^|/)\.env($$|\.(local|production|staging)$$)|(^|/)cloudflare(/|$$)|\.bak|(^|/)\.impeccable(/|$$)|(^|/)backups(-staging)?(/|$$)|^\.git(/|$$)|^infra/\.last_tag$$|^infra/build-.*\.log$$
 SYNC_DRYRUN = rsync -azn --delete --itemize-changes $(SYNC_EXCLUDES) $(ROOT)/ $(SYNC_DEST)
-SYNC_PREFLIGHT = $(if $(filter-out file,$(origin SYNC_PROTECTED)),echo "refusing to sync: SYNC_PROTECTED comes from the $(origin SYNC_PROTECTED); it is fixed in the Makefile"; exit 1;) \
-	  out=$$($(SYNC_DRYRUN)) || exit $$?; \
-	  bad=$$(printf '%s\n' "$$out" | sed -n -E 's/^(\*deleting|[<>c][fdLDS][^ ]*) +//p' | grep -Ev '\.(example|template)$$' | grep -E '$(SYNC_PROTECTED)'); rc=$$?; \
+SYNC_PREFLIGHT = out=$$($(SYNC_DRYRUN)) || exit $$?; \
+	  bad=$$(printf '%s\n' "$$out" | sed -n -E -e '/^(\*deleting|[<>c][fdLDS])/!d' -e '/^[<>c]L/s/ -> .*$$//' -e 's/^[^ ]+ +//' -e 's,/$$,,' -e p | grep -Ev '\.(example|template)$$' | grep -E '$(SYNC_PROTECTED)'); rc=$$?; \
 	  [ $$rc -le 1 ] || { echo "refusing to sync: SYNC_PROTECTED is not a valid regex (grep exit $$rc)"; exit 1; }; \
 	  [ -z "$$bad" ] || { echo "refusing to sync: the dry run would overwrite or delete protected Pi-only paths (check SYNC_EXCLUDES):"; \
 	  printf '%s\n' "$$bad" | sed 's/^/  /'; exit 1; }
@@ -78,7 +80,7 @@ help:
 # ---------------------------------------------------------------- code + env
 sync:
 	@$(SYNC_GUARD)
-	@$(SYNC_PREFLIGHT)
+	@$(foreach v,SYNC_PROTECTED SYNC_PREFLIGHT SYNC_DRYRUN,$(if $(filter-out file,$(origin $v)),echo "refusing to sync: $v comes from the $(origin $v); it is fixed in the Makefile"; exit 1;)) $(SYNC_PREFLIGHT)
 	rsync -az --delete --human-readable $(SYNC_EXCLUDES) $(ROOT)/ $(SYNC_DEST)
 	$(SSH) 'mkdir -p $(INFRA)/backups $(INFRA)/backups-staging && chown -R $(OWNER):$(OWNER) $(REMOTE_DIR) && \
 	  for f in $(INFRA)/.env $(INFRA)/.env.staging; do [ -f $$f ] && chmod 600 $$f; done; true'
