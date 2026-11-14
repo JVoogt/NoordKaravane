@@ -1521,12 +1521,12 @@ if (PAGES.includes(NEUTRAL_PAGE)) {
       const ready = await page.getAttribute('[data-estimator]', 'data-est-ready');
       record(NEUTRAL_PAGE, width, 'estimator JS on: marked ready by its script, live visible, static hidden', ready !== null && (await live.isVisible()) && !(await stat.isVisible()), `data-est-ready=${ready === null ? 'absent' : 'set'}`);
       const t0 = (await total.textContent()).trim();
-      record(NEUTRAL_PAGE, width, 'estimator starts on the default package', t0 === 'R1 499' && (await axle1.getAttribute('aria-pressed')) === 'true' && (await decoded()).includes('Single, braked: R1 499'), t0);
+      record(NEUTRAL_PAGE, width, 'estimator starts on the default package', t0 === 'R1 720' && (await axle1.getAttribute('aria-pressed')) === 'true' && (await decoded()).includes('Single, braked: R1 720'), t0);
       await axle2.click();
       await lift.click();
       const t1 = (await total.textContent()).trim();
       const href = await decoded();
-      record(NEUTRAL_PAGE, width, 'estimator total after Double braked + lift kit', t1 === 'R4 279', t1);
+      record(NEUTRAL_PAGE, width, 'estimator total after Double braked + lift kit', t1 === 'R4 600', t1);
       record(
         NEUTRAL_PAGE,
         width,
@@ -1537,7 +1537,7 @@ if (PAGES.includes(NEUTRAL_PAGE)) {
         NEUTRAL_PAGE,
         width,
         'estimator CTA href carries the new estimate',
-        href.startsWith(WA_PREFIX) && href.includes('Double, braked: R2 299') && href.includes('50 mm lift kit fitted: + R1 980') && href.includes('Total est.: R4 279'),
+        href.startsWith(WA_PREFIX) && href.includes('Double, braked: R2 620') && href.includes('50 mm lift kit fitted: + R1 980') && href.includes('Total est.: R4 600'),
         href.slice(WA_PREFIX.length, WA_PREFIX.length + 90).replace(/\n/g, ' | '),
       );
       const optH = await axle2.evaluate((e) => e.getBoundingClientRect().height);
@@ -1546,7 +1546,7 @@ if (PAGES.includes(NEUTRAL_PAGE)) {
       await unsure.click();
       const t2 = (await total.textContent()).replace(/\s+/g, ' ').trim();
       const href2 = await decoded();
-      record(NEUTRAL_PAGE, width, 'estimator "Not sure" shows a "From" total and says so in the message', t2 === 'From R3 479' && href2.includes('Total est.: from R3 479 (excl. parts)'), `${t2} | ${href2.slice(-70).replace(/\n/g, ' | ')}`);
+      record(NEUTRAL_PAGE, width, 'estimator "Not sure" shows a "From" total and says so in the message', t2 === 'From R3 700' && href2.includes('Total est.: from R3 700 (excl. parts)'), `${t2} | ${href2.slice(-70).replace(/\n/g, ' | ')}`);
     }
   });
 }

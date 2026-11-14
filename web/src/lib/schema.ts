@@ -12,7 +12,7 @@ export const ORG_ID = 'https://noordkaravane.co.za/#org' as const;
 
 const abs = (path: string): string => BUSINESS.url + path;
 
-/** 'R949 - R2 299': lowest and highest axle package, ASCII hyphen-minus, spaced thousands. */
+/** 'R1 090 - R2 620': lowest and highest axle package, ASCII hyphen-minus, spaced thousands. */
 export function priceRange(): string {
   const prices = AXLE_OPTIONS.map((a) => a.price);
   return fmtR(Math.min(...prices)) + ' - ' + fmtR(Math.max(...prices));

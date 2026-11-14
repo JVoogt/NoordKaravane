@@ -5,9 +5,9 @@ import { ADDONS, AXLE_OPTIONS, fmtR } from './pricing';
 describe('fmtR', () => {
   it.each([
     [0, 'R0'],
-    [949, 'R949'],
-    [1499, 'R1 499'],
-    [2299, 'R2 299'],
+    [1090, 'R1 090'],
+    [1720, 'R1 720'],
+    [2620, 'R2 620'],
     [12345, 'R12 345'],
     [1234567, 'R1 234 567'],
   ])('formats %i as %s', (n, out) => {
@@ -15,7 +15,7 @@ describe('fmtR', () => {
   });
 
   it('uses only digits and plain U+0020 (no no-break space look-alikes)', () => {
-    for (const n of [0, 949, 1499, 2299, 12345, 1234567]) {
+    for (const n of [0, 1090, 1720, 2620, 12345, 1234567]) {
       const s = fmtR(n);
       expect(s).toMatch(/^R[0-9 ]+$/);
       expect(s).not.toContain(String.fromCharCode(0x00a0));
@@ -27,10 +27,10 @@ describe('fmtR', () => {
 describe('price constants', () => {
   it('AXLE_OPTIONS matches the old page', () => {
     expect(AXLE_OPTIONS).toEqual([
-      { id: 'unbraked-1', label: 'Single, unbraked', price: 949 },
-      { id: 'braked-1', label: 'Single, braked', price: 1499 },
-      { id: 'braked-2', label: 'Double, braked', price: 2299 },
-      { id: 'other', label: 'Not sure', price: 1499 },
+      { id: 'unbraked-1', label: 'Single, unbraked', price: 1090 },
+      { id: 'braked-1', label: 'Single, braked', price: 1720 },
+      { id: 'braked-2', label: 'Double, braked', price: 2620 },
+      { id: 'other', label: 'Not sure', price: 1720 },
     ]);
   });
 
