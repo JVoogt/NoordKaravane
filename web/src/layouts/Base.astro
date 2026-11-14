@@ -33,6 +33,8 @@ const ogImageUrl = BUSINESS.url + ogImage;
 const emergency = path === servicePath('recoveries');
 // Google Tag Manager container. Empty outside production builds.
 const GTM_ID = import.meta.env.PROD ? 'GTM-5SDSQR78' : '';
+// Google Analytics 4 measurement ID. Loaded directly so page views and contact clicks are counted without any setup inside the container.
+const GA_ID = import.meta.env.PROD ? 'G-02SGNS5MWB' : '';
 ---
 
 <!doctype html>
@@ -76,20 +78,32 @@ const GTM_ID = import.meta.env.PROD ? 'GTM-5SDSQR78' : '';
     {/* Google Tag Manager: production builds only, so dev and preview traffic stays out of the numbers.
         GA4 and the Meta pixel are configured as tags inside this container, not in the page. */}
     {GTM_ID && (
-      <script is:inline define:vars={{ GTM_ID }}>
+      <script is:inline define:vars={{ GTM_ID, GA_ID }}>
         window.dataLayer = window.dataLayer || [];
         window.dataLayer.push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
         var gtmScript = document.createElement('script');
         gtmScript.async = true;
         gtmScript.src = 'https://www.googletagmanager.com/gtm.js?id=' + GTM_ID;
         document.head.appendChild(gtmScript);
+        function gtag() { window.dataLayer.push(arguments); }
+        if (GA_ID) {
+          var gaScript = document.createElement('script');
+          gaScript.async = true;
+          gaScript.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_ID;
+          document.head.appendChild(gaScript);
+          gtag('js', new Date());
+          gtag('config', GA_ID);
+        }
         // Contact clicks are the site's conversions: push one dataLayer event per WhatsApp or phone click.
         document.addEventListener('click', function (e) {
           var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
           if (!a) return;
           var href = a.getAttribute('href') || '';
           var kind = href.indexOf('wa.me/') > -1 ? 'whatsapp_click' : href.indexOf('tel:') === 0 ? 'phone_click' : null;
-          if (kind) window.dataLayer.push({ event: kind, link_text: (a.textContent || '').trim().slice(0, 60), page_path: location.pathname });
+          if (!kind) return;
+          var text = (a.textContent || '').trim().slice(0, 60);
+          window.dataLayer.push({ event: kind, link_text: text, page_path: location.pathname });
+          if (GA_ID) gtag('event', kind, { link_text: text, page_path: location.pathname });
         }, true);
       </script>
     )}
