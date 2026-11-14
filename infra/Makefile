@@ -45,13 +45,18 @@ SYNC_EXCLUDES := \
 SYNC_GUARD = $(if $(findstring --exclude='/.git',$(SYNC_EXCLUDES)),true,[ ! -f $(ROOT)/.git ] || { echo "refusing to sync: $(ROOT)/.git is a file (git worktree) and SYNC_EXCLUDES lacks --exclude='/.git'"; exit 1; })
 
 # Fail-closed preflight for `sync` (and every build* target, which all depend on it): the same dry run as
-# `sync-check`, then a refusal if any path it would DELETE matches SYNC_PROTECTED. The regex is deliberately
-# independent of SYNC_EXCLUDES, so a typo or a dropped exclude cannot also silence the check that would catch it.
-SYNC_PROTECTED ?= business\.json|(^|/)\.env|(^|/)cloudflare/|\.bak|(^|/)\.impeccable/|(^|/)backups(-staging)?/|^\.git(/|$$)
+# `sync-check`, then a refusal if any path it would SEND (create or overwrite: `<`/`>`/`c` itemize lines) or DELETE
+# (`*deleting`) matches SYNC_PROTECTED. `.example` / `.template` files are carved out (they ship from the repo). The
+# regex is deliberately independent of SYNC_EXCLUDES, so a typo or a dropped exclude cannot also silence the check that
+# would catch it. A plain := (an environment value cannot replace it) plus a refusal when it comes from the command line
+# or `make -e`; a regex grep rejects (exit 2) refuses too.
+SYNC_PROTECTED := business\.json|(^|/)\.env($$|\.(local|production|staging)$$)|(^|/)cloudflare/|\.bak|(^|/)\.impeccable/|(^|/)backups(-staging)?/|^\.git(/|$$)|^infra/\.last_tag$$|^infra/build-.*\.log$$
 SYNC_DRYRUN = rsync -azn --delete --itemize-changes $(SYNC_EXCLUDES) $(ROOT)/ $(SYNC_DEST)
-SYNC_PREFLIGHT = out=$$($(SYNC_DRYRUN)) || exit $$?; \
-	  bad=$$(printf '%s\n' "$$out" | sed -n 's/^\*deleting  *//p' | grep -E '$(SYNC_PROTECTED)'); \
-	  [ -z "$$bad" ] || { echo "refusing to sync: the dry run would delete protected Pi-only paths (check SYNC_EXCLUDES):"; \
+SYNC_PREFLIGHT = $(if $(filter-out file,$(origin SYNC_PROTECTED)),echo "refusing to sync: SYNC_PROTECTED comes from the $(origin SYNC_PROTECTED); it is fixed in the Makefile"; exit 1;) \
+	  out=$$($(SYNC_DRYRUN)) || exit $$?; \
+	  bad=$$(printf '%s\n' "$$out" | sed -n -E 's/^(\*deleting|[<>c][fdLDS][^ ]*) +//p' | grep -Ev '\.(example|template)$$' | grep -E '$(SYNC_PROTECTED)'); rc=$$?; \
+	  [ $$rc -le 1 ] || { echo "refusing to sync: SYNC_PROTECTED is not a valid regex (grep exit $$rc)"; exit 1; }; \
+	  [ -z "$$bad" ] || { echo "refusing to sync: the dry run would overwrite or delete protected Pi-only paths (check SYNC_EXCLUDES):"; \
 	  printf '%s\n' "$$bad" | sed 's/^/  /'; exit 1; }
 
 # Runs on the Pi after the Kampi image build: the Dockerfile defaults BRAND to nk, so a build that lost the BRAND arg
