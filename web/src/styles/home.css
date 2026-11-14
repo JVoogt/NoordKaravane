@@ -1,0 +1,134 @@
+/* Home page (site redesign, 2026-11-14): the approved prototype, Ink colour field, split hero.
+   Loaded by pages/index.astro. The patterns it shares with the other pages (the hero field, the price board,
+   numbered steps, the job card, plates, the ruled list of facts) live in system.css; this file holds what only
+   the Home page has. Colours and fonts come from tokens.css only. */
+
+/* ============ HERO ============ */
+/* The place is first in the markup; column-reverse sets it under the headline. */
+.hero h1 { display: flex; flex-direction: column-reverse; gap: 16px; }
+.h1-say { font-size: clamp(3.5rem, 8.4vw, 7rem); line-height: 0.9; letter-spacing: 0.005em; text-wrap: balance; overflow-wrap: break-word; min-width: 0; }
+.h1-place { font-size: clamp(1.4rem, 2.2vw, 1.9rem); line-height: 1; letter-spacing: 0.02em; }
+.hero-trust { display: flex; flex-wrap: wrap; gap: 8px 0; margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--field-rule); font-weight: 600; font-size: 0.98rem; }
+.hero-trust-item + .hero-trust-item { margin-left: 20px; padding-left: 20px; border-left: 1px solid var(--field-rule); }
+.hero-trust-item a { text-decoration: underline; text-underline-offset: 3px; }
+.hero-trust-item a:hover { color: var(--field-hi); }
+
+/* The inspection tag hung on the photo of the part it describes. */
+.hero-tag {
+  position: absolute;
+  left: clamp(-72px, -5vw, -24px);
+  bottom: clamp(28px, 6vw, 72px);
+  width: min(320px, 78%);
+  padding: 20px 20px 16px 24px;
+  border-radius: 4px;
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: var(--sh-tag);
+  transform: rotate(-2.2deg);
+  transform-origin: 12% 0;
+}
+.hero-tag::before { content: ""; position: absolute; top: 12px; right: 12px; width: 12px; height: 12px; border-radius: 50%; background: var(--field); box-shadow: var(--sh-hole); }
+.hero-tag-t { padding-right: 20px; font-family: var(--f-display); font-size: 1.7rem; line-height: 1; letter-spacing: 0.01em; }
+.hero-tag-p { margin-top: 8px; font-size: 0.95rem; line-height: 1.4; }
+.hero-tag-f { display: flex; justify-content: space-between; gap: 12px; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--rule); font-size: 0.85rem; font-weight: 600; }
+.hero-tag-f span:last-child { color: var(--orange-deep); }
+.hero-tag-k { margin-top: 8px; font-size: 0.8125rem; color: var(--text-dim); }
+@media (prefers-reduced-motion: no-preference) {
+  .hero-tag { animation: hang .9s var(--ease) .35s both; }
+  @keyframes hang {
+    from { opacity: 0; transform: rotate(-9deg) translateY(-24px); }
+    to { opacity: 1; transform: rotate(-2.2deg); }
+  }
+}
+
+/* ============ SERVICES: UNDER THE PRICE BOARD ============ */
+.board-notes { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 20px 64px; margin-top: clamp(48px, 6vw, 80px); }
+.board-notes p { max-width: 62ch; }
+.svc-help { color: var(--text-dim); }
+.svc-help a { font-weight: 600; color: var(--orange-deep); text-decoration: underline; text-underline-offset: 3px; }
+.svc-help a:hover { color: var(--ink); }
+
+/* ============ HOW A JOB RUNS ============ */
+.how { background: var(--ground-2); }
+.how-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 0.95fr); gap: 48px clamp(40px, 6vw, 96px); align-items: start; }
+.how-lede { margin-top: 16px; font-size: 1.15rem; font-weight: 600; }
+.steps-link { display: inline-flex; align-items: center; min-height: 44px; margin-top: 4px; }
+
+/* WhatsApp message builder. The choices and the preview show only once scripts/compose has bound them and marked
+   the form ready; until then, and whenever that script does not run, only the Send link shows (it carries the
+   default message). */
+.compose { margin-top: 20px; padding: 20px; border-radius: 6px; background: var(--card); box-shadow: var(--sh-card); }
+.compose-live { display: none; margin-bottom: 16px; }
+.compose[data-compose-ready] .compose-live { display: block; }
+.compose legend, .compose-label { display: block; margin-bottom: 12px; font-weight: 600; font-size: 0.95rem; }
+.compose-label { margin-top: 20px; }
+.picks { display: flex; flex-wrap: wrap; gap: 8px; }
+.picks label { position: relative; cursor: pointer; }
+.picks input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.picks span { display: block; padding: 12px 16px; border: 1.5px solid var(--field-edge); border-radius: 4px; font-weight: 600; font-size: 0.98rem; transition: background-color .15s, border-color .15s, color .15s; }
+.picks label:hover span { border-color: var(--ink); }
+.picks input:checked + span { background: var(--ink); border-color: var(--ink); color: var(--white); }
+.picks input:focus-visible + span { outline: 3px solid var(--focus); outline-offset: 2px; }
+.compose input[type="text"] { width: 100%; padding: 12px 16px; border: 1.5px solid var(--field-edge); border-radius: 4px; background: var(--white); color: var(--ink); font: 400 1.0625rem var(--f-body); }
+.compose input[type="text"]::placeholder { color: var(--text-dim); }
+.compose input[type="text"]:focus-visible { outline: 3px solid var(--focus); outline-offset: 1px; border-color: var(--ink); }
+.compose .bubble { max-width: 46ch; margin: 16px 0 0 auto; padding: 12px 16px; border-radius: 10px 10px 2px 10px; background: var(--wa-bubble); color: var(--wa-bubble-ink); font-size: 1rem; line-height: 1.4; overflow-wrap: anywhere; }
+.compose .btn { width: 100%; }
+.compose .btn:hover { background: var(--ink-deep); }
+
+/* The technician photo with the sample report (the job card, system.css) laid over its lower edge. */
+.proofcol { position: sticky; top: 96px; }
+.proofcol figure img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; object-position: 50% 40%; border-radius: 4px; }
+.proofcol .rep { margin: -72px 0 0 clamp(16px, 3vw, 40px); }
+
+/* ============ REVIEWS ============ */
+.rev { background: var(--ink); color: var(--paper); }
+.rev-grid { display: grid; grid-template-columns: minmax(0, 0.62fr) minmax(0, 1.38fr); gap: 48px clamp(40px, 6vw, 96px); }
+.score { font-family: var(--f-display); font-size: clamp(6rem, 13vw, 10.5rem); line-height: 0.82; letter-spacing: -0.01em; color: var(--orange); }
+.rev h2 { margin-top: 8px; }
+.rev-meta { margin-top: 16px; color: var(--on-ink-dim); }
+.rev-links { display: flex; flex-direction: column; align-items: start; gap: 8px; margin-top: 24px; }
+.rev-links a { display: inline-flex; align-items: center; min-height: 44px; font-weight: 600; color: var(--white); text-decoration: underline; text-underline-offset: 4px; }
+.rev-links a:hover { color: var(--orange-hi); }
+.q-big blockquote { font-size: clamp(1.35rem, 2.5vw, 2rem); line-height: 1.28; text-wrap: pretty; color: var(--white); }
+.q-big blockquote::before { content: ""; display: block; width: 56px; height: 6px; margin-bottom: 24px; background: var(--orange); }
+.q-rest { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px 40px; margin-top: 44px; padding-top: 32px; border-top: 1px solid var(--ink-rule); }
+.q-rest blockquote { font-size: 1.06rem; }
+.by { display: flex; flex-wrap: wrap; align-items: center; gap: 0 8px; margin-top: 8px; font-size: 0.95rem; color: var(--on-ink-dim); }
+.by b { color: var(--white); font-weight: 600; }
+.by a { display: inline-flex; align-items: center; min-height: 44px; text-decoration: underline; text-underline-offset: 3px; }
+.by a:hover { color: var(--white); }
+
+/* ============ RECOVERIES ============ */
+.rec { background: var(--field); color: var(--field-ink); border-top: 1px solid var(--field-rule); }
+.rec-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px clamp(40px, 6vw, 96px); align-items: center; }
+.rec p { margin-top: 16px; max-width: 50ch; color: var(--field-dim); font-size: 1.1rem; }
+.rec .cta-row { margin-top: 32px; }
+
+/* ============ FIND THE WORKSHOP ============ */
+.find-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); gap: 40px clamp(40px, 6vw, 88px); align-items: center; }
+.find figure img { width: 100%; aspect-ratio: 3 / 2; object-fit: cover; object-position: 50% 60%; border-radius: 4px; }
+.find figcaption { margin-top: 12px; font-size: 0.95rem; color: var(--text-dim); }
+.find-lede { margin-top: 16px; max-width: 46ch; font-size: 1.1rem; }
+.find .find-facts { margin-top: 28px; }
+.find .cta-row { margin-top: 32px; }
+.find-aside { margin-top: 28px; color: var(--text-dim); }
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 860px) {
+  .h1-say { font-size: clamp(3.4rem, 17vw, 5.25rem); }
+  .hero-tag { left: var(--edge); bottom: auto; top: -40px; width: min(300px, calc(100% - 2 * var(--edge))); }
+  .hero-trust-item { display: flex; align-items: center; }
+  .hero-trust-item a { display: inline-flex; align-items: center; min-height: 44px; }
+  .how-grid, .rev-grid, .rec-grid, .find-grid, .board-notes, .q-rest { grid-template-columns: minmax(0, 1fr); }
+  .proofcol { position: static; }
+  .proofcol .rep { margin-left: 0; margin-top: -40px; }
+}
+@media (max-width: 560px) {
+  .hero-trust { flex-direction: column; gap: 4px; }
+  .hero-trust-item + .hero-trust-item { margin-left: 0; padding-left: 0; border-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-tag { animation: none; }
+  .picks span { transition: none; }
+}

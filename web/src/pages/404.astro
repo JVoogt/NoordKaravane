@@ -1,9 +1,10 @@
 ---
 import Base from '../layouts/Base.astro';
 import CtaButton from '../components/CtaButton.astro';
+import Icon from '../components/Icon.astro';
+import PageHero from '../components/PageHero.astro';
+import ServiceBoard from '../components/ServiceBoard.astro';
 import { BUSINESS } from '../data/business';
-import { servicePath } from '../data/routes';
-import { SERVICE_LIST } from '../data/services';
 import { buildGraph, jsonLd } from '../lib/schema';
 import { WA_TEXT, waUrl } from '../lib/whatsapp';
 ---
@@ -15,19 +16,24 @@ import { WA_TEXT, waUrl } from '../lib/whatsapp';
   jsonLd={jsonLd(buildGraph([]))}
   noindex
 >
-  <section class="notfound">
-    <div class="container">
-      <h1 class="hero-title">Page <span class="accent">not found.</span></h1>
-      <p class="hero-lede">That page isn't here. Pick a service below, go back home, or message the workshop.</p>
-      <ul class="notfound-links">
-        {SERVICE_LIST.map((s) => <li><a href={servicePath(s.slug)}>{s.name}</a></li>)}
-        <li><a href="/find-us/">Find us</a></li>
-      </ul>
-      <div class="hero-actions">
-        <CtaButton href="/" variant="ghost">Back to home</CtaButton>
-        <CtaButton href={waUrl(WA_TEXT.enquire)} variant="primary" external>Ask on WhatsApp</CtaButton>
-        <CtaButton href={`tel:${BUSINESS.phone.e164}`} variant="ghost">Call {BUSINESS.phone.display}</CtaButton>
-      </div>
+  <PageHero h1={['Page', 'not found.']} class="notfound">
+    <p class="lede hero-lede">That page isn't here. Pick a service below, go back home, or message the workshop.</p>
+    <div class="cta-row hero-actions">
+      <CtaButton href="/" variant="ghost">Back to home</CtaButton>
+      <CtaButton href={waUrl(WA_TEXT.enquire)} variant="primary" icon="wa" external>Ask on WhatsApp</CtaButton>
+      <CtaButton href={`tel:${BUSINESS.phone.e164}`} variant="ghost" icon="tel">Call {BUSINESS.phone.display}</CtaButton>
+    </div>
+  </PageHero>
+
+  {/* The price board is the way back into the site: the five services, then Find us. */}
+  <section class="sec">
+    <div class="wrap">
+      <ServiceBoard heading="h2">
+        <a class="board-row board-row--plain" href="/find-us/">
+          <h2 class="board-name">Find us</h2>
+          <Icon name="go" />
+        </a>
+      </ServiceBoard>
     </div>
   </section>
 </Base>

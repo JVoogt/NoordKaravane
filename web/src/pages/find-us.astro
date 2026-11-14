@@ -2,16 +2,18 @@
 import { Image } from 'astro:assets';
 import Base from '../layouts/Base.astro';
 import wallSign from '../assets/workshop-wall-sign.jpg';
-import Breadcrumbs from '../components/Breadcrumbs.astro';
+import workshop from '../assets/workshop.jpg';
 import ContactBand from '../components/ContactBand.astro';
 import CtaButton from '../components/CtaButton.astro';
 import Faq from '../components/Faq.astro';
-import Hours from '../components/Hours.astro';
+import Icon from '../components/Icon.astro';
+import PageHero from '../components/PageHero.astro';
 import { BUSINESS } from '../data/business';
 import { servicePath } from '../data/routes';
 import { SERVICE_LIST } from '../data/services';
-import { formatHoursProse } from '../lib/hours';
+import { formatHoursProse, formatHoursRows } from '../lib/hours';
 import type { FaqItem } from '../lib/faq';
+import { listWithAnd } from '../lib/prose';
 import { breadcrumbNode, buildGraph, faqNode, jsonLd, orgNode } from '../lib/schema';
 import { WA_TEXT, waUrl } from '../lib/whatsapp';
 
@@ -19,6 +21,7 @@ const path = '/find-us/';
 // Friday closing time comes from business.ts, never typed here.
 const friday = BUSINESS.hours.fri;
 const a = BUSINESS.address;
+const tel = `tel:${BUSINESS.phone.e164}`;
 const crumbs = [
   { name: 'Home', path: '/' },
   { name: 'Find us', path },
@@ -40,8 +43,8 @@ const faq: FaqItem[] = [
   },
 ];
 
-const countries = BUSINESS.crossBorder.map((c) => c.name);
-const countryList = `${countries.slice(0, -1).join(', ')} and ${countries[countries.length - 1]}`;
+// Right for one country, and a build error for none (lib/prose).
+const countryList = listWithAnd(BUSINESS.crossBorder.map((c) => c.name));
 const coords = `${BUSINESS.geo.lat.toFixed(5)}, ${BUSINESS.geo.lng.toFixed(5)}`;
 
 const mapEmbed = `https://maps.google.com/maps?q=${BUSINESS.links.mapsQuery}&t=&z=16&ie=UTF8&iwloc=B&output=embed`;
@@ -57,60 +60,60 @@ const graph = buildGraph([orgNode(), breadcrumbNode(crumbs), faqNode(faq)]);
   waText={WA_TEXT.findUs}
   jsonLd={jsonLd(graph)}
 >
-  <header class="hero hero--service">
-    <div class="container hero-grid hero-grid--panel">
-      <div class="hero-main">
-        <Breadcrumbs items={crumbs} />
-        <h1 class="hero-title hero-title--service">Find the workshop in {a.locality}</h1>
-        <p class="hero-lede">{a.street}, {a.locality}, {a.postalCode}. A quick WhatsApp before you tow in means we're ready for you.</p>
-        <div class="hero-actions">
-          <CtaButton href={mapLink} variant="primary" external>Get directions</CtaButton>
-          <CtaButton href={waUrl(WA_TEXT.findUs)} variant="ghost" external>Book a time on WhatsApp</CtaButton>
-        </div>
-      </div>
-      <div class="hero-panel">
-        <div class="loc-card">
-          <div class="loc-item">
-            <div class="loc-k">Address</div>
-            <div class="loc-v">{a.street}<br /><small>{a.locality}, {a.city}, {a.postalCode}</small></div>
-          </div>
-          <div class="loc-item">
-            <div class="loc-k">Workshop hours</div>
-            <Hours />
-          </div>
-          <div class="loc-item">
-            <div class="loc-k">Call</div>
-            <div class="loc-v"><a href={`tel:${BUSINESS.phone.e164}`}>{BUSINESS.phone.display}</a><small>WhatsApp preferred (faster replies)</small></div>
-          </div>
-        </div>
-      </div>
+  <PageHero
+    h1={`Find the workshop in ${a.locality}`}
+    crumbs={crumbs}
+    photo={{ src: workshop, alt: `Inside the ${BUSINESS.name} workshop: a caravan between the lifts, with the workbench along the window wall`, position: '50% 60%' }}
+  >
+    <p class="lede hero-lede">{a.street}, {a.locality}, {a.postalCode}. A quick WhatsApp before you tow in means we're ready for you.</p>
+    <div class="cta-row hero-actions">
+      <CtaButton href={mapLink} variant="primary" external>Get directions</CtaButton>
+      <CtaButton href={waUrl(WA_TEXT.findUs)} variant="ghost" icon="wa" external>Book a time on WhatsApp</CtaButton>
     </div>
-  </header>
+  </PageHero>
 
-  <section id="location" class="block block--tight">
-    <div class="container loc-split">
-      <div class="loc-map-wrap">
-        {/* The address, GPS and the Maps link sit in a bar on the map frame itself, so the box says something useful
-            while Google's map loads, if it never loads, and with JavaScript off. The bar is outside the iframe, so
-            it stays clickable and in the Tab order after the map appears. */}
-        <div class="map-card">
-          <div class="map-bar">
-            <p class="map-bar-addr">
-              <strong>{a.street}, {a.locality}</strong>
-              <span>GPS {coords}</span>
-            </p>
-            <a class="btn btn-primary" href={mapLink} target="_blank" rel="noopener">Open in Google Maps</a>
-          </div>
-          <div class="loc-map">
-            <p class="loc-map-wait" aria-hidden="true">The map loads here. If it doesn't, use Open in Google Maps above.</p>
-            <iframe src={mapEmbed} loading="lazy" title="Map of the Noord Karavane workshop" width="600" height="420"></iframe>
-          </div>
+  <section id="location" class="sec">
+    <div class="wrap loc-grid">
+      <dl class="find-facts loc-facts nums">
+        <div>
+          <dt>Address</dt>
+          <dd>{a.street}<br /><small>{a.locality}, {a.city}, {a.postalCode}</small></dd>
         </div>
-        <figure class="loc-photo">
-          <Image src={wallSign} widths={[480, 800]} sizes="(max-width: 959px) 92vw, 600px" format="webp" quality={72} alt={`The painted Noord Karavane sign on the workshop wall, with ${BUSINESS.phone.display} and ${a.street}, ${a.locality}`} />
-          <figcaption>Look for this painted wall at {a.street}. Our sign is on the left, beside the Kampi one.</figcaption>
-        </figure>
+        <div>
+          <dt>Workshop hours</dt>
+          <dd class="hrs">
+            {formatHoursRows(BUSINESS.hours).map((r) => <Fragment><span>{r.days}</span>{' '}<span>{r.time}</span>{' '}</Fragment>)}
+          </dd>
+        </div>
+        <div>
+          <dt>Call</dt>
+          <dd><a class="find-tel" href={tel}>{BUSINESS.phone.display}</a><small>WhatsApp preferred (faster replies)</small></dd>
+        </div>
+      </dl>
+
+      {/* The address, GPS and the Maps link sit in a bar on the map frame itself, so the box says something useful
+          while Google's map loads, if it never loads, and with JavaScript off. The bar is outside the iframe, so
+          it stays clickable and in the Tab order after the map appears. */}
+      <div class="map-card">
+        <div class="map-bar nums">
+          <p class="map-bar-addr">
+            <strong>{a.street}, {a.locality}</strong>
+            <span>GPS {coords}</span>
+          </p>
+          <a class="btn btn-primary" href={mapLink} target="_blank" rel="noopener">Open in Google Maps</a>
+        </div>
+        <div class="loc-map">
+          <p class="loc-map-wait" aria-hidden="true">The map loads here. If it doesn't, use Open in Google Maps above.</p>
+          <iframe src={mapEmbed} loading="lazy" title="Map of the Noord Karavane workshop" width="600" height="420"></iframe>
+        </div>
       </div>
+
+      {/* What to look for from the street: the painted wall. */}
+      <figure class="loc-photo">
+        <Image src={wallSign} widths={[480, 800]} sizes="(max-width: 860px) 92vw, 600px" format="webp" quality={72} alt={`The painted Noord Karavane sign on the workshop wall, with ${BUSINESS.phone.display} and ${a.street}, ${a.locality}`} />
+        <figcaption>Look for this painted wall at {a.street}. Our sign is on the left, beside the Kampi one.</figcaption>
+      </figure>
+
       <div class="loc-text">
         <h2>Getting here</h2>
         <p>The workshop is at {a.street} in {a.locality}, {a.city}. For a satnav, the GPS position is {coords}.</p>
@@ -119,16 +122,16 @@ const graph = buildGraph([orgNode(), breadcrumbNode(crumbs), faqNode(faq)]);
         <p>For a <a href={servicePath('recoveries')}>caravan or trailer recovery</a> we come to you, anywhere in South Africa and across the border to {countryList}.</p>
         <h2>What we do here</h2>
         <ul class="loc-services">
-          {SERVICE_LIST.map((s) => <li><a href={servicePath(s.slug)}>{s.name}</a></li>)}
+          {SERVICE_LIST.map((s) => <li><a href={servicePath(s.slug)}>{s.name}<Icon name="go" /></a></li>)}
         </ul>
       </div>
     </div>
   </section>
 
-  <section id="faq" class="block block--tight">
-    <div class="container faq-layout">
+  <section id="faq" class="sec">
+    <div class="wrap sec-split">
       <div class="sec-head">
-        <h2 class="sec-title">Visiting the workshop</h2>
+        <h2>Visiting the workshop</h2>
       </div>
       <Faq items={faq} />
     </div>

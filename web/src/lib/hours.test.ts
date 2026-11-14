@@ -5,6 +5,7 @@ import {
   formatHoursSegments,
   formatHoursLines,
   formatHoursProse,
+  formatHoursRows,
   groupHours,
   hoursToSchema,
 } from './hours';
@@ -77,6 +78,15 @@ describe('formatters', () => {
       'Fri · 08:00 to 14:00',
       'Sat and Sun · closed',
     ]);
+  });
+
+  it('rows split each line into its days and its times, for the hours table', () => {
+    expect(formatHoursRows(BUSINESS.hours)).toEqual([
+      { days: 'Mon to Thu', time: '08:00 to 16:00' },
+      { days: 'Fri', time: '08:00 to 14:00' },
+      { days: 'Sat and Sun', time: 'closed' },
+    ]);
+    expect(formatHoursRows(closedWeek)).toEqual([{ days: 'Mon to Sun', time: 'closed' }]);
   });
 
   it('prose equals the plan string', () => {

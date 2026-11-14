@@ -1,4 +1,6 @@
 ---
+// The top line above the nav. Static text only: the workshop hours, the address and the number. It makes no live
+// "open now" claim: the weekly hours know nothing about public holidays or other closures.
 import { BUSINESS } from '../data/business';
 import { formatHoursCompact } from '../lib/hours';
 
@@ -8,27 +10,23 @@ interface Props {
   emergency?: boolean;
 }
 const { emergency = false } = Astro.props;
-
-// Phones show the ticker static with only the hours (the `keep` item); larger screens scroll it and pause on hover.
-const items = [
-  { text: `Caravan workshop, ${BUSINESS.address.street}, ${BUSINESS.address.locality}`, keep: false },
-  { text: `${BUSINESS.google.rating.toFixed(1)} on Google from ${BUSINESS.google.reviewCount} reviews`, keep: false },
-  { text: 'Insurance-accredited recoveries', keep: false },
-  { text: `Cross-border: ${BUSINESS.crossBorder.map((c) => c.code).join(', ')}`, keep: false },
-  { text: formatHoursCompact(BUSINESS.hours), keep: true },
-  { text: `WhatsApp ${BUSINESS.phone.display}`, keep: false },
-];
+const a = BUSINESS.address;
+const tel = `tel:${BUSINESS.phone.e164}`;
 ---
 
 {emergency ? (
   <div class="topbar topbar--emergency">
-    <a class="topbar-call" href={`tel:${BUSINESS.phone.e164}`}>{`${BUSINESS.recoveriesNote} · Call ${BUSINESS.phone.display}`}</a>
+    <a class="topbar-call" href={tel}>{`${BUSINESS.recoveriesNote} · Call ${BUSINESS.phone.display}`}</a>
   </div>
 ) : (
-  <div class="topbar">
-    <div class="topbar-track">
-      {items.map((t) => <span class:list={{ 'topbar-keep': t.keep }}>{t.text}</span>)}
-      {items.map((t) => <span class:list={{ 'topbar-keep': t.keep }} aria-hidden="true">{t.text}</span>)}
+  <div class="topbar nums">
+    {/* The number is a link above 860px. At 860px and below it is plain text: a 17px line of text is no tap target,
+        and the fixed bar at the bottom of the screen carries Call there. Same words either way: the plain-text
+        twin draws the number from data-tel (chrome.css), so the markup holds it once. */}
+    <div class="wrap topbar-track">
+      <span>{formatHoursCompact(BUSINESS.hours)}</span>{' '}
+      <span class="topbar-addr">Caravan workshop, <a href="/find-us/">{a.street}, {a.locality}</a></span>{' '}
+      <span>WhatsApp or call <a class="topbar-tel" href={tel}>{BUSINESS.phone.display}</a><span class="topbar-tel-text" data-tel={BUSINESS.phone.display}></span></span>
     </div>
   </div>
 )}

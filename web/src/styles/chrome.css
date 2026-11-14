@@ -1,0 +1,274 @@
+/* Shared chrome (site redesign, 2026-11-14): the top line, the pinned nav, buttons, the footer and the fixed
+   WhatsApp and Call bar. Loaded by Base.astro on every page. Colours and fonts come from tokens.css only. */
+
+/* Icon sprite holder (Base.astro): takes no room. */
+.sprite { position: absolute; width: 0; height: 0; }
+
+/* A section on ink: buttons flip to the orange action with an ink label, outlines and focus rings go paper. */
+.on-ink {
+  --btn-bg: var(--orange);
+  --btn-fg: var(--ink);
+  --btn-ico: var(--ink);
+  --btn-line: var(--paper);
+  --btn-line-fg: var(--ink);
+  --focus: var(--paper);
+}
+
+/* ============ TOP LINE ============ */
+.topbar { background: var(--ink); color: var(--on-ink-dim); font-size: 0.875rem; --focus: var(--paper); }
+.topbar-track { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 28px; padding-block: 8px; }
+/* Links in the top line are underlined: on ink, colour alone does not say "link". */
+.topbar-track a { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.topbar a:hover { color: var(--white); }
+/* The number as plain text, shown instead of the link at 860px and below (see the responsive block). */
+.topbar-tel-text { display: none; }
+.topbar-tel-text::after { content: attr(data-tel); }
+/* Recoveries: one static line that says 24/7 and dials the number. No workshop hours on that route. */
+.topbar--emergency { text-align: center; }
+.topbar-call {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding-inline: var(--gutter);
+  color: var(--on-ink);
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.topbar-call:hover { text-decoration-thickness: 2px; }
+.topbar-call:focus-visible { outline-offset: -4px; }
+
+/* ============ NAV ============ */
+.nav { position: sticky; top: 0; z-index: 40; background: var(--ink); color: var(--paper); border-top: 1px solid var(--ink-rule); --focus: var(--paper); }
+.nav-inner { display: flex; align-items: center; gap: 28px; min-height: var(--nav-h); }
+.brand { display: flex; align-items: center; gap: 12px; min-height: 44px; margin-right: auto; }
+.brand img { width: 44px; height: 44px; background: var(--white); border-radius: 50%; padding: 2px; flex: none; }
+.brand b { font-family: var(--f-display); font-weight: 400; font-size: 1.55rem; letter-spacing: 0.06em; line-height: 1; white-space: nowrap; }
+.nav-links { display: flex; gap: 28px; }
+.nav-links a { font-weight: 600; font-size: 0.98rem; padding: 8px 0; border-bottom: 2px solid transparent; white-space: nowrap; }
+.nav-links a:hover, .nav-links a[aria-current="page"] { border-color: var(--orange); }
+.nav-call { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-weight: 600; white-space: nowrap; }
+.nav-call:hover { text-decoration: underline; }
+.nav-cta {
+  display: inline-flex; align-items: center; gap: 8px;
+  min-height: 44px;
+  padding: 12px 16px;
+  border: 2px solid var(--orange);
+  border-radius: 6px;
+  background: var(--orange);
+  color: var(--ink);
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  transition: background-color .2s, border-color .2s;
+}
+.nav-cta:hover { background: var(--orange-hi); border-color: var(--orange-hi); }
+/* Recoveries header: Call is the filled action, WhatsApp the outlined second choice. */
+.nav-call.nav-call--primary {
+  padding: 12px 16px;
+  border-radius: 6px;
+  background: var(--orange);
+  color: var(--ink);
+  font-weight: 700;
+  line-height: 1;
+  transition: background-color .2s;
+}
+.nav-call.nav-call--primary:hover { background: var(--orange-hi); text-decoration: none; }
+.nav-cta.nav-cta--second { background: transparent; color: var(--paper); border-color: var(--paper); }
+.nav-cta.nav-cta--second:hover { background: var(--paper); color: var(--ink); border-color: var(--paper); }
+
+/* Quick-link row: the page links as chips under the bar, where the links no longer fit in it (1080px and down).
+   The row hangs under the bar (absolute, out of the flow); the nav keeps a margin of the same height, so the page
+   starts where it always did. Scrolling down hides the row (QuickNav.astro sets data-qn-hidden): it fades and
+   lifts away and nothing below it moves. The chips stay focusable; a Tab press or focus inside the header brings
+   the row back. The fade only runs when motion is welcome. */
+.mobile-quicknav {
+  display: none;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  gap: 8px;
+  padding: 8px var(--gutter);
+  border-top: 1px solid var(--ink-rule);
+  /* Right-edge fade says "this row scrolls"; QuickNav.astro drops it once scrolled to the end.
+     scroll-padding keeps a Tab-focused chip clear of the fade. The mask fades everything the row paints, its own
+     ink background included, so the ink that shows through the fade is the nav's ::after (below), which no mask
+     touches. Without it the fade would show the light page under the header. */
+  -webkit-mask-image: linear-gradient(to right, var(--mask-solid) calc(100% - 32px), transparent);
+  mask-image: linear-gradient(to right, var(--mask-solid) calc(100% - 32px), transparent);
+  scroll-padding-inline: var(--gutter) 40px;
+}
+.js .nav[data-qn-hidden] .mobile-quicknav, .js .nav[data-qn-hidden]::after { opacity: 0; transform: translateY(-8px); pointer-events: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .mobile-quicknav, .nav::after { transition: opacity .15s ease, transform .2s ease; }
+}
+.mobile-quicknav[data-end] { -webkit-mask-image: none; mask-image: none; }
+.mobile-quicknav a {
+  min-width: 44px;
+  min-height: 44px;
+  flex: 1 0 auto;
+  display: grid;
+  place-items: center;
+  padding: 0 12px;
+  border: 1px solid var(--ink-rule);
+  border-radius: 6px;
+  background: var(--ink-tint);
+  color: var(--paper);
+  font-size: 0.875rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.mobile-quicknav a[aria-current="page"] { border-color: var(--orange); }
+
+/* ============ BUTTONS ============ */
+.cta-row { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 12px;
+  min-height: 52px;
+  padding: 12px 24px;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  font: 700 1.125rem/1 var(--f-body);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: transform .25s var(--ease), background-color .2s, color .2s;
+}
+/* Icons inside buttons keep their size when the label is long. */
+.btn svg { width: 1.3em; height: 1.3em; flex: none; }
+.btn-primary { background: var(--btn-bg); color: var(--btn-fg); box-shadow: var(--sh-btn); }
+.btn-primary .ico { color: var(--btn-ico); }
+.btn-primary:hover { transform: translateY(-2px); }
+.btn-ghost { border-color: var(--btn-line); color: var(--btn-line); background: transparent; }
+.btn-ghost:hover { background: var(--btn-line); color: var(--btn-line-fg); }
+.btn:active { transform: translateY(0); }
+
+/* Text link on a light ground. */
+.link { font-weight: 600; color: var(--orange-deep); text-decoration: underline; text-underline-offset: 3px; }
+.link:hover { color: var(--ink); }
+
+/* ============ TREAD STRIP ============ */
+.tread { height: 36px; background: var(--tread-c); -webkit-mask: var(--tread) repeat-x left center; mask: var(--tread) repeat-x left center; }
+
+/* ============ FOOTER ============ */
+.foot { background: var(--ink); color: var(--on-ink-dim); --focus: var(--paper); }
+.foot .tread { --tread-c: var(--tread-foot); margin-bottom: 56px; }
+.foot-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.2fr); gap: 36px 40px; }
+.foot .brand { color: var(--white); margin-bottom: 16px; margin-right: 0; }
+.foot-brand p { max-width: 36ch; }
+.foot-heading { margin-bottom: 12px; color: var(--white); font: 600 0.95rem var(--f-body); letter-spacing: 0; }
+.foot-col li { margin-bottom: 8px; }
+.foot-col a:hover { color: var(--white); text-decoration: underline; }
+/* Footer hours: a time range never breaks mid-range; wrapping happens between segments only. */
+.foot-hours-seg { white-space: nowrap; }
+.foot-end {
+  display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px;
+  margin-top: 48px;
+  padding-block: 24px 28px;
+  border-top: 1px solid var(--ink-rule);
+  font-size: 0.9rem;
+}
+.foot-end span:last-child { font-family: var(--f-display); font-size: 1.3rem; letter-spacing: 0.05em; color: var(--white); }
+
+/* ============ FIXED WHATSAPP AND CALL BAR (small screens) ============ */
+/* Above 860px the pinned nav carries the phone number and the WhatsApp action, so the bar is not shown. */
+.bar { display: none; }
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 1080px) {
+  .nav-links { display: none; }
+  .nav { margin-bottom: var(--quicknav-h); }
+  .mobile-quicknav {
+    display: flex;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    height: var(--quicknav-h);
+    background: var(--ink);
+  }
+  /* The ink the chip row sits on: the same box as the row, behind it (the nav is its own stacking context), and
+     hidden with it by the same rule above. It takes no clicks: the row over it does. The row keeps its own ink
+     too (its chips are drawn on an opaque ground); where the mask fades that away, this is what shows. */
+  .nav::after {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    top: 100%;
+    left: 0;
+    right: 0;
+    height: var(--quicknav-h);
+    background: var(--ink);
+    pointer-events: none;
+  }
+}
+@media (max-width: 860px) {
+  .topbar-addr { display: none; }
+  /* The number stops being a link: the fixed bar below carries Call, with a proper tap target. */
+  .topbar-tel { display: none; }
+  .topbar-tel-text { display: inline; }
+  /* The bar carries Call on small screens. On Recoveries the header keeps its Call button as well. */
+  .nav-call:not(.nav-call--primary) { display: none; }
+  .foot-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .foot-brand { grid-column: 1 / -1; }
+  /* Footer links are 44px rows on touch screens. */
+  .foot-col li { margin-bottom: 0; }
+  .foot-col a { display: inline-flex; align-items: center; min-width: 44px; min-height: 44px; }
+  /* Room for the fixed bar: the page ends above it, and focus and anchor scrolling stop short of it (the
+     bottom-edge twin of scroll-padding-top in base.css). */
+  html { scroll-padding-bottom: calc(var(--bar-h) + env(safe-area-inset-bottom) + 16px); }
+  body { padding-bottom: calc(var(--bar-h) + env(safe-area-inset-bottom)); }
+  .bar {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+    gap: 8px;
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 50;
+    padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
+    background: var(--ink);
+    border-top: 1px solid var(--ink-rule);
+    --focus: var(--paper);
+  }
+  .bar a {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 52px;
+    border: 2px solid transparent;
+    border-radius: 6px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .bar .bar-wa { background: var(--wa); color: var(--wa-ink); }
+  .bar .bar-call { border-color: var(--paper); color: var(--paper); }
+  /* Recoveries: Call is filled and comes first (in the markup, Base.astro), WhatsApp second. */
+  .bar--emergency .bar-call { background: var(--orange); border-color: var(--orange); color: var(--ink); }
+  .bar--emergency .bar-wa { background: transparent; border-color: var(--paper); color: var(--paper); }
+}
+@media (max-width: 560px) {
+  .foot-grid { grid-template-columns: minmax(0, 1fr); }
+  .cta-row .btn { width: 100%; }
+  /* Long button labels wrap instead of pushing the page wide. */
+  .btn { white-space: normal; text-align: center; line-height: 1.15; }
+  /* The header WhatsApp action keeps its icon; its label stays in the accessibility tree. */
+  .nav-cta { padding: 12px; }
+  .nav-cta span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  /* Recoveries header: logo, Call, WhatsApp. The wordmark returns above 560px. */
+  .nav--emergency .brand b { display: none; }
+  .nav-inner { gap: 12px; }
+}
+@media (max-width: 380px) {
+  .btn { font-size: 1rem; padding: 12px 16px; gap: 8px; }
+  .bar a { font-size: 0.95rem; }
+}
+/* Phones: the five chips fit a 360px screen without scrolling (the 44px targets stay). */
+@media (max-width: 480px) {
+  .mobile-quicknav { gap: 4px; padding-inline: 8px; }
+  .mobile-quicknav a { padding: 0 6px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn, .nav-cta, .nav-call.nav-call--primary { transition: none; }
+}
+@media print {
+  .bar { display: none; }
+}

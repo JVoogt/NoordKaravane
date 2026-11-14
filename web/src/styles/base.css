@@ -1,32 +1,47 @@
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+/* No sideways scroll at any width. clip and never hidden, so the sticky header keeps working. */
+html, body { overflow-x: clip; }
+html { -webkit-text-size-adjust: 100%; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
 @media (prefers-reduced-motion: no-preference) {
   html { scroll-behavior: smooth; }
 }
 body {
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--ground);
+  color: var(--text);
   font-family: var(--f-body);
-  font-size: 16px;
-  line-height: 1.5;
-  font-feature-settings: 'ss01', 'ss02', 'cv11';
+  font-size: 1.0625rem;
+  line-height: 1.55;
 }
-img { max-width: 100%; display: block; }
+img { display: block; max-width: 100%; height: auto; }
 a { color: inherit; text-decoration: none; }
 button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
-ul { list-style: none; }
+ul, ol { list-style: none; }
+fieldset { border: 0; min-width: 0; }
 
-.container { width: var(--container); margin-inline: auto; }
+/* Display headings: painted-sign capitals. Page-specific heading classes set their own size. */
+h2 {
+  font-family: var(--f-display);
+  font-weight: 400;
+  font-size: clamp(2.4rem, 5vw, 3.75rem);
+  line-height: 0.95;
+  letter-spacing: 0.01em;
+  text-wrap: balance;
+  overflow-wrap: break-word;
+  min-width: 0;
+}
 
-/* Anchor jumps and focus scrolling both clear the sticky nav: 70px header plus the 59px quick-link row below 1361px
-   (Shift+Tab brings the row back, so it counts), the header alone above that. One mechanism only: scroll-padding on
-   the scroller, never scroll-margin on targets as well, or the offsets add up. */
-html { scroll-padding-top: 140px; }
-@media (min-width: 1361px) { html { scroll-padding-top: 96px; } }
+/* Page gutters: content sits in a 1240px column, never closer to the edge than the gutter. */
+.wrap { padding-inline: var(--edge); }
 
-/* One focus rule for every interactive element (replaces the old hand-kept selector list). */
-:where(a, button, summary, input, iframe, [tabindex]):focus-visible {
-  outline: 2px solid var(--focus);
+/* Anchor jumps and focus scrolling both clear the sticky nav: the 68px bar plus the quick-link row that hangs under
+   it up to 1080px (Shift+Tab brings the row back, so it counts), the bar alone above that. One mechanism only:
+   scroll-padding on the scroller, never scroll-margin on targets as well, or the offsets add up. */
+html { scroll-padding-top: calc(var(--nav-h) + var(--quicknav-h) + 16px); }
+@media (min-width: 1081px) { html { scroll-padding-top: calc(var(--nav-h) + 28px); } }
+
+/* One focus rule for every interactive element. Sections on ink switch --focus to paper (chrome.css). */
+:focus-visible {
+  outline: 3px solid var(--focus);
   outline-offset: 3px;
 }
 
@@ -34,19 +49,23 @@ html { scroll-padding-top: 140px; }
   position: absolute;
   width: 1px; height: 1px;
   overflow: hidden;
-  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
   white-space: nowrap;
 }
 /* Skip link: revealed when keyboard focus lands on it. */
 .sr-only:focus {
-  width: auto; height: auto;
-  clip: auto;
-  overflow: visible;
-  z-index: 100;
+  position: fixed;
   top: 8px; left: 8px;
-  padding: 10px 16px;
-  background: var(--orange);
+  width: auto; height: auto;
+  clip-path: none;
+  z-index: 100;
+  padding: 12px 16px;
+  background: var(--white);
   color: var(--ink);
   font-weight: 700;
-  border-radius: 999px;
+  border-radius: 6px;
 }
+
+.ico { width: 1.2em; height: 1.2em; flex: none; }
+/* Prices, hours and phone numbers line up digit for digit. */
+.nums { font-variant-numeric: tabular-nums; }

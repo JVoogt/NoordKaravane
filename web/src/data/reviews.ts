@@ -10,7 +10,9 @@ import { BUSINESS } from './business';
 
 const LISTING = BUSINESS.links.googleMaps;
 
-export const REVIEWS: Array<{ name: string; date: string; text: string; url: string; approved: boolean; lang?: string }> = [
+// lead: layout only. The Home reviews section sets one approved review large; it is the one flagged here
+// (the first approved review when none is flagged). It changes nothing about which reviews are shown.
+export const REVIEWS: Array<{ name: string; date: string; text: string; url: string; approved: boolean; lang?: string; lead?: boolean }> = [
   {
     // Electrical and water work; mentions Christiaan by name.
     name: 'Vernon d. P.',
@@ -51,5 +53,6 @@ export const REVIEWS: Array<{ name: string; date: string; text: string; url: str
     url: LISTING,
     approved: true,
     lang: 'af',
+    lead: true,
   },
 ];

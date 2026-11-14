@@ -4,6 +4,7 @@ import logo from '../assets/logo.png';
 import { BUSINESS } from '../data/business';
 import { servicePath } from '../data/routes';
 import { waUrl } from '../lib/whatsapp';
+import Icon from './Icon.astro';
 import QuickNav from './QuickNav.astro';
 
 interface Props {
@@ -13,9 +14,10 @@ interface Props {
 const { path, waText } = Astro.props;
 
 // Someone who has broken down is not browsing or booking: on Recoveries the header and the chip row are about
-// reaching us. The Call button becomes the filled primary action (it is the only control that stays on screen
-// while scrolling), WhatsApp sits beside it as the second choice, and the chips jump to what to send and where
-// we recover instead of Pricing and Shop.
+// reaching us. The Call button becomes the filled primary action (it stays in the header at every width),
+// WhatsApp sits beside it as the second choice, and the chips jump to what to send and where we recover instead
+// of Pricing and Shop. Everywhere else the header shows the number as a link and the WhatsApp booking button;
+// below 861px the number moves to the fixed bar at the bottom of the screen (Base.astro).
 const emergency = path === servicePath('recoveries');
 const raw = [
   { label: 'Services', href: '/#services' },
@@ -38,24 +40,21 @@ const tel = `tel:${BUSINESS.phone.e164}`;
 ---
 
 <nav class:list={['nav', { 'nav--emergency': emergency }]} aria-label="Main">
-  <div class="container nav-inner">
+  <div class="wrap nav-inner">
     <a href="/" class="brand">
-      <span class="brand-mark"><Image src={logo} width={68} height={68} format="webp" alt="Noord Karavane" loading="eager" /></span>
-      <span class="brand-txt">{BUSINESS.name} <small>{BUSINESS.address.locality}</small></span>
+      <Image src={logo} width={88} height={88} format="webp" alt={BUSINESS.name} loading="eager" />
+      <b aria-hidden="true">{BUSINESS.name}</b>
     </a>
     <div class="nav-links">
       {links.map((l) => <a href={l.href} aria-current={l.current ? 'page' : undefined}>{l.label}</a>)}
     </div>
-    <div class="nav-cta-group">
-      {!emergency && <a href={tel} class="nav-phone" aria-label={`Call ${BUSINESS.phone.display}`}>{BUSINESS.phone.display}</a>}
-      <a href={tel} class:list={['nav-call', { 'nav-call--primary': emergency }]} aria-label={`Call ${BUSINESS.name}`}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>
-        {emergency && <span>Call</span>}
-      </a>
-      <a href={waUrl(waText)} class:list={['nav-cta', { 'nav-cta--second': emergency }]} target="_blank" rel="noopener">
-        {emergency ? 'WhatsApp' : 'Book on WhatsApp'}
-      </a>
-    </div>
+    {/* The accessible name contains the visible words (the number, or "Call"), so voice control can find the link. */}
+    <a href={tel} class:list={['nav-call', 'nums', { 'nav-call--primary': emergency }]} aria-label={`Call ${BUSINESS.name} on ${BUSINESS.phone.display}`}>
+      {emergency ? <Fragment><Icon name="tel" /><span>Call</span></Fragment> : BUSINESS.phone.display}
+    </a>
+    <a href={waUrl(waText)} class:list={['nav-cta', { 'nav-cta--second': emergency }]} target="_blank" rel="noopener">
+      <Icon name="wa" /><span>{emergency ? 'WhatsApp' : 'Book on WhatsApp'}</span>
+    </a>
   </div>
   <QuickNav links={chips} />
 </nav>

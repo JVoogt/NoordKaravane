@@ -1,17 +1,15 @@
 ---
-// Three hero trust chips, all checkable: the live Google rating (linked), the recoveries accreditation (scoped to
+// Three hero proof points, all checkable: the live Google rating (linked), the recoveries accreditation (scoped to
 // recoveries, which is what the owner claims) and the quote-first rule that every service page repeats.
 import { BUSINESS } from '../data/business';
 
 const rating = BUSINESS.google.rating.toFixed(1);
 ---
 
-<ul class="hero-trust" aria-label="Noord Karavane trust signals">
+<ul class="hero-trust nums" aria-label="Noord Karavane trust signals">
   <li class="hero-trust-item">
-    <a href={BUSINESS.links.googleProfile} target="_blank" rel="noopener">
-      {rating} on Google, {BUSINESS.google.reviewCount} reviews
-    </a>
+    <a href={BUSINESS.links.googleProfile} target="_blank" rel="noopener">{rating} on Google, {BUSINESS.google.reviewCount} reviews</a>
   </li>
-  <li class="hero-trust-item"><strong>Insurance-accredited recoveries</strong></li>
-  <li class="hero-trust-item"><strong>Quote before work</strong></li>
+  <li class="hero-trust-item">Insurance-accredited recoveries</li>
+  <li class="hero-trust-item">Quote before work</li>
 </ul>

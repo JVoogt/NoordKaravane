@@ -1,12 +1,15 @@
 ---
 import '@fontsource/bebas-neue/latin-400.css';
+// The same file latin-400.css points at: preloaded so the headline face is there for the first paint.
+import bebasWoff2 from '@fontsource/bebas-neue/files/bebas-neue-latin-400-normal.woff2?url';
 import '@fontsource/barlow/latin-400.css';
-import '@fontsource/barlow/latin-500.css';
 import '@fontsource/barlow/latin-600.css';
 import '@fontsource/barlow/latin-700.css';
 import '../styles/tokens.css';
 import '../styles/base.css';
-import '../styles/components.css';
+import '../styles/chrome.css';
+import '../styles/system.css';
+import Icon from '../components/Icon.astro';
 import Ticker from '../components/Ticker.astro';
 import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
@@ -27,6 +30,7 @@ interface Props {
 const { title, description, path, ogImage = '/assets/images/og-image-1200.jpg', waText = WA_TEXT.book, jsonLd, noindex = false } = Astro.props;
 const canonical = BUSINESS.url + path;
 const ogImageUrl = BUSINESS.url + ogImage;
+const emergency = path === servicePath('recoveries');
 ---
 
 <!doctype html>
@@ -65,27 +69,32 @@ const ogImageUrl = BUSINESS.url + ogImage;
     <link rel="icon" type="image/png" href="/favicon-192.png" sizes="192x192" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
-    <script is:inline>document.documentElement.classList.add('js');</script>
+    <link rel="preload" as="font" type="font/woff2" href={bebasWoff2} crossorigin />    <script is:inline>document.documentElement.classList.add('js');</script>
     <script type="application/ld+json" set:html={jsonLd} />
   </head>
   <body>
+    {/* Icon sprite: WhatsApp, phone, the row arrow and the FAQ plus and minus, drawn once and reused through Icon.astro. */}
+    <svg class="sprite" aria-hidden="true" focusable="false">
+      <symbol id="i-wa" viewBox="0 0 24 24"><path fill="currentColor" d="M12.04 2C6.55 2 2.08 6.46 2.08 11.95c0 1.76.46 3.47 1.33 4.98L2 22l5.2-1.36a9.9 9.9 0 0 0 4.84 1.23h.01c5.49 0 9.95-4.46 9.95-9.95A9.93 9.93 0 0 0 12.04 2zm0 18.2h-.01a8.25 8.25 0 0 1-4.2-1.15l-.3-.18-3.09.81.83-3.01-.2-.31a8.23 8.23 0 0 1-1.26-4.4c0-4.56 3.71-8.27 8.28-8.27a8.27 8.27 0 0 1 8.27 8.27c0 4.56-3.71 8.24-8.32 8.24zm4.54-6.19c-.25-.12-1.47-.72-1.7-.8-.23-.09-.39-.13-.56.12-.17.25-.64.8-.78.97-.14.17-.29.19-.54.06-.25-.12-1.05-.39-2-1.23-.74-.66-1.24-1.47-1.38-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.15.17-.25.25-.42.08-.17.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.41-.42-.56-.42h-.48c-.17 0-.43.06-.66.31-.23.25-.87.85-.87 2.07s.89 2.4 1.01 2.57c.12.17 1.75 2.67 4.24 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.67-1.18.21-.58.21-1.07.15-1.18-.06-.1-.23-.17-.48-.29z"/></symbol>
+      <symbol id="i-tel" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></symbol>
+      <symbol id="i-go" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 12h15M13 6l6 6-6 6"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square" d="M12 4v16M4 12h16"/></symbol>
+      <symbol id="i-minus" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square" d="M4 12h16"/></symbol>
+    </svg>
     <a class="sr-only" href="#main">Skip to content</a>
-    <Ticker emergency={path === servicePath('recoveries')} />
+    <Ticker emergency={emergency} />
     <Nav path={path} waText={waText} />
     <main id="main">
       <slot />
     </main>
     <Footer />
-    <a href={waUrl(waText)} class="wa-float" target="_blank" rel="noopener" aria-label="Chat on WhatsApp">
-      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2C6.55 2 2.08 6.46 2.08 11.95c0 1.76.46 3.47 1.33 4.98L2 22l5.2-1.36a9.9 9.9 0 0 0 4.84 1.23h.01c5.49 0 9.95-4.46 9.95-9.95A9.93 9.93 0 0 0 12.04 2zm0 18.2h-.01a8.25 8.25 0 0 1-4.2-1.15l-.3-.18-3.09.81.83-3.01-.2-.31a8.23 8.23 0 0 1-1.26-4.4c0-4.56 3.71-8.27 8.28-8.27a8.27 8.27 0 0 1 8.27 8.27c0 4.56-3.71 8.24-8.32 8.24zm4.54-6.19c-.25-.12-1.47-.72-1.7-.8-.23-.09-.39-.13-.56.12-.17.25-.64.8-.78.97-.14.17-.29.19-.54.06-.25-.12-1.05-.39-2-1.23-.74-.66-1.24-1.47-1.38-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.15.17-.25.25-.42.08-.17.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.41-.42-.56-.42h-.48c-.17 0-.43.06-.66.31-.23.25-.87.85-.87 2.07s.89 2.4 1.01 2.57c.12.17 1.75 2.67 4.24 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.67-1.18.21-.58.21-1.07.15-1.18-.06-.1-.23-.17-.48-.29z"/></svg>
-    </a>
+    {/* Small screens: WhatsApp and Call stay within thumb reach in a fixed bar (it replaces the old floating
+        WhatsApp button, and keeps its wa-float hook). Above 860px the pinned nav carries both, so the bar is hidden.
+        On Recoveries, Call comes first (in the markup, so the reading and Tab order match what is drawn) and filled. */}
+    <div class:list={['bar', { 'bar--emergency': emergency }]} role="group" aria-label={`Contact ${BUSINESS.name}`}>
+      {emergency && <a class="bar-call" href={`tel:${BUSINESS.phone.e164}`}><Icon name="tel" />Call</a>}
+      <a class="bar-wa wa-float" href={waUrl(waText)} target="_blank" rel="noopener"><Icon name="wa" />{emergency ? 'WhatsApp' : 'Book on WhatsApp'}</a>
+      {!emergency && <a class="bar-call" href={`tel:${BUSINESS.phone.e164}`}><Icon name="tel" />Call</a>}
+    </div>
   </body>
 </html>
-
-<style is:global>
-  /* No sideways scroll at any width. clip and never hidden so the sticky header keeps working. */
-  html,
-  body {
-    overflow-x: clip;
-  }
-</style>
