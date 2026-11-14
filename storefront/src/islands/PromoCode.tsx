@@ -6,7 +6,7 @@ import { PROMO_COPY, appliedCodes, droppedCodes, normalisePromoCode, promoErrorC
  * One discount code per order (CONTRACTS "Vouchers"). Everything shown is derived from the `cart` prop; local state is
  * only the input, the busy flag and the one inline message. Rendered once in Cart and once in Checkout.
  */
-export default function PromoCode({ cart, onCart, idPrefix }: { cart: Cart; onCart: (c: Cart) => void; idPrefix: string }) {
+export default function PromoCode({ cart, onCart, idPrefix, announceDrops = true }: { cart: Cart; onCart: (c: Cart) => void; idPrefix: string; announceDrops?: boolean }) {
   const [open, setOpen] = useState(false);
   const [raw, setRaw] = useState('');
   const [busy, setBusy] = useState<string | null>(null); // 'apply' or the code being removed
@@ -22,10 +22,11 @@ export default function PromoCode({ cart, onCart, idPrefix }: { cart: Cart; onCa
   const msgId = `${idPrefix}-promo-msg`;
 
   // A code shown as applied that a later cart no longer holds (for example after a quantity change) says so once.
-  // Our own apply and remove update `shown` before handing the cart up, so they never trigger it.
+  // Our own apply and remove update `shown` before handing the cart up, so they never trigger it. Checkout turns this
+  // off: its place() stop already says the code dropped, and a failure gets one message, not two.
   useEffect(() => {
     const before = shown.current;
-    if (before && droppedCodes({ promotions: before.map((c) => ({ code: c })) }, cart).length) setMsg(PROMO_COPY.not_applied);
+    if (announceDrops && before && droppedCodes({ promotions: before.map((c) => ({ code: c })) }, cart).length) setMsg(PROMO_COPY.not_applied);
     shown.current = appliedCodes(cart);
   }, [cart]);
 
@@ -86,7 +87,7 @@ export default function PromoCode({ cart, onCart, idPrefix }: { cart: Cart; onCa
       ) : (
         <div class="field">
           <label for={inputId}>Discount code</label>
-          <div class="flex gap-2">
+          <div class="flex flex-col gap-2 xs:flex-row">
             <input
               ref={input} id={inputId} class="input typed min-w-0 flex-1 uppercase" type="text" name="promo_code" value={raw}
               autoCapitalize="characters" autoComplete="off" spellcheck={false} readOnly={busy === 'apply'}
@@ -94,7 +95,7 @@ export default function PromoCode({ cart, onCart, idPrefix }: { cart: Cart; onCa
               onInput={(e) => { setRaw((e.target as HTMLInputElement).value); if (msg) setMsg(''); }}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); apply(); } }}
             />
-            <button type="button" class="btn shrink-0 px-5" disabled={!code || !!busy} onClick={apply}>{busy === 'apply' ? 'Applying' : 'Apply'}</button>
+            <button type="button" class="btn shrink-0 xs:px-5" disabled={!code || !!busy} onClick={apply}>{busy === 'apply' ? 'Applying' : 'Apply'}</button>
           </div>
         </div>
       )}

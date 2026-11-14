@@ -367,7 +367,7 @@ export default function Checkout(props: Props) {
           </div>
         </fieldset>
 
-        <PromoCode idPrefix="co" cart={cart} onCart={(c) => setCart(c)} />
+        <PromoCode idPrefix="co" cart={cart} onCart={(c) => setCart(c)} announceDrops={false} />
 
         <div>
           {submitErr && <p id="submit-err" class="err mb-3 border-2 border-wine p-3 font-medium" role="alert">{submitErr}</p>}
