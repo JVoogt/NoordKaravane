@@ -14,7 +14,7 @@ const cat = categories.find((c) => c.handle === handle);
 if (!cat) { Astro.response.headers.set('Cache-Control', 'no-store'); return Astro.rewrite(u('/404')); }
 if (error) Astro.response.headers.set('Cache-Control', 'no-store');
 const parent = cat.parent ? categories.find((c) => c.handle === cat.parent) : null;
-const filtered = [...Astro.url.searchParams.keys()].some((k) => ['sort', 'q'].includes(k));
+const filtered = [...Astro.url.searchParams.keys()].some((k) => ['sort', 'q', 'show'].includes(k));
 const crumbs = [{ name: 'Home', path: '/' }, { name: 'Shop', path: u('/') }, ...(parent ? [{ name: parent.name, path: u(`/category/${parent.handle}/`) }] : []), { name: cat.name, path: u(`/category/${cat.handle}/`) }];
 ---
 <Base title={KAMPI ? `${cat.name} for caravans and camping` : `${cat.name} for caravans & camping`} description={KAMPI ? `Shop ${cat.name.toLowerCase()} at Kampi Store. Pay by EFT, delivered countrywide or collected in Pretoria North.` : `Shop ${cat.name.toLowerCase()} from Noord Karavane, a caravan workshop in Pretoria North. Pay by EFT, delivered countrywide or collect from us.`} path={u(`/category/${cat.handle}/`)} noindex={filtered} jsonld={[breadcrumbLd(crumbs)]}>
