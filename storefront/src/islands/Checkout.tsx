@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { backendAvailable, client, errMsg, ga4Items, getCart, publishCount, reloadCart, setCartId, setShippingMethod, type Cart } from '../scripts/cart-client';
 import { zar } from './format';
 import { quoteHref, quoteLines } from '../lib/quote';
-import { PROMO_COPY, droppedCodes, isNetworkError } from '../lib/promo';
+import { PROMO_COPY, droppedCodes, isNetworkError, summaryTotals } from '../lib/promo';
 import PromoCode from './PromoCode';
 
 interface Props {
@@ -95,7 +95,9 @@ export default function Checkout(props: Props) {
     setOptsState('loading');
     try {
       const so = (await client().store.fulfillment.listCartOptions({ cart_id: cartId })) as any;
-      await priceOptions(cartId, ((so.shipping_options ?? []) as Opt[]).filter((x) => props.collectEnabled || !isCollect(x)));
+      const listed = ((so.shipping_options ?? []) as Opt[]).filter((x) => props.collectEnabled || !isCollect(x));
+      if (!listed.length) console.error('[checkout] no delivery options', cartId);
+      await priceOptions(cartId, listed);
       setOptsState('ready');
     } catch (e) { console.error('[checkout] delivery options failed', e); setOptsState('failed'); }
   }
@@ -156,17 +158,10 @@ export default function Checkout(props: Props) {
     } finally { setShipBusy(false); }
   }
 
-  const totals = useMemo(() => {
-    if (!cart) return null;
-    // Only trust the cart's own shipping total when its method is the one currently selected. A stale method (for example a
-    // Pudo choice dropped because the cart became too heavy) must not leak its fee into the summary.
-    const matches = !!shipId && cartOptionId === shipId;
-    // Delivery shows the pre-discount fee: a code that discounts shipping is already in Discount, so it is subtracted
-    // once (Subtotal - Discount + Delivery = Total).
-    if (matches) return { ship: cartShip, total: cart.total };
-    const base = cart.total - (cart.shipping_methods?.length ? cart.shipping_total : 0);
-    return { ship: selected ? selected.amount : null, total: base + (selected?.amount ?? 0) };
-  }, [cart, selected, shipId, cartOptionId, cartShip]);
+  // Every summary number comes from here (P8). The cart's own totals count only when its method is the one selected: a
+  // stale or replaced method (a Pudo pick waiting for Place order, a Pudo dropped for weight) leaks neither its fee nor
+  // its shipping discount into the summary.
+  const totals = useMemo(() => (cart ? summaryTotals(cart, shipId, selected?.amount ?? null) : null), [cart, selected, shipId]);
 
   function validate(): Record<string, string> {
     const e: Record<string, string> = {};
@@ -225,7 +220,7 @@ export default function Checkout(props: Props) {
         // the cart on screen rather than one without weights; the message still stops the order.
         let shown: Cart | null = null;
         try { shown = await reloadCart(cart.id); } catch (err) { console.error('[checkout] reload after stop failed', err); }
-        if (shown) { setPlaceStop(true); setCart(shown); priceOptions(shown.id, opts); }
+        if (shown) { setPlaceStop(true); setShipErr(''); setCart(shown); priceOptions(shown.id, opts); }
         setPlacing(false);
         setSubmitErr(dropped ? PROMO_COPY.dropped : PROMO_COPY.total_changed);
         return;
@@ -310,8 +305,8 @@ export default function Checkout(props: Props) {
         ))}
       </ul>
       <dl class="mt-5 grid gap-2 border-t-2 border-ink pt-4">
-        <div class="flex justify-between"><dt>Subtotal</dt><dd class="typed">{zar(cart.original_item_total ?? cart.item_total ?? cart.subtotal)}</dd></div>
-        {cart.discount_total > 0 && <div class="flex justify-between"><dt>Discount</dt><dd class="typed">&minus;{zar(cart.discount_total)}</dd></div>}
+        <div class="flex justify-between"><dt>Subtotal</dt><dd class="typed">{zar(totals?.subtotal)}</dd></div>
+        {!!totals && totals.discount > 0 && <div class="flex justify-between"><dt>Discount</dt><dd class="typed">&minus;{zar(totals.discount)}</dd></div>}
         <div class="flex justify-between"><dt>Delivery</dt><dd class="typed">{totals?.ship == null ? (selected ? 'Price not available' : 'choose below') : totals.ship === 0 ? 'Free' : zar(totals.ship)}</dd></div>
         <div class="flex items-baseline justify-between border-t border-ink/40 pt-3 text-[1.2rem] font-bold"><dt>Total <span class="hint font-normal">incl. VAT where applicable</span></dt><dd class="typed text-[1.5rem]" aria-live="polite">{zar(totals?.total)}</dd></div>
       </dl>
@@ -358,6 +353,9 @@ export default function Checkout(props: Props) {
           {optsState === 'loading' && opts.length === 0 && <p class="hint">Loading delivery options...</p>}
           {optsState === 'failed' && (
             <p class="err" role="alert">We could not load delivery options. <button type="button" class="link min-h-11 px-1" onClick={() => loadOptions(cart.id)}>Try again</button></p>
+          )}
+          {optsState === 'ready' && visibleOpts.length === 0 && (
+            <p class="err" role="alert">No delivery options are available for this order. <a href={u('/contact')}>Contact us</a> to arrange delivery.</p>
           )}
           {heavy && opts.some(isPudo) && <p class="hint">This order is too big for a Pudo locker, so locker delivery is not offered.</p>}
           {visibleOpts.map((o) => {
@@ -422,7 +420,7 @@ export default function Checkout(props: Props) {
         </fieldset>
 
         <PromoCode idPrefix="co" cart={cart} announceDrops={!placeStop} disabled={placing || shipBusy} onBusy={setPromoBusy}
-          onCart={(c) => { setPlaceStop(false); setCart(c); priceOptions(c.id, opts); }} />
+          onCart={(c) => { setPlaceStop(false); setShipErr(''); setCart(c); priceOptions(c.id, opts); }} />
 
         <div>
           {submitErr && <p id="submit-err" class="err mb-3 border-2 border-wine p-3 font-medium" role="alert">{submitErr}</p>}

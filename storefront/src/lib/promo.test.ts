@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { PROMO_COPY, appliedCodes, droppedCodes, errMsg, isNetworkError, normalisePromoCode, promoErrorCopy, promoOutcome, promoPrecheck } from './promo.ts';
-import type { PromoOutcomeCart } from './promo.ts';
+import { PROMO_COPY, appliedCodes, droppedCodes, errMsg, isNetworkError, normalisePromoCode, promoErrorCopy, promoOutcome, promoPrecheck, summaryTotals } from './promo.ts';
+import type { PromoOutcomeCart, SummaryCart, SummaryTotals } from './promo.ts';
 
 // Made-up codes and amounts only: this repo is public.
 const withCode = (code: string, extra: PromoOutcomeCart = {}): PromoOutcomeCart => ({ promotions: [{ code }], ...extra });
@@ -148,4 +148,50 @@ test('errMsg: never shows the internal pudo_locker field name', () => {
 test('errMsg: a proxy error with only an HTTP status text (no shop message) gives the fallback, never "Not Found"', () => {
   assert.equal(errMsg({ status: 404, message: 'Not Found', statusText: 'Not Found' }, 'Fallback.'), 'Fallback.');
   assert.equal(errMsg({ status: 502, message: 'Bad Gateway', statusText: 'Bad Gateway' }, 'Fallback.'), 'Fallback.');
+});
+
+// Checkout summary (P8): Subtotal - Discount + Delivery = Total in every state. Made-up option ids and amounts.
+const COURIER = 'so_courier';
+const LOCKER = 'so_locker';
+const p8 = (t: SummaryTotals) => assert.equal(t.subtotal - t.discount + (t.ship ?? 0), t.total, `P8 broken: ${JSON.stringify(t)}`);
+const cartWith = (c: Omit<SummaryCart, 'shipping_methods'>, method: string | null = COURIER): SummaryCart => ({ ...c, shipping_methods: method ? [{ shipping_option_id: method }] : [] });
+// Courier R85 on the cart, a R40 shipping code: shipping_total is the post-discount R45, and the R40 is in discount_total.
+const shipCodeCart = cartWith({ original_item_total: 800, item_total: 800, discount_total: 40, shipping_total: 45, original_shipping_total: 85, total: 845 });
+// Courier R85 on the cart, a R120 item code.
+const itemCodeCart = cartWith({ original_item_total: 800, item_total: 680, discount_total: 120, shipping_total: 85, original_shipping_total: 85, total: 765 });
+
+test('summaryTotals: chosen option is the cart method, shipping code: the cart totals as Medusa gives them', () => {
+  const t = summaryTotals(cartWith({ original_item_total: 549, item_total: 549, discount_total: 40, shipping_total: 45, original_shipping_total: 85, total: 594 }), COURIER, 85);
+  assert.deepEqual(t, { subtotal: 549, discount: 40, ship: 85, total: 594 });
+  p8(t);
+});
+test('summaryTotals: Pudo picked over a courier cart with a shipping code: the shipping discount is left out', () => {
+  const t = summaryTotals(shipCodeCart, LOCKER, 99);
+  assert.deepEqual(t, { subtotal: 800, discount: 0, ship: 99, total: 899 });
+  p8(t);
+});
+test('summaryTotals: Pudo picked over a courier cart with an item code: the item discount stays', () => {
+  const t = summaryTotals(itemCodeCart, LOCKER, 99);
+  assert.deepEqual(t, { subtotal: 800, discount: 120, ship: 99, total: 779 });
+  p8(t);
+});
+test('summaryTotals: Pudo picked over a courier cart with no code', () => {
+  const t = summaryTotals(cartWith({ original_item_total: 800, item_total: 800, discount_total: 0, shipping_total: 85, original_shipping_total: 85, total: 885 }), LOCKER, 99);
+  assert.deepEqual(t, { subtotal: 800, discount: 0, ship: 99, total: 899 });
+  p8(t);
+});
+test('summaryTotals: no delivery chosen yet while the cart holds a discounted method: no delivery, no shipping discount', () => {
+  const t = summaryTotals(shipCodeCart, '', null);
+  assert.deepEqual(t, { subtotal: 800, discount: 0, ship: null, total: 800 });
+  p8(t);
+});
+test('summaryTotals: cart without a method, item code, Pudo picked', () => {
+  const t = summaryTotals(cartWith({ original_item_total: 800, item_total: 680, discount_total: 120, shipping_total: 0, original_shipping_total: 0, total: 680 }, null), LOCKER, 99);
+  assert.deepEqual(t, { subtotal: 800, discount: 120, ship: 99, total: 779 });
+  p8(t);
+});
+test('summaryTotals: chosen option has no price: delivery unknown, total is items only', () => {
+  const t = summaryTotals(itemCodeCart, LOCKER, null);
+  assert.deepEqual(t, { subtotal: 800, discount: 120, ship: null, total: 680 });
+  p8(t);
 });

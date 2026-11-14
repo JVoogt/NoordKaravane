@@ -95,6 +95,31 @@ export function promoPrecheck(cart: PromoCart, code: string): PromoPrecheck {
   return held.length ? 'one_code' : 'ok';
 }
 
+export type SummaryCart = {
+  total: number; item_total: number; discount_total: number; shipping_total: number;
+  original_item_total?: number; original_shipping_total?: number;
+  shipping_methods?: { shipping_option_id: string }[] | null;
+};
+export type SummaryTotals = { subtotal: number; discount: number; ship: number | null; total: number };
+
+/**
+ * Every number the checkout summary shows, so that Subtotal - Discount + Delivery = Total holds in every state (P8).
+ * `shipId` is the delivery option the shopper picked, `chosenAmount` its listed price (null when not priced or none).
+ */
+export function summaryTotals(cart: SummaryCart, shipId: string, chosenAmount: number | null): SummaryTotals {
+  const subtotal = cart.original_item_total ?? cart.item_total;
+  const matches = !!shipId && cart.shipping_methods?.[0]?.shipping_option_id === shipId;
+  // The cart's own totals hold when its method is the one picked. Delivery is the pre-discount fee: a code that
+  // discounts shipping is already in Discount, so it is subtracted once.
+  if (matches) return { subtotal, discount: cart.discount_total, ship: cart.original_shipping_total ?? cart.shipping_total, total: cart.total };
+  // Picked option differs from the cart's method (Pudo waits for Place order): the cart's shipping adjustments belong
+  // to a method that will be replaced, so Discount is the item discount only and Total is an estimate. place() still
+  // stops before payment if the real total differs.
+  const discount = subtotal - cart.item_total;
+  const ship = shipId ? chosenAmount : null;
+  return { subtotal, discount, ship, total: subtotal - discount + (ship ?? 0) };
+}
+
 /** Shopper codes present on `before` and gone from `after`. */
 export function droppedCodes(before: PromoCart, after: PromoCart): string[] {
   const now = appliedCodes(after);
