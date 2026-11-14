@@ -47785,8 +47785,8 @@
     "sku": "KAMPI-KIT-QR",
     "title": "Kampi Host Sticker Kit with QR",
     "type": "variable",
-    "description": "One kit per camper. The 400 mm QR sticker goes on the back of your camper and sends anyone who scans it straight to your own Kampi listing. Choose white, khaki or black for the side stickers and logos, so they show up on your camper. The kit includes: 1 x QR sticker printed for your listing (400 x 400 mm), 2 x \"Rent me / Huur my\" side stickers (840 x 190 mm), 1 x \"Rent me\" square (300 x 300 mm), 2 x Kampi stickers (500 x 121 mm), 4 x Kampi stickers (300 x 73 mm), 2 x pre-departure checklist stickers (105 x 148 mm), 2 x tyre pressure labels (70 x 30 mm), 1 x ZA sticker (200 x 130 mm), 1 x licence disc frame (90 x 90 mm), A placement guide. Each QR sticker is printed for one specific camper, so we need your Kampi listing number with the order. Courier to your door or a locker, or collect for free at Noord Karavane in Pretoria North, where we can also fit the stickers for you.",
-    "description_html": "<p>One kit per camper. The 400 mm QR sticker goes on the back of your camper and sends anyone who scans it straight to your own Kampi listing. Choose white, khaki or black for the side stickers and logos, so they show up on your camper.</p><p>The kit includes:</p><ul><li>1 x QR sticker printed for your listing (400 x 400 mm)</li><li>2 x \"Rent me / Huur my\" side stickers (840 x 190 mm)</li><li>1 x \"Rent me\" square (300 x 300 mm)</li><li>2 x Kampi stickers (500 x 121 mm)</li><li>4 x Kampi stickers (300 x 73 mm)</li><li>2 x pre-departure checklist stickers (105 x 148 mm)</li><li>2 x tyre pressure labels (70 x 30 mm)</li><li>1 x ZA sticker (200 x 130 mm)</li><li>1 x licence disc frame (90 x 90 mm)</li><li>A placement guide</li></ul><p>Each QR sticker is printed for one specific camper, so we need your Kampi listing number with the order. Courier to your door or a locker, or collect for free at Noord Karavane in Pretoria North, where we can also fit the stickers for you.</p>",
+    "description": "One kit per camper. The 400 mm QR sticker goes on the back of your camper and sends anyone who scans it straight to your own Kampi listing. Choose white, khaki or black for the side stickers and logos, so they show up on your camper, and a khaki or white design for the QR sticker. The kit includes: 1 x QR sticker printed for your listing (400 x 400 mm, khaki or white design), 2 x \"Rent me / Huur my\" side stickers (840 x 190 mm), 1 x \"Rent me\" square (300 x 300 mm), 2 x Kampi stickers (500 x 121 mm), 4 x Kampi stickers (300 x 73 mm), 2 x pre-departure checklist stickers (105 x 148 mm), 2 x tyre pressure labels (70 x 30 mm), 1 x ZA sticker (200 x 130 mm), 1 x licence disc frame (90 x 90 mm), A placement guide. Each QR sticker is printed for one specific camper, so we need your Kampi listing number with the order. Courier to your door or a locker, or collect for free at Noord Karavane in Pretoria North, where we can also fit the stickers for you.",
+    "description_html": "<p>One kit per camper. The 400 mm QR sticker goes on the back of your camper and sends anyone who scans it straight to your own Kampi listing. Choose white, khaki or black for the side stickers and logos, so they show up on your camper, and a khaki or white design for the QR sticker.</p><p>The kit includes:</p><ul><li>1 x QR sticker printed for your listing (400 x 400 mm, khaki or white design)</li><li>2 x \"Rent me / Huur my\" side stickers (840 x 190 mm)</li><li>1 x \"Rent me\" square (300 x 300 mm)</li><li>2 x Kampi stickers (500 x 121 mm)</li><li>4 x Kampi stickers (300 x 73 mm)</li><li>2 x pre-departure checklist stickers (105 x 148 mm)</li><li>2 x tyre pressure labels (70 x 30 mm)</li><li>1 x ZA sticker (200 x 130 mm)</li><li>1 x licence disc frame (90 x 90 mm)</li><li>A placement guide</li></ul><p>Each QR sticker is printed for one specific camper, so we need your Kampi listing number with the order. Courier to your door or a locker, or collect for free at Noord Karavane in Pretoria North, where we can also fit the stickers for you.</p>",
     "price_zar": 550.0,
     "regular_price_zar": 550.0,
     "on_sale": false,
@@ -47813,6 +47813,13 @@
           "Khaki",
           "Black"
         ]
+      },
+      {
+        "name": "QR sticker design",
+        "values": [
+          "Khaki",
+          "White"
+        ]
       }
     ],
     "images": [
@@ -47829,27 +47836,57 @@
     ],
     "variants": [
       {
-        "sku": "KAMPI-KIT-QR-WHT",
+        "sku": "KAMPI-KIT-QR-WHT-QK",
         "price_zar": 550.0,
         "weight_g": 350,
         "options": {
-          "Sticker colour": "White"
+          "Sticker colour": "White",
+          "QR sticker design": "Khaki"
         }
       },
       {
-        "sku": "KAMPI-KIT-QR-KHK",
+        "sku": "KAMPI-KIT-QR-WHT-QW",
         "price_zar": 550.0,
         "weight_g": 350,
         "options": {
-          "Sticker colour": "Khaki"
+          "Sticker colour": "White",
+          "QR sticker design": "White"
         }
       },
       {
-        "sku": "KAMPI-KIT-QR-BLK",
+        "sku": "KAMPI-KIT-QR-KHK-QK",
         "price_zar": 550.0,
         "weight_g": 350,
         "options": {
-          "Sticker colour": "Black"
+          "Sticker colour": "Khaki",
+          "QR sticker design": "Khaki"
+        }
+      },
+      {
+        "sku": "KAMPI-KIT-QR-KHK-QW",
+        "price_zar": 550.0,
+        "weight_g": 350,
+        "options": {
+          "Sticker colour": "Khaki",
+          "QR sticker design": "White"
+        }
+      },
+      {
+        "sku": "KAMPI-KIT-QR-BLK-QK",
+        "price_zar": 550.0,
+        "weight_g": 350,
+        "options": {
+          "Sticker colour": "Black",
+          "QR sticker design": "Khaki"
+        }
+      },
+      {
+        "sku": "KAMPI-KIT-QR-BLK-QW",
+        "price_zar": 550.0,
+        "weight_g": 350,
+        "options": {
+          "Sticker colour": "Black",
+          "QR sticker design": "White"
         }
       }
     ],

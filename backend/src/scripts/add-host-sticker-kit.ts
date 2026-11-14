@@ -28,12 +28,19 @@ const COLOURS = [
   { value: "Khaki", sku: `${SKU}-KHK` },
   { value: "Black", sku: `${SKU}-BLK` },
 ]
+// The 400 mm QR sticker is printed, so its design is a second choice: khaki background or white background.
+const QR_OPTION = "QR sticker design"
+const QR_DESIGNS = [
+  { value: "Khaki", sku: "QK" },
+  { value: "White", sku: "QW" },
+]
+const VARIANTS = COLOURS.flatMap((c) => QR_DESIGNS.map((q) => ({ title: `${c.value} stickers / ${q.value} QR`, sku: `${c.sku}-${q.sku}`, colour: c.value, qr: q.value })))
 const PRICE_ZAR = 550
 const WEIGHT_G = 350
 const CATEGORIES = ["KampiHost Essentials", "Stickers & Decals"]
 const TAGS = ["kampi.co.za", "Stickers", "Vehicle decal", "QR"]
 const CONTENTS = [
-  "1 x QR sticker printed for your listing (400 x 400 mm)",
+  "1 x QR sticker printed for your listing (400 x 400 mm, khaki or white design)",
   '2 x "Rent me / Huur my" side stickers (840 x 190 mm)',
   '1 x "Rent me" square (300 x 300 mm)',
   "2 x Kampi stickers (500 x 121 mm)",
@@ -45,7 +52,7 @@ const CONTENTS = [
   "A placement guide",
 ]
 const INTRO =
-  "One kit per camper. The 400 mm QR sticker goes on the back of your camper and sends anyone who scans it straight to your own Kampi listing. Choose white, khaki or black for the side stickers and logos, so they show up on your camper."
+  "One kit per camper. The 400 mm QR sticker goes on the back of your camper and sends anyone who scans it straight to your own Kampi listing. Choose white, khaki or black for the side stickers and logos, so they show up on your camper, and a khaki or white design for the QR sticker."
 const OUTRO =
   "Each QR sticker is printed for one specific camper, so we need your Kampi listing number with the order. Courier to your door or a locker, or collect for free at Noord Karavane in Pretoria North, where we can also fit the stickers for you."
 const DESCRIPTION = `${INTRO} The kit includes: ${CONTENTS.join(", ")}. ${OUTRO}`
@@ -110,13 +117,16 @@ export default async function addHostStickerKit({ container }: ExecArgs) {
             // one Kampi listing number per kit must travel with the order (the QR print file is picked by it)
             requires_kampi_listing_numbers: true,
           },
-          options: [{ title: COLOUR_OPTION, values: COLOURS.map((c) => c.value) }],
-          variants: COLOURS.map((c) => ({
-            title: c.value,
-            sku: c.sku,
+          options: [
+            { title: COLOUR_OPTION, values: COLOURS.map((c) => c.value) },
+            { title: QR_OPTION, values: QR_DESIGNS.map((q) => q.value) },
+          ],
+          variants: VARIANTS.map((v) => ({
+            title: v.title,
+            sku: v.sku,
             manage_inventory: false,
             weight: WEIGHT_G,
-            options: { [COLOUR_OPTION]: c.value },
+            options: { [COLOUR_OPTION]: v.colour, [QR_OPTION]: v.qr },
             prices: [{ amount: PRICE_ZAR, currency_code: "zar" }],
           })),
         },
