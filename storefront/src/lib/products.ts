@@ -4,6 +4,7 @@ import Medusa from '@medusajs/js-sdk';
 import { env, medusaServerUrl, publishableKey } from './env';
 import { decodeEntities } from './format';
 import { u } from './url';
+import { swr, allPages } from './swr';
 
 export interface Variant { id: string; sku: string; price: number | null; weightG: number | null; options: Record<string, string> }
 export interface Option { name: string; values: string[] }
@@ -90,30 +91,30 @@ function loadDev() {
   return (devCache = { products: [], categories: [] });
 }
 
-let memo: { at: number; data: Catalogue } | null = null;
+async function loadCatalogue(): Promise<Catalogue> {
+  const region_id = await getRegionId();
+  const out = await allPages(async (offset) => {
+    const { products, count } = await getSdk().store.product.list({ limit: 100, offset, region_id, fields: FIELDS } as any);
+    return { items: products as any[], count };
+  }, 100, 1000);
+  const { product_categories } = await getSdk().store.category.list({ limit: 200, fields: 'id,name,handle,parent_category_id' } as any);
+  const byId = new Map((product_categories as any[]).map((c) => [c.id, c]));
+  const categories: Category[] = (product_categories as any[]).map((c) => ({ handle: c.handle, name: decodeEntities(c.name), parent: byId.get(c.parent_category_id)?.handle ?? null }));
+  return { products: out.map(fromMedusa), categories, source: 'medusa' };
+}
+
+/** Served from memory; older than 20 s, it refreshes in the background, so no visitor waits on the full catalogue fetch. */
+const catalogue = swr(loadCatalogue, 20_000, (e) => console.error('[catalogue] medusa refresh failed', e));
+
 export async function getCatalogue(): Promise<Catalogue> {
   if (!hasBackend()) {
     const d = loadDev();
     return { ...d, source: d.products.length ? 'dev' : 'none' };
   }
-  if (memo && Date.now() - memo.at < 20_000) return memo.data;
   try {
-    const region_id = await getRegionId();
-    const out: any[] = [];
-    for (let offset = 0; offset < 1000; offset += 100) {
-      const { products, count } = await getSdk().store.product.list({ limit: 100, offset, region_id, fields: FIELDS } as any);
-      out.push(...products);
-      if (out.length >= count) break;
-    }
-    const { product_categories } = await getSdk().store.category.list({ limit: 200, fields: 'id,name,handle,parent_category_id' } as any);
-    const byId = new Map((product_categories as any[]).map((c) => [c.id, c]));
-    const categories: Category[] = (product_categories as any[]).map((c) => ({ handle: c.handle, name: decodeEntities(c.name), parent: byId.get(c.parent_category_id)?.handle ?? null }));
-    const data: Catalogue = { products: out.map(fromMedusa), categories, source: 'medusa' };
-    memo = { at: Date.now(), data };
-    return data;
+    return await catalogue();
   } catch (e) {
     console.error('[catalogue] medusa fetch failed', e);
-    if (memo) return memo.data;
     return { products: [], categories: [], error: 'Our catalogue is taking a breather. Try again in a minute.', source: 'none' };
   }
 }
