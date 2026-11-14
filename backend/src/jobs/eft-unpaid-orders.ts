@@ -2,7 +2,7 @@ import type { MedusaContainer } from "@medusajs/framework/types"
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 import { cancelOrderWorkflow } from "@medusajs/medusa/core-flows"
 import { getBusinessConfig } from "../lib/business"
-import { isEftOrder, ORDER_FIELDS, orderEmailData, sendEmail } from "../lib/orders"
+import { hasCapturedPayment, isEftOrder, ORDER_FIELDS, orderEmailData, sendEmail } from "../lib/orders"
 
 /**
  * Hourly: unpaid EFT orders older than eft_reminder_after_hours get one reminder (recorded in
@@ -27,7 +27,8 @@ export default async function eftUnpaidOrders(container: MedusaContainer) {
   for (const order of orders as any[]) {
     try {
       if (!isEftOrder(order)) continue
-      if (order.payment_status === "captured" || order.payment_status === "partially_captured") continue
+      // Paid orders are never reminded or cancelled. Decided from the captured payment rows.
+      if (hasCapturedPayment(order)) continue
       const ageH = (now - new Date(order.created_at).getTime()) / 3600_000
       const md = (order.metadata ?? {}) as Record<string, any>
 
