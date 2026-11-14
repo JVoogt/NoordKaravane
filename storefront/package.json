@@ -9,7 +9,7 @@
     "start": "node ./dist/server/entry.mjs",
     "preview": "astro preview",
     "check": "astro check",
-    "test": "node --test src/lib/turnstile.test.ts src/lib/quote.test.ts"
+    "test": "node --test src/lib/turnstile.test.ts src/lib/quote.test.ts src/lib/promo.test.ts"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.12",

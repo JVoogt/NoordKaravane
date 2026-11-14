@@ -4,18 +4,24 @@ import { clientEnv } from './env';
 export interface CartItem {
   id: string; title: string; product_title?: string; variant_title?: string; product_handle?: string; thumbnail?: string | null;
   variant_id?: string; quantity: number; unit_price: number; total: number;
+  /** Pre-discount line value (line `total` is post-discount). */
+  subtotal?: number; original_total?: number;
+  adjustments?: { code?: string | null; amount?: number | null }[] | null;
   variant?: { id: string; title?: string; weight?: number | null; options?: { value: string }[] };
 }
 export interface Cart {
   id: string; email?: string; currency_code: string; region_id: string;
   items: CartItem[]; subtotal: number; total: number; shipping_total: number; discount_total: number; item_total: number;
-  shipping_methods?: { id: string; shipping_option_id: string; name: string; amount: number }[];
+  /** Pre-discount, VAT-inclusive item total. `item_total` is post-discount once a code applies. */
+  original_item_total?: number;
+  promotions?: { id: string; code?: string | null; is_automatic?: boolean | null }[];
+  shipping_methods?: { id: string; shipping_option_id: string; name: string; amount: number; adjustments?: { code?: string | null; amount?: number | null }[] | null }[];
   shipping_address?: Record<string, string>; metadata?: Record<string, unknown> | null;
   payment_collection?: { payment_sessions?: { id: string; provider_id: string; data?: Record<string, any> }[] };
 }
 
 export const CART_COOKIE = 'nk_cart';
-const FIELDS = '*items,+items.thumbnail,+items.product_handle,+items.product_title,+items.variant_title,*items.variant,*items.variant.options,+items.variant.weight,*shipping_methods,*payment_collection,*payment_collection.payment_sessions';
+const FIELDS = '*items,+items.thumbnail,+items.product_handle,+items.product_title,+items.variant_title,*items.variant,*items.variant.options,+items.variant.weight,*shipping_methods,*payment_collection,*payment_collection.payment_sessions,+promotions.code';
 
 let sdk: Medusa | null = null;
 export function client(): Medusa {
@@ -97,6 +103,16 @@ export async function removeLine(cartId: string, lineId: string): Promise<Cart> 
 }
 
 export const reloadCart = refresh;
+
+/** Adds a code (already normalised by the caller). SDK errors are re-thrown unchanged for promoErrorCopy. */
+export async function applyPromo(cartId: string, code: string): Promise<Cart> {
+  await client().store.cart.addPromotions(cartId, { promo_codes: [code] });
+  return refresh(cartId);
+}
+export async function removePromo(cartId: string, code: string): Promise<Cart> {
+  await client().store.cart.removePromotions(cartId, { promo_codes: [code] });
+  return refresh(cartId);
+}
 
 export function errMsg(e: unknown, fallback = 'Something went wrong. Please try again.'): string {
   const m = (e as { message?: string })?.message;

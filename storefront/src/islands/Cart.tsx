@@ -3,6 +3,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { backendAvailable, errMsg, getCart, publishCount, removeLine, updateQty, type Cart as CartT } from '../scripts/cart-client';
 import { zar } from './format';
 import { quoteHref, quoteLines } from '../lib/quote';
+import PromoCode from './PromoCode';
 
 export default function Cart({ freeShipping, quoteHandles }: { freeShipping: number; quoteHandles: string[] }) {
   const [cart, setCart] = useState<CartT | null>(null);
@@ -36,9 +37,12 @@ export default function Cart({ freeShipping, quoteHandles }: { freeShipping: num
 
   const quoted = quoteLines(items, quoteHandles);
   const isQuote = (it: { product_handle?: string | null }) => quoted.some((q) => q === it);
-  const subtotal = cart!.item_total ?? cart!.subtotal;
-  const toFree = Math.max(0, freeShipping - subtotal);
-  const pct = Math.min(100, Math.round((subtotal / freeShipping) * 100));
+  // item_total is post-discount once a code applies: show the pre-discount total, then subtract the discount once.
+  const subtotal = cart!.original_item_total ?? cart!.item_total ?? cart!.subtotal;
+  // Free delivery follows the courier's basis, item_total (post-discount).
+  const shipBasis = cart!.item_total ?? cart!.subtotal;
+  const toFree = Math.max(0, freeShipping - shipBasis);
+  const pct = Math.min(100, Math.round((shipBasis / freeShipping) * 100));
 
   return (
     <div class="grid gap-10 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)] lg:gap-14">
@@ -64,7 +68,7 @@ export default function Cart({ freeShipping, quoteHandles }: { freeShipping: num
                   <button type="button" class="link min-h-11 px-1 text-[0.95rem]" onClick={() => change(() => removeLine(cart!.id, it.id), it.id)}>Remove</button>
                 </div>
               </div>
-              <p class="typed col-start-2 text-[1.15rem] font-bold sm:col-start-3 sm:text-right">{zar(it.total)}</p>
+              <p class="typed col-start-2 text-[1.15rem] font-bold sm:col-start-3 sm:text-right">{zar(it.original_total ?? it.total)}</p>
             </li>
           ))}
         </ul>
@@ -77,6 +81,7 @@ export default function Cart({ freeShipping, quoteHandles }: { freeShipping: num
           {cart!.discount_total > 0 && <div class="flex justify-between"><dt>Discount</dt><dd class="typed">&minus;{zar(cart!.discount_total)}</dd></div>}
           <div class="flex justify-between text-muted"><dt>Delivery</dt><dd>{quoted.length > 0 ? 'quoted for large items' : 'chosen at checkout'}</dd></div>
         </dl>
+        <PromoCode idPrefix="cart" cart={cart!} onCart={(c) => { setCart(c); publishCount(c); }} />
         {quoted.length === 0 && <div class="mt-4" aria-live="polite">
           {toFree > 0 ? <p class="text-[0.92rem]">Add <strong>{zar(toFree)}</strong> more for free delivery (parcels up to 5 kg).</p> : <p class="text-[0.92rem] font-bold text-moss-deep">You have free shipping.</p>}
           <div class="mt-2 h-2 border border-ink bg-paper" role="presentation"><div class="h-full bg-wine" style={{ width: pct + '%' }} /></div>

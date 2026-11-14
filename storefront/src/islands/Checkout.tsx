@@ -1,8 +1,10 @@
 import { u } from '../lib/url';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
-import { backendAvailable, client, errMsg, ga4Items, getCart, publishCount, setCartId, type Cart } from '../scripts/cart-client';
+import { backendAvailable, client, errMsg, ga4Items, getCart, publishCount, reloadCart, setCartId, type Cart } from '../scripts/cart-client';
 import { zar } from './format';
 import { quoteHref, quoteLines } from '../lib/quote';
+import { PROMO_COPY, droppedCodes } from '../lib/promo';
+import PromoCode from './PromoCode';
 
 interface Props {
   quoteHandles: string[];
@@ -145,6 +147,8 @@ export default function Checkout(props: Props) {
   async function place(ev: Event) {
     ev.preventDefault();
     if (!cart || placing) return;
+    // The Total the shopper sees right now. The order must be placed at exactly this amount (CONTRACTS "Vouchers").
+    const shownTotal = totals?.total;
     setSubmitErr('');
     const e = validate();
     setErrors(e);
@@ -170,6 +174,17 @@ export default function Checkout(props: Props) {
       if (!cart.shipping_methods?.some((m) => m.shipping_option_id === shipId)) await sdk.store.cart.addShippingMethod(cart.id, { option_id: shipId, data: {} });
 
       const fresh = (await sdk.store.cart.retrieve(cart.id, { fields: '*items,*shipping_methods,*payment_collection,*payment_collection.payment_sessions' })).cart as unknown as Cart;
+      // The update above refreshes the cart: a shown code can drop out, or shipping can be re-priced (a discount can take
+      // the courier's basis under the free-delivery threshold). Stop before payment and show the new cart.
+      const dropped = droppedCodes(cart, fresh).length > 0;
+      const moved = shownTotal != null && Math.round(fresh.total * 100) !== Math.round(shownTotal * 100);
+      if (dropped || moved) {
+        // `fresh` lacks the variant weights the Pudo rule reads, so show the fully-shaped cart.
+        setCart(await reloadCart(cart.id).catch(() => fresh));
+        setPlacing(false);
+        setSubmitErr(dropped ? PROMO_COPY.dropped : PROMO_COPY.total_changed);
+        return;
+      }
       await sdk.store.payment.initiatePaymentSession(fresh as any, { provider_id: pay });
 
       if (pay === PAYFAST) {
@@ -244,12 +259,12 @@ export default function Checkout(props: Props) {
               <span class="typed absolute -right-0 -top-0 grid min-w-5 place-items-center bg-ink px-1 text-[0.72rem] leading-5 text-paper">{it.quantity}</span>
             </div>
             <div class="min-w-0"><p class="font-display text-[0.95rem] font-extrabold uppercase leading-tight">{it.product_title || it.title}</p><p class="text-[0.85rem] text-muted">{it.variant_title}</p></div>
-            <p class="typed text-[0.95rem]">{zar(it.total)}</p>
+            <p class="typed text-[0.95rem]">{zar(it.original_total ?? it.total)}</p>
           </li>
         ))}
       </ul>
       <dl class="mt-5 grid gap-2 border-t-2 border-ink pt-4">
-        <div class="flex justify-between"><dt>Subtotal</dt><dd class="typed">{zar(cart.item_total ?? cart.subtotal)}</dd></div>
+        <div class="flex justify-between"><dt>Subtotal</dt><dd class="typed">{zar(cart.original_item_total ?? cart.item_total ?? cart.subtotal)}</dd></div>
         {cart.discount_total > 0 && <div class="flex justify-between"><dt>Discount</dt><dd class="typed">&minus;{zar(cart.discount_total)}</dd></div>}
         <div class="flex justify-between"><dt>Delivery</dt><dd class="typed">{totals?.ship == null ? 'choose below' : totals.ship === 0 ? 'Free' : zar(totals.ship)}</dd></div>
         <div class="flex items-baseline justify-between border-t border-ink/40 pt-3 text-[1.2rem] font-bold"><dt>Total <span class="hint font-normal">incl. VAT where applicable</span></dt><dd class="typed text-[1.5rem]" aria-live="polite">{zar(totals?.total)}</dd></div>
@@ -297,12 +312,14 @@ export default function Checkout(props: Props) {
           {opts.length === 0 && <p class="hint">Loading delivery options...</p>}
           {heavy && opts.some(isPudo) && <p class="hint">This order is too big for a Pudo locker, so locker delivery is not offered.</p>}
           {visibleOpts.map((o) => {
-            const free = (totals && cart.shipping_methods?.some((m) => m.shipping_option_id === o.id) ? cart.shipping_total : o.amount) === 0;
+            // The cart's own price for its method wins over the listing price (a code can re-price it).
+            const amount = cart.shipping_methods?.some((m) => m.shipping_option_id === o.id) ? cart.shipping_total : o.amount;
+            const free = amount === 0;
             return (
               <label class={'choice' + (shipId === o.id ? ' is-on' : '')}>
                 <input type="radio" name="shipping" value={o.id} checked={shipId === o.id} onChange={() => chooseShipping(o)} disabled={shipBusy || placing} />
                 <span class="choice__body">
-                  <span class="flex items-baseline justify-between gap-3"><strong class="font-display text-[1.05rem] uppercase">{o.name}</strong><span class="typed font-bold">{free ? 'Free' : zar(o.amount)}</span></span>
+                  <span class="flex items-baseline justify-between gap-3"><strong class="font-display text-[1.05rem] uppercase">{o.name}</strong><span class="typed font-bold">{free ? 'Free' : zar(amount)}</span></span>
                   <span class="text-[0.92rem] text-muted">{isPudo(o) ? 'Small parcels only. Collect from a Pudo locker near you, any time of day.' : isCollect(o) ? 'Free. Collect from 252 General Beyers Street, Pretoria North, Mon to Thu 08:00 to 16:00, Fri 08:00 to 14:00. We contact you when it is ready.' : 'Delivered to your door by The Courier Guy. Price depends on parcel size.'}{isCollect(o) ? '' : <> Free over {zar(props.freeShipping)} for parcels up to 5 kg.</>}</span>
                 </span>
               </label>
@@ -349,6 +366,8 @@ export default function Checkout(props: Props) {
             {err('terms') && <p id="e-terms" class="err mt-1">{err('terms')}</p>}
           </div>
         </fieldset>
+
+        <PromoCode idPrefix="co" cart={cart} onCart={(c) => setCart(c)} />
 
         <div>
           {submitErr && <p id="submit-err" class="err mb-3 border-2 border-wine p-3 font-medium" role="alert">{submitErr}</p>}
