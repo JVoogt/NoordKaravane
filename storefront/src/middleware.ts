@@ -2,6 +2,8 @@ import { defineMiddleware } from 'astro:middleware';
 import { PRODUCT_REDIRECTS } from '~/lib/redirects';
 import { CATEGORY_REDIRECTS } from '~/lib/category-config';
 import { u } from '~/lib/url';
+import { BRAND } from '~/lib/brand';
+import { wooRedirect } from '~/lib/woo-redirects';
 
 // Paths are relative to the store base (plan DD6): /shop on NK, / on Kampi. B is '' on Kampi.
 const B = ((import.meta.env.BASE_URL as string) || '/').replace(/\/$/, '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -11,7 +13,14 @@ const PRODUCT = new RegExp(`^${B}\\/([a-z0-9-]+)\\/?$`);
 const CATEGORY = new RegExp(`^${B}\\/category\\/([a-z0-9-]+)\\/?$`);
 const PUBLIC = 'public, s-maxage=600, stale-while-revalidate=86400';
 
+const WOO_MAPS = { products: PRODUCT_REDIRECTS, categories: CATEGORY_REDIRECTS };
+
 export const onRequest = defineMiddleware(async (ctx, next) => {
+  // Kampi only: old WooCommerce URLs of store.kampi.co.za go to their new page in one 301 (plan DD8).
+  if (BRAND === 'kampi') {
+    const woo = wooRedirect(ctx.url.pathname, ctx.url.search, WOO_MAPS);
+    if (woo) return new Response(null, { status: 301, headers: { Location: woo, 'Cache-Control': 'public, max-age=86400' } });
+  }
   // merged products: old product URLs permanently redirect to the grouped product page
   const m = ctx.url.pathname.match(PRODUCT);
   const to = m && Object.hasOwn(PRODUCT_REDIRECTS, m[1]) ? PRODUCT_REDIRECTS[m[1]] : null;
