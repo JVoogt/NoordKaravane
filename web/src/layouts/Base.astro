@@ -35,6 +35,8 @@ const emergency = path === servicePath('recoveries');
 const GTM_ID = import.meta.env.PROD ? 'GTM-5SDSQR78' : '';
 // Google Analytics 4 measurement ID. Loaded directly so page views and contact clicks are counted without any setup inside the container.
 const GA_ID = import.meta.env.PROD ? 'G-02SGNS5MWB' : '';
+// Meta pixel (dataset) for the Noord Karavane ad account.
+const PIXEL_ID = import.meta.env.PROD ? '1771834747217902' : '';
 ---
 
 <!doctype html>
@@ -78,7 +80,7 @@ const GA_ID = import.meta.env.PROD ? 'G-02SGNS5MWB' : '';
     {/* Google Tag Manager: production builds only, so dev and preview traffic stays out of the numbers.
         GA4 and the Meta pixel are configured as tags inside this container, not in the page. */}
     {GTM_ID && (
-      <script is:inline define:vars={{ GTM_ID, GA_ID }}>
+      <script is:inline define:vars={{ GTM_ID, GA_ID, PIXEL_ID }}>
         window.dataLayer = window.dataLayer || [];
         window.dataLayer.push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
         var gtmScript = document.createElement('script');
@@ -94,6 +96,12 @@ const GA_ID = import.meta.env.PROD ? 'G-02SGNS5MWB' : '';
           gtag('js', new Date());
           gtag('config', GA_ID);
         }
+        if (PIXEL_ID) {
+          // Meta's standard pixel loader.
+          !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+          window.fbq('init', PIXEL_ID);
+          window.fbq('track', 'PageView');
+        }
         // Contact clicks are the site's conversions: push one dataLayer event per WhatsApp or phone click.
         document.addEventListener('click', function (e) {
           var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
@@ -104,11 +112,15 @@ const GA_ID = import.meta.env.PROD ? 'G-02SGNS5MWB' : '';
           var text = (a.textContent || '').trim().slice(0, 60);
           window.dataLayer.push({ event: kind, link_text: text, page_path: location.pathname });
           if (GA_ID) gtag('event', kind, { link_text: text, page_path: location.pathname });
+          if (PIXEL_ID && window.fbq) window.fbq('track', 'Contact', { method: kind === 'whatsapp_click' ? 'whatsapp' : 'phone' });
         }, true);
       </script>
     )}
   </head>
   <body>
+    {PIXEL_ID && (
+      <noscript><img height="1" width="1" style="display:none" alt="" src={`https://www.facebook.com/tr?id=${PIXEL_ID}&ev=PageView&noscript=1`} /></noscript>
+    )}
     {GTM_ID && (
       <noscript><iframe src={`https://www.googletagmanager.com/ns.html?id=${GTM_ID}`} height="0" width="0" style="display:none;visibility:hidden" title="Google Tag Manager"></iframe></noscript>
     )}
