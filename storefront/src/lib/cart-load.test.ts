@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { loadCart } from './cart-load.ts';
+import { cartLoadMsg, loadCart } from './cart-load.ts';
 
 type C = { id: string; completed_at?: string | null };
 const tracker = () => { const t = { cleared: 0, forget: () => { t.cleared += 1; } }; return t; };
@@ -46,4 +46,15 @@ test('loadCart keeps the cookie on a 404 about a different cart', async () => {
   const t = tracker();
   await assert.rejects(loadCart<C>('cart_1', async () => { throw fetchError(404, "Cart with id 'cart_2' not found"); }, t.forget), /cart_2/);
   assert.equal(t.cleared, 0);
+});
+
+const CONNECTION = 'We could not reach the shop. Check your connection and try again.';
+test('cartLoadMsg: a proxy 404 on cart load gets the connection line (empty message or the status text)', () => {
+  assert.equal(cartLoadMsg(Object.assign(new Error(''), { status: 404, statusText: '' })), CONNECTION);
+  assert.equal(cartLoadMsg(Object.assign(new Error('Not Found'), { status: 404, statusText: 'Not Found' })), CONNECTION);
+});
+test('cartLoadMsg: offline gets the connection line; a shop message passes through; a bare 5xx gets the fallback', () => {
+  assert.equal(cartLoadMsg(new TypeError('Failed to fetch')), CONNECTION);
+  assert.equal(cartLoadMsg(fetchError(500, 'An unknown error occurred.')), 'An unknown error occurred.');
+  assert.equal(cartLoadMsg(Object.assign(new Error('Bad Gateway'), { status: 502, statusText: 'Bad Gateway' })), 'Something went wrong. Please try again.');
 });

@@ -6,6 +6,8 @@ export interface Business {
   brand: string; domain: string; tagline: string;
   legal_name: string; legal_status: string; registration_number: string; vat_number: string;
   physical_address: string; postal_address: string; phone: string; whatsapp: string;
+  /** The workshop as a structured address: the shipping address of a collect-from-workshop order. */
+  workshop: { address_1: string; city: string; province: string; postal_code: string };
   email_general: string; email_orders: string; email_privacy: string; information_officer: string;
   instagram: string; facebook: string; currency: string;
   production_lead_time_days: string; eft_payment_window_hours: number; eft_reminder_after_hours: number;
@@ -18,6 +20,7 @@ const FALLBACK: Business = {
   brand: 'Noord Karavane', domain: 'noordkaravane.co.za', tagline: 'Caravan specialists in Pretoria North.',
   legal_name: '{{LEGAL_NAME}}', legal_status: '{{LEGAL_STATUS}}', registration_number: '{{REGISTRATION_NUMBER}}',
   vat_number: '{{VAT_NUMBER}}', physical_address: '252 General Beyers Street, Pretoria North, Pretoria, 0182', postal_address: '252 General Beyers Street, Pretoria North, Pretoria, 0182',
+  workshop: { address_1: '252 General Beyers Street', city: 'Pretoria North', province: 'Gauteng', postal_code: '0182' },
   phone: '083 334 9357', whatsapp: '27833349357', email_general: '{{EMAIL_GENERAL}}',
   email_orders: '{{EMAIL_ORDERS}}', email_privacy: '{{EMAIL_PRIVACY}}',
   information_officer: '{{INFORMATION_OFFICER}}', instagram: '', facebook: 'https://facebook.com/NoordKaravane',

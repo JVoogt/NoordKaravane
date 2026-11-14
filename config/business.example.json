@@ -9,6 +9,12 @@
   "vat_number": "REPLACE_ME",
   "physical_address": "252 General Beyers Street, Pretoria North, Pretoria, 0182",
   "postal_address": "252 General Beyers Street, Pretoria North, Pretoria, 0182",
+  "workshop": {
+    "address_1": "252 General Beyers Street",
+    "city": "Pretoria North",
+    "province": "Gauteng",
+    "postal_code": "0182"
+  },
   "phone": "REPLACE_ME",
   "whatsapp": "REPLACE_ME",
   "email_general": "REPLACE_ME",

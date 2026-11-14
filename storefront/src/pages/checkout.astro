@@ -12,6 +12,6 @@ const quoteHandles = quoteOnlyHandles(products);
   <div class="wrap pb-16 pt-10">
     <p class="text-[0.95rem]"><a href={u('/cart')}>&larr; Back to cart</a></p>
     <h1 class="display mb-8 mt-3 text-[clamp(2.4rem,7vw,4.2rem)]">Checkout</h1>
-    <Checkout client:load quoteHandles={quoteHandles} eftWindowHours={b.eft_payment_window_hours} leadTime={b.production_lead_time_days} freeShipping={b.shipping.free_shipping_threshold_zar} pudoMaxWeightG={b.shipping.pudo_max_weight_g} collectEnabled={b.shipping.collect_from_workshop} workshop={{ address_1: '252 General Beyers Street', city: 'Pretoria North', province: 'Gauteng', postal_code: '0182' }} bank={{ account_name: b.bank.account_name, bank_name: b.bank.bank_name }} />
+    <Checkout client:load quoteHandles={quoteHandles} eftWindowHours={b.eft_payment_window_hours} leadTime={b.production_lead_time_days} freeShipping={b.shipping.free_shipping_threshold_zar} pudoMaxWeightG={b.shipping.pudo_max_weight_g} collectEnabled={b.shipping.collect_from_workshop} workshop={b.workshop} bank={{ account_name: b.bank.account_name, bank_name: b.bank.bank_name }} />
   </div>
 </Base>
