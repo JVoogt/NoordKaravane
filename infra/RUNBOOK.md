@@ -140,7 +140,7 @@ make -C infra pgdump-now        # writes infra/backups/nkshop-<timestamp>.dump a
 ```
 
 ## Redeploy
-`HOST` defaults to the ssh alias `dockpi` (`root@dockpi` does not resolve). Every `build*` target and `staging-build` runs `sync` first, and `sync` copies the checkout you run it from into the **production** tree on the Pi (`rsync --delete`). So run them only from a merged checkout (a clean deploy worktree of `main`), never from a feature branch. Run `make -C infra sync-check` first: it changes nothing and prints only the files `sync` would delete on the Pi. The exclude list keeps the Pi-only files (both `business.json` copies, `.env*`, backups, `/infra/cloudflare/`, any `*.bak*` file, `/web/.impeccable/`, and a worktree's `.git` file via `--exclude='/.git'`); `sync` refuses to run from a worktree if that last exclude is ever removed. Read every `*deleting` line before you sync.
+`HOST` defaults to the ssh alias `dockpi` (`root@dockpi` does not resolve). Every `build*` target and `staging-build` runs `sync` first, and `sync` copies the checkout you run it from into the **production** tree on the Pi (`rsync --delete`). So run them only from a merged checkout (a clean deploy worktree of `main`), never from a feature branch. Run `make -C infra sync-check` first: it changes nothing and prints only the files `sync` would delete on the Pi. The exclude list keeps the Pi-only files (both `business.json` copies, `.env*`, backups, `/infra/cloudflare/`, any `*.bak*` file, `/web/.impeccable/`, and a worktree's `.git` file via `--exclude='/.git'`); `sync` refuses to run from a worktree if that last exclude is ever removed. Read every `*deleting` line before you sync. `sync` (so every `build*` target too) also runs the same dry run itself first and refuses, with a non-zero exit and the offending paths, if any `*deleting` path matches `SYNC_PROTECTED` (`business.json`, `.env*`, `cloudflare/`, `*.bak*`, `.impeccable/`, `backups/`, the top-level `.git`). That regex is separate from the exclude list on purpose: a typo in an exclude stops the sync instead of deleting the file.
 
 `:prev` check around a build: record the image ids first (`ssh dockpi 'DOCKER_API_VERSION=1.41 docker image inspect --format "{{.Id}}" nkshop-backend:latest nkshop-storefront:latest'`). After the build, `docker image inspect --format "{{.Id}}" nkshop-<image>:prev` must equal the recorded id; if it does not (two builds in a row), `docker tag <recorded id> nkshop-<image>:prev` by hand.
 ```bash
@@ -198,10 +198,11 @@ Rotate immediately if `.env` is ever pasted anywhere or the Azure backup account
 ssh dockpi 'ss -ltn | grep -E ":855[45]\b" || echo "8554/8555 free"'   # else set PORT_WEB_KAMPI to a free port
 make -C infra pgdump-now
 make -C infra sync-check && make -C infra sync
-make -C infra build-backend      # then: docker compose up -d migrate medusa-server medusa-worker (named services only)
+make -C infra build-backend      # then the next line: start only the named backend services
+ssh dockpi 'cd /home/voogiepi/docker/nkshop/infra && DOCKER_API_VERSION=1.41 docker compose up -d migrate medusa-server medusa-worker'
 make -C infra kampi-channel      # prints KAMPI_SALES_CHANNEL_ID, KAMPI_PUBLISHABLE_KEY and a kampi-channel {...} summary
 ```
-1. **Config.** Back up and edit both `business.json` copies (`config/` and `backend/src/config/`) with the real `brands.kampi` block: `sales_channel_ids` = [the printed id], `name`, `shop_url`, `logo_url`, `palette`, `from_name`, and the optional display keys you have. **Leave an optional key out** rather than setting it to `""`. `python3 -m json.tool` on both, then `docker compose restart medusa-server medusa-worker`.
+1. **Config.** Back up and edit both `business.json` copies (`config/` and `backend/src/config/`) with the real `brands.kampi` block: `sales_channel_ids` = [the printed id], `name`, `shop_url`, `logo_url`, `palette`, `from_name`, and the optional display keys you have. **Leave an optional key out** rather than setting it to `""`. `python3 -m json.tool` on both, then `ssh dockpi 'cd /home/voogiepi/docker/nkshop/infra && DOCKER_API_VERSION=1.41 docker compose restart medusa-server medusa-worker'`.
 2. **Positive probe** (a quiet log proves nothing: the config is read lazily). In both containers:
    ```bash
    for c in nkshop-medusa-server nkshop-medusa-worker; do
@@ -209,15 +210,48 @@ make -C infra kampi-channel      # prints KAMPI_SALES_CHANNEL_ID, KAMPI_PUBLISHA
    done
    ```
    Both must print `{"kampi_valid":true,"brand":"kampi","has_id":true}`, or stop and fix the block.
-3. **`.env`** (back up, keep `chmod 600`): `STORE_CORS` += `,https://store.kampi.co.za`; `KAMPI_PUBLIC_MEDUSA_PUBLISHABLE_KEY` = the printed key; the other `KAMPI_*` keys as `.env.example` describes. Recreate `medusa-server` (`docker compose up -d medusa-server`; a restart does not re-read `.env`).
+3. **`.env`** (back up, keep `chmod 600`): `STORE_CORS` += `,https://store.kampi.co.za`; `KAMPI_PUBLIC_MEDUSA_PUBLISHABLE_KEY` = the printed key; the other `KAMPI_*` keys as `.env.example` describes. Recreate `medusa-server` (a restart does not re-read `.env`): `ssh dockpi 'cd /home/voogiepi/docker/nkshop/infra && DOCKER_API_VERSION=1.41 docker compose up -d medusa-server'`.
 4. `make -C infra build-storefront-kampi` (the brand check runs inside it), then `make -C infra up` and `make -C infra ps`. Build the Kampi image before the first `up`: otherwise `up` would build it itself, without the brand check.
+   If the Kampi build or its brand check fails, NK is not blocked: `make build` would stop at that point **before any `:latest` retag** (NK's included, because of `set -e`), so deploy NK with `make -C infra build-backend` and `make -C infra build-storefront` instead, then `make -C infra up`, and fix the Kampi image separately.
 5. LAN checks: `curl -s http://<BIND_IP>:8554/healthz`; `/` answers 200 and contains `Kampi Store`. Scripted POSTs from the LAN get 403 from Astro's origin check (the LAN host is not in `security.allowedDomains`); test forms through the real hostname.
 
 ### Preview on the real hostname, then the switch (homelab runbook, never `make route`)
-- Template: `infra/traefik/kampi-store.yml.example`, installed by hand as `kampi-store.yml` in the Traefik dynamic dir (owner `voogiepi`, mode 644). Replace `REPLACE_WITH_PI_LAN_IP` and `REPLACE_WITH_TOKEN` on the Pi only. Before installing, no file in the dynamic dir may already use a `kampi-store` name.
+- Template: `infra/traefik/kampi-store.yml.example` (synced to the Pi under `/home/voogiepi/docker/nkshop/infra/traefik/`), installed by hand as `kampi-store.yml` in the Traefik dynamic dir (owner `voogiepi`, mode 644). Before installing, no file in the dynamic dir may already use a `kampi-store` name.
+- **Substitutions (Tasks 4.3 and 5.3), on the Pi only, never committed:**
+  - `REPLACE_WITH_TOKEN`: the preview cookie value, `openssl rand -hex 16`;
+  - `REPLACE_WITH_PI_LAN_IP`: `BIND_IP` from `infra/.env`;
+  - the port `8554` in the service URL, if `PORT_WEB_KAMPI` in `infra/.env` is not 8554.
+  The block below does all three. Run it in a shell on the Pi (`ssh dockpi`) as `voogiepi`:
+```bash
+# kampi-store.yml: preview file (Task 4.3)
+D=/home/voogiepi/docker
+cd "$D/traefik/config/dynamic"
+LAN_IP=$(sed -n 's/^BIND_IP=\([0-9.]*\).*/\1/p' "$D/nkshop/infra/.env")
+PORT=$(sed -n 's/^PORT_WEB_KAMPI=\([0-9]*\).*/\1/p' "$D/nkshop/infra/.env"); PORT=${PORT:-8554}
+TOKEN=$(openssl rand -hex 16)
+sed -e "s/REPLACE_WITH_PI_LAN_IP/$LAN_IP/" -e "s/:8554\"/:$PORT\"/" -e "s/REPLACE_WITH_TOKEN/$TOKEN/" \
+  "$D/nkshop/infra/traefik/kampi-store.yml.example" > ../kampi-store.yml.new
+if [ -n "$LAN_IP" ] && ! grep -q REPLACE_WITH ../kampi-store.yml.new; then
+  chmod 644 ../kampi-store.yml.new && mv ../kampi-store.yml.new kampi-store.yml
+  echo "preview cookie: kampi_preview=$TOKEN"   # keep it in the password manager, never in git
+else
+  echo "STOP: BIND_IP not found or a placeholder is left in ../kampi-store.yml.new"
+fi
+```
 - Preview phase (as shipped): router `kampi-store-preview` (priority 300) matches only a request whose `Cookie` header holds `kampi_preview=<token>`; everyone else still reaches the old store through `kampi-shop.yml`. Set the cookie for `store.kampi.co.za` in the browser to test.
-- Switch: delete the `PREVIEW ROUTER` block and strip the `#S ` prefixes (the template header has the `sed` line). The three public routers (priority 200) then win over `kampi-shop.yml`; `shop.kampi.co.za` answers 301 to `store.kampi.co.za`. Move `kampi-shop.yml` into `dynamic-archive/` as `kampi-shop.yml.pre-nk-cutover-<YYYYMMDD>`.
-- Route rollback: copy the archived `kampi-shop.yml` back into the dynamic dir (start the old store if it was stopped), then move `kampi-store.yml` out. Traefik reloads by itself; check `docker logs --since 2m traefik`.
+- Switch (Task 5.3): delete the `PREVIEW ROUTER` block and strip the `#S ` prefixes with the template header's `sed` line (both addresses anchored to the whole marker line; the unanchored form also matched the header and broke the YAML). The three public routers (priority 200) then win over `kampi-shop.yml`; `shop.kampi.co.za` answers 301 to `store.kampi.co.za`. The same shell on the Pi:
+```bash
+# kampi-store.yml: switch (Task 5.3)
+cd /home/voogiepi/docker/traefik/config/dynamic
+sed -e '/^ *# --- PREVIEW ROUTER BEGIN ---$/,/^ *# --- PREVIEW ROUTER END ---$/d' -e 's/^#S //' kampi-store.yml > ../kampi-store.yml.switch
+if grep -q -e '^#S' -e 'kampi-store-preview' ../kampi-store.yml.switch; then
+  echo "STOP: the switch file still has preview lines"
+else
+  chmod 644 ../kampi-store.yml.switch && mv ../kampi-store.yml.switch kampi-store.yml
+  mkdir -p ../dynamic-archive && mv kampi-shop.yml "../dynamic-archive/kampi-shop.yml.pre-nk-cutover-$(date +%Y%m%d)"
+fi
+```
+- Route rollback: copy the archived `kampi-shop.yml` back into the dynamic dir (start the old store if it was stopped), then move `kampi-store.yml` out. Traefik reloads by itself; check `docker logs --since 2m traefik` after each step.
 
 ### Redeploy and rollback
 - Kampi-only change: `make -C infra sync-check && make -C infra build-storefront-kampi && make -C infra up`. `make -C infra build` builds all three images (the Kampi one last, then the brand check).

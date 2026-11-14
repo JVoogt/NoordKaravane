@@ -44,6 +44,16 @@ SYNC_EXCLUDES := \
 # otherwise copy it over the Pi tree as a broken .git.
 SYNC_GUARD = $(if $(findstring --exclude='/.git',$(SYNC_EXCLUDES)),true,[ ! -f $(ROOT)/.git ] || { echo "refusing to sync: $(ROOT)/.git is a file (git worktree) and SYNC_EXCLUDES lacks --exclude='/.git'"; exit 1; })
 
+# Fail-closed preflight for `sync` (and every build* target, which all depend on it): the same dry run as
+# `sync-check`, then a refusal if any path it would DELETE matches SYNC_PROTECTED. The regex is deliberately
+# independent of SYNC_EXCLUDES, so a typo or a dropped exclude cannot also silence the check that would catch it.
+SYNC_PROTECTED ?= business\.json|(^|/)\.env|(^|/)cloudflare/|\.bak|(^|/)\.impeccable/|(^|/)backups(-staging)?/|^\.git(/|$$)
+SYNC_DRYRUN = rsync -azn --delete --itemize-changes $(SYNC_EXCLUDES) $(ROOT)/ $(SYNC_DEST)
+SYNC_PREFLIGHT = out=$$($(SYNC_DRYRUN)) || exit $$?; \
+	  bad=$$(printf '%s\n' "$$out" | sed -n 's/^\*deleting  *//p' | grep -E '$(SYNC_PROTECTED)'); \
+	  [ -z "$$bad" ] || { echo "refusing to sync: the dry run would delete protected Pi-only paths (check SYNC_EXCLUDES):"; \
+	  printf '%s\n' "$$bad" | sed 's/^/  /'; exit 1; }
+
 # Runs on the Pi after the Kampi image build: the Dockerfile defaults BRAND to nk, so a build that lost the BRAND arg
 # would silently produce an NK store. The image label records the brand it was really built as.
 KAMPI_BRAND_CHECK = b=$$($(DOCKER) image inspect -f "{{index .Config.Labels \"org.noordkaravane.storefront.brand\"}}" nkshop-storefront-kampi:$(TAG)) && [ "$$b" = kampi ] || { echo "nkshop-storefront-kampi:$(TAG) was built as brand [$$b], not kampi: check BRAND in docker-compose.yml"; exit 1; }
@@ -63,6 +73,7 @@ help:
 # ---------------------------------------------------------------- code + env
 sync:
 	@$(SYNC_GUARD)
+	@$(SYNC_PREFLIGHT)
 	rsync -az --delete --human-readable $(SYNC_EXCLUDES) $(ROOT)/ $(SYNC_DEST)
 	$(SSH) 'mkdir -p $(INFRA)/backups $(INFRA)/backups-staging && chown -R $(OWNER):$(OWNER) $(REMOTE_DIR) && \
 	  for f in $(INFRA)/.env $(INFRA)/.env.staging; do [ -f $$f ] && chmod 600 $$f; done; true'
@@ -70,7 +81,7 @@ sync:
 # Dry run of `sync`: prints only the files it would DELETE on the Pi, changes nothing. Read it before every sync.
 sync-check:
 	@$(SYNC_GUARD)
-	@out=$$(rsync -azn --delete --itemize-changes $(SYNC_EXCLUDES) $(ROOT)/ $(SYNC_DEST)) || exit $$?; \
+	@out=$$($(SYNC_DRYRUN)) || exit $$?; \
 	  printf '%s\n' "$$out" | grep '^\*deleting' || echo "sync-check: nothing would be deleted"
 
 # create infra/.env (and .env.staging) from the examples if missing, then edit them on the Pi

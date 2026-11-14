@@ -15,8 +15,10 @@
 #   1. PREVIEW (as shipped): only requests carrying the cookie kampi_preview=<token> reach the new store
 #      (priority 300). Everyone else still gets the old route in kampi-shop.yml. Set the cookie in the browser
 #      for store.kampi.co.za to test on the real hostname.
-#   2. SWITCH: delete the block between the PREVIEW ROUTER markers and strip the "#S " prefix from every line
-#      (sed -e '/# --- PREVIEW ROUTER BEGIN ---/,/# --- PREVIEW ROUTER END ---/d' -e 's/^#S //').
+#   2. SWITCH: delete the block between the PREVIEW ROUTER markers and strip the "#S " prefix from every line.
+#      Both sed addresses are anchored to the whole marker line, so this header (which names the markers) is kept:
+#      (sed -e '/^ *# --- PREVIEW ROUTER BEGIN ---$/,/^ *# --- PREVIEW ROUTER END ---$/d' -e 's/^#S //')
+#      RUNBOOK.md ("Kampi storefront") has the exact commands for both phases.
 #      The three public routers (priority 200) then beat kampi-shop.yml's routers (rule-length priority, far lower),
 #      and shop.kampi.co.za answers 301 to the same path on store.kampi.co.za.
 #      After the switch, move kampi-shop.yml out of the watched dir into
@@ -52,7 +54,7 @@ http:
 #S         - kampi-store-domain-redirect
 #S         - kampi-store-https-redirect
 #S       service: kampi-store-storefront
-#S
+#S 
 #S     kampi-store:
 #S       rule: "Host(`store.kampi.co.za`)"
 #S       priority: 200
@@ -64,7 +66,7 @@ http:
 #S         - kampi-store-security-headers
 #S         - kampi-store-compress
 #S       service: kampi-store-storefront
-#S
+#S 
 #S     # The old hostname: 301 to the same path on store.kampi.co.za.
 #S     kampi-store-legacy:
 #S       rule: "Host(`shop.kampi.co.za`)"
@@ -89,13 +91,13 @@ http:
 #S       redirectScheme:
 #S         scheme: https
 #S         permanent: true
-#S
+#S 
 #S     kampi-store-domain-redirect:
 #S       redirectRegex:
 #S         regex: "^https?://shop\\.kampi\\.co\\.za(.*)"
 #S         replacement: "https://store.kampi.co.za${1}"
 #S         permanent: true
-#S
+#S 
     kampi-store-compress:
       compress: {}
 
