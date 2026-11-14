@@ -1,6 +1,7 @@
 import Medusa from '@medusajs/js-sdk';
 import { clientEnv } from './env';
 import { loadCart } from '../lib/cart-load';
+import { cookiePath } from '../lib/cookie-path';
 export { errMsg } from '../lib/promo';
 
 export interface CartItem {
@@ -41,11 +42,13 @@ export function getCartId(): string | null {
   const m = document.cookie.match(new RegExp('(?:^|; )' + CART_COOKIE + '=([^;]+)'));
   return m ? decodeURIComponent(m[1]) : null;
 }
+// NK: exactly Path=/shop (existing carts survive); Kampi at base /: Path=/ (plan DD7, P21).
+const COOKIE_PATH = cookiePath((import.meta.env.BASE_URL as string) || '/');
 export function setCartId(id: string | null) {
   const secure = location.protocol === 'https:' ? '; Secure' : '';
   document.cookie = id
-    ? `${CART_COOKIE}=${encodeURIComponent(id)}; Max-Age=${60 * 60 * 24 * 30}; Path=/shop; SameSite=Lax${secure}`
-    : `${CART_COOKIE}=; Max-Age=0; Path=/shop; SameSite=Lax${secure}`;
+    ? `${CART_COOKIE}=${encodeURIComponent(id)}; Max-Age=${60 * 60 * 24 * 30}; Path=${COOKIE_PATH}; SameSite=Lax${secure}`
+    : `${CART_COOKIE}=; Max-Age=0; Path=${COOKIE_PATH}; SameSite=Lax${secure}`;
 }
 
 export function publishCount(cart: Cart | null) {

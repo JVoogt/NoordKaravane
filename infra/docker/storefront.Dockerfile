@@ -17,6 +17,9 @@ RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 COPY . .
 # business.json is read relative to the app dir as ../config/business.json
 COPY --from=config business.json /config/business.json
+# BRAND (nk or kampi) is build-time only: vite.define inlines it, and the runtime stage must not carry it.
+ARG BRAND=nk
+ENV BRAND=$BRAND
 ARG PUBLIC_MEDUSA_URL
 ARG PUBLIC_MEDUSA_PUBLISHABLE_KEY
 ARG PUBLIC_SITE_URL

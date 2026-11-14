@@ -66,11 +66,11 @@ export default function Cart({ freeShipping, quoteHandles }: { freeShipping: num
         <ul class="border-t-2 border-ink">
           {items.map((it) => (
             <li class="grid grid-cols-[5.5rem_1fr] gap-4 border-b border-ink/40 py-5 sm:grid-cols-[7rem_1fr_auto]" aria-busy={busyId === it.id}>
-              <a href={it.product_handle ? `/shop/${it.product_handle}/` : '#'} class="block aspect-square overflow-hidden bg-paper-3 outline outline-1 outline-ink/50">
+              <a href={it.product_handle ? u(`/${it.product_handle}/`) : '#'} class="block aspect-square overflow-hidden bg-paper-3 outline outline-1 outline-ink/50">
                 {it.thumbnail ? <img src={it.thumbnail} alt="" width="224" height="224" class="h-full w-full object-contain" loading="lazy" /> : null}
               </a>
               <div class="min-w-0">
-                <h2 class="font-display text-[1.15rem] font-extrabold uppercase leading-tight"><a class="no-underline hover:text-wine" href={it.product_handle ? `/shop/${it.product_handle}/` : '#'}>{it.product_title || it.title}</a></h2>
+                <h2 class="font-display text-[1.15rem] font-extrabold uppercase leading-tight"><a class="no-underline hover:text-wine" href={it.product_handle ? u(`/${it.product_handle}/`) : '#'}>{it.product_title || it.title}</a></h2>
                 <p class="mt-1 text-[0.95rem] text-muted">{it.variant_title || it.variant?.options?.map((o) => o.value).join(' / ')}</p>
                 <p class="typed mt-1 text-[0.95rem]">{zar(it.unit_price)} each</p>
                 {isQuote(it) && <p class="mt-1 text-[0.9rem] font-bold text-wine-lit">Quote only: we quote delivery for this item.</p>}

@@ -6,9 +6,8 @@ import { abs, trunc, organizationLd, websiteLd } from '~/lib/seo';
 import { env, medusaUrl, publishableKey } from '~/lib/env';
 import { business } from '~/lib/business';
 import { u } from '~/lib/url';
-import bebas from '@fontsource/bebas-neue/files/bebas-neue-latin-400-normal.woff2?url';
-import barlow from '@fontsource/barlow/files/barlow-latin-400-normal.woff2?url';
-import barlow600 from '@fontsource/barlow/files/barlow-latin-600-normal.woff2?url';
+// After global.css: the Kampi brand module brings its tokens and component layer, which must win over global.css.
+import { fontPreloads } from '@brand';
 
 interface Props {
   title: string;
@@ -49,9 +48,7 @@ const ld = [organizationLd(), websiteLd(), ...jsonld];
     <meta name="theme-color" content="#0e0f11" />
     <link rel="icon" href={u('/icon-192.png')} type="image/png" />
     <link rel="apple-touch-icon" href={u('/apple-touch-icon.png')} />
-    <link rel="preload" href={bebas} as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href={barlow} as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href={barlow600} as="font" type="font/woff2" crossorigin />
+    {fontPreloads.map((f) => <link rel="preload" href={f} as="font" type="font/woff2" crossorigin />)}
 
     <meta property="og:site_name" content="Noord Karavane" />
     <meta property="og:locale" content="en_ZA" />

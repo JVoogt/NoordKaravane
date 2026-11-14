@@ -6,6 +6,6 @@
     "jsx": "react-jsx",
     "jsxImportSource": "preact",
     "baseUrl": ".",
-    "paths": { "~/*": ["src/*"] }
+    "paths": { "~/*": ["src/*"], "@brand": ["src/brands/nk/index.ts"], "@brand-copy": ["src/brands/nk/copy.ts"] }
   }
 }
