@@ -10,7 +10,7 @@
     "preview": "astro preview",
     "check": "astro check && node scripts/guard.mjs",
     "guard": "node scripts/guard.mjs",
-    "test": "node --test src/lib/turnstile.test.ts src/lib/quote.test.ts src/lib/promo.test.ts src/lib/cart-load.test.ts src/lib/brands.test.ts src/lib/cookie-path.test.ts src/lib/sanitize.test.ts src/lib/fill.test.ts src/lib/business-display.test.ts src/lib/woo-redirects.test.ts scripts/guard.test.mjs"
+    "test": "node --test src/lib/turnstile.test.ts src/lib/quote.test.ts src/lib/promo.test.ts src/lib/cart-load.test.ts src/lib/brands.test.ts src/lib/cookie-path.test.ts src/lib/sanitize.test.ts src/lib/fill.test.ts src/lib/business-display.test.ts src/lib/woo-redirects.test.ts src/lib/swr.test.ts scripts/guard.test.mjs"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.12",

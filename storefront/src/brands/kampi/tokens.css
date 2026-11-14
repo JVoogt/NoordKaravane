@@ -231,7 +231,9 @@ p.input, p.input:hover { background: var(--color-paper-2); border-color: var(--c
   transition: transform 0.22s var(--ease-out), box-shadow 0.22s var(--ease-out);
 }
 .frame__photo img { mix-blend-mode: multiply; }  /* white product backdrops take the well's cream */
-.frame:hover .frame__photo img:first-child { transform: none; }  /* one hover signal: the well lifts, the photo stays (NK scales it, global.css:163) */
+.frame:hover .frame__photo img:first-child { transform: none; }
+/* The second photo replaces the first on hover: with multiply blending, a first photo left visible shows through it. */
+.frame:hover .frame__photo img:first-child:not(:last-child), .frame:focus-visible .frame__photo img:first-child:not(:last-child) { opacity: 0; }  /* one hover signal: the well lifts, the photo stays (NK scales it, global.css:163) */
 .frame:hover .frame__photo { transform: translateY(-4px); box-shadow: var(--kampi-shadow-lift-hi); }
 .frame:hover .frame__title { color: var(--color-wine-lit); }
 .frame .typed { color: var(--color-wine-lit); font-weight: 800; }  /* price reads olive, never sand */
