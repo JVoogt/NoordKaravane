@@ -1,7 +1,6 @@
 ---
-// Lift kit price block. The price comes from pricing.ts; the block ends in the page's one primary CTA.
-import { Picture } from 'astro:assets';
-import liftKit from '../assets/lift-kit.jpg';
+// Lift kit price block: the price, then the specs as a ruled table, ending in the page's one primary CTA.
+// The price comes from pricing.ts. The photo of the fitted kit is the page's hero photo.
 import { ADDONS, fmtR } from '../data/pricing';
 import { servicePath } from '../data/routes';
 import CtaButton from './CtaButton.astro';
@@ -22,35 +21,21 @@ const specs = [
 ];
 ---
 
-<section id="lift-kit" class="block">
-  <div class="container">
-    <div class="promo">
-      <div class="promo-media">
-        <Picture
-          src={liftKit}
-          formats={['avif', 'webp']}
-          fallbackFormat="jpg"
-          widths={[480, 640, 900]}
-          sizes="(max-width: 1100px) 92vw, 560px"
-          quality={70}
-          alt="Jurgens Penta with a 50 mm lift kit fitted at Noord Karavane"
-          loading="lazy"
-          decoding="async"
-        />
-        <span class="promo-ticket">Fitted at our workshop</span>
+<section id="lift-kit" class="sec">
+  <div class="wrap kit">
+    <div>
+      <h2>50 mm lift kit: price, fit time and warranty</h2>
+      <div class="kit-price">
+        <span class="amt nums">{fmtR(price)}</span>
+        <span class="unit">Fitted, taxes included</span>
       </div>
-      <div class="promo-detail">
-        <h2 class="promo-title">50 mm lift kit: price, fit time and warranty</h2>
-        <div class="promo-price">
-          <span class="amt">{fmtR(price)}</span>
-          <span class="unit">Fitted, taxes included</span>
-        </div>
-        <p class="promo-sub">Booking a <a href={servicePath('caravan-service') + '#pricing'}>caravan service</a> anyway? Tick the lift kit as an add-on in the estimate and we fit both in one visit.</p>
-        <dl class="promo-specs">
-          {specs.map((s) => <div class="promo-spec"><dt class="k">{s.k}</dt><dd class="v">{s.v}</dd></div>)}
-        </dl>
-        <CtaButton href={href} variant="primary" external>{label}</CtaButton>
-      </div>
+      <p class="kit-sub">Booking a <a class="link" href={servicePath('caravan-service') + '#pricing'}>caravan service</a> anyway? Tick the lift kit as an add-on in the estimate and we fit both in one visit.</p>
+    </div>
+    <div>
+      <dl class="specs nums">
+        {specs.map((s) => <div><dt>{s.k}</dt><dd>{s.v}</dd></div>)}
+      </dl>
+      <CtaButton href={href} variant="primary" icon="wa" external>{label}</CtaButton>
     </div>
   </div>
 </section>

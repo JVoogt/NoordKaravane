@@ -1,0 +1,47 @@
+---
+// The sample inspection report on the Home page: the job card a customer gets, with real workshop photos as the
+// evidence on the first finding and the workshop's stamp at the foot. An example format, labelled as such.
+import { Image } from 'astro:assets';
+import ev1 from '../assets/ev1.jpg';
+import ev2 from '../assets/ev2.jpg';
+import ev3 from '../assets/ev3.jpg';
+import ev4 from '../assets/ev4.jpg';
+import stamp from '../assets/stamp.svg';
+import { BUSINESS } from '../data/business';
+import { SAMPLE_FINDINGS } from '../data/sample-report';
+
+const photos = [
+  { src: ev1, alt: 'Two wheel bearings laid out on a cloth' },
+  { src: ev2, alt: 'Brake shoes and springs with the drum removed' },
+  { src: ev3, alt: 'Stub axle with old grease, drum removed' },
+  { src: ev4, alt: 'Cleaned stub axle and backing plate on an axle stand' },
+];
+const a = BUSINESS.address;
+---
+
+<div class="rep nums" role="group" aria-label="Example inspection report format">
+  <div class="rep-head">
+    <div>
+      <div class="rep-title">Service inspection summary</div>
+      <div class="rep-sub">Example format, no customer data shown</div>
+    </div>
+    <div class="rep-status">Quote ready</div>
+  </div>
+  {SAMPLE_FINDINGS.map((f, i) => (
+    <div class="rep-finding">
+      <strong>{f.k}</strong>{" "}<span class:list={['rep-state', { ok: f.low }]}>{f.state}</span>
+      <p>{f.v}</p>
+      {i === 0 && (
+        <ul class="rep-evid" aria-label={f.evidence}>
+          {photos.map((p) => (
+            <li><Image src={p.src} widths={[160, 320]} sizes="(max-width: 860px) 22vw, 130px" format="webp" quality={68} alt={p.alt} /></li>
+          ))}
+        </ul>
+      )}
+    </div>
+  ))}
+  <div class="rep-foot">
+    <p>Nothing extra gets done without your go-ahead.</p>
+    <Image src={stamp} width={140} height={92} alt={`${BUSINESS.name} service stamp: ${a.street}, ${a.locality}, ${BUSINESS.phone.display}`} />
+  </div>
+</div>

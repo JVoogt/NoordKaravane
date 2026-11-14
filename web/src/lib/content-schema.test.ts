@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ADDONS, AXLE_OPTIONS } from '../data/pricing';
-import { text, serviceSchema, assertRelatedOk, priceAmount } from './content-schema';
+import { text, serviceSchema, assertEmergencyFields, assertRelatedOk, priceAmount } from './content-schema';
 
 describe('content text field', () => {
   it('rejects the empty string (blank whatsapp chat, empty <title>)', () => {
@@ -84,5 +84,30 @@ describe('assertRelatedOk: a page never lists itself', () => {
 
   it('passes for other slugs', () => {
     expect(() => assertRelatedOk('repairs', ['caravan-service', 'recoveries'])).not.toThrow();
+  });
+});
+
+describe('assertEmergencyFields: safety and checklist only render on an emergency page', () => {
+  const checklist = { heading: 'Have this ready', items: ['Where you are', 'What happened'] };
+
+  it('throws when a page that is not an emergency page sets safety', () => {
+    expect(() => assertEmergencyFields('repairs', { safety: 'Get off the road first.' }, false)).toThrow(/services\/repairs\.md sets safety/);
+  });
+
+  it('throws when a page that is not an emergency page sets checklist', () => {
+    expect(() => assertEmergencyFields('repairs', { checklist }, false)).toThrow(/services\/repairs\.md sets checklist/);
+  });
+
+  it('names both fields when both are set', () => {
+    expect(() => assertEmergencyFields('lift-kits', { safety: 'x', checklist }, false)).toThrow(/sets safety and checklist/);
+  });
+
+  it('passes on an emergency page, with or without the fields', () => {
+    expect(() => assertEmergencyFields('recoveries', { safety: 'x', checklist }, true)).not.toThrow();
+    expect(() => assertEmergencyFields('recoveries', {}, true)).not.toThrow();
+  });
+
+  it('passes on any other page that sets neither', () => {
+    expect(() => assertEmergencyFields('repairs', {}, false)).not.toThrow();
   });
 });

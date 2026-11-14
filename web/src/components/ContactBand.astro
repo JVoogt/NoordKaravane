@@ -1,10 +1,10 @@
 ---
-// Closing contact band: the last section of every page. One compact block that carries the WhatsApp and Call
-// actions, the address and the hours, so pages no longer end with a separate hours card and a tall slogan panel.
-// waText keeps each page's own WhatsApp message; heading and text let a page say what to send.
+// Closing band: the last section of every page but Home. An ink field with the WhatsApp and Call actions and,
+// beside them, the workshop address and hours as a ruled list. waText keeps each page's own WhatsApp message;
+// heading and text let a page say what to send. The .contact hook and both links are what verify check 14 reads.
 import CtaButton from './CtaButton.astro';
-import Hours from './Hours.astro';
 import { BUSINESS } from '../data/business';
+import { formatHoursRows } from '../lib/hours';
 import { WA_TEXT, waUrl } from '../lib/whatsapp';
 
 interface Props {
@@ -18,7 +18,7 @@ interface Props {
   placeLabel?: string;
   /** Add the recoveries line under the workshop hours (Recoveries page). */
   recoveries?: boolean;
-  /** Emergency page: Call first and filled, WhatsApp beside it as the ghost second choice (matches the hero). */
+  /** Emergency page: Call first and filled, WhatsApp beside it as the outlined second choice (matches the hero). */
   callFirst?: boolean;
 }
 const {
@@ -32,48 +32,53 @@ const {
   callFirst = false,
 } = Astro.props;
 const a = BUSINESS.address;
+const tel = `tel:${BUSINESS.phone.e164}`;
 ---
 
-<section class="block block--band" id={id}>
-  <div class="container">
+<section class="sec band on-ink" id={id}>
+  <div class="wrap">
     <div class:list={['contact', { 'contact--solo': place === 'none' }]}>
       <div class="contact-main">
         <h2>{heading}</h2>
-        <p>{text}</p>
-        <div class="contact-actions">
+        <p class="contact-text">{text}</p>
+        <div class="cta-row contact-actions">
           {callFirst ? (
             <Fragment>
-              <CtaButton href={`tel:${BUSINESS.phone.e164}`} variant="primary">Call {BUSINESS.phone.display}</CtaButton>
-              <CtaButton href={waUrl(waText)} variant="ghost" external>WhatsApp {BUSINESS.phone.display}</CtaButton>
+              <CtaButton href={tel} variant="primary" icon="tel">Call {BUSINESS.phone.display}</CtaButton>
+              <CtaButton href={waUrl(waText)} variant="ghost" icon="wa" external>WhatsApp {BUSINESS.phone.display}</CtaButton>
             </Fragment>
           ) : (
             <Fragment>
-              <CtaButton href={waUrl(waText)} variant="primary" external>WhatsApp {BUSINESS.phone.display}</CtaButton>
-              <CtaButton href={`tel:${BUSINESS.phone.e164}`} variant="ghost">Call {BUSINESS.phone.display}</CtaButton>
+              <CtaButton href={waUrl(waText)} variant="primary" icon="wa" external>WhatsApp {BUSINESS.phone.display}</CtaButton>
+              <CtaButton href={tel} variant="ghost" icon="tel">Call {BUSINESS.phone.display}</CtaButton>
             </Fragment>
           )}
         </div>
+        <slot />
       </div>
       {place !== 'none' && (
-        <div class="loc-card contact-loc">
-          <div class="loc-item">
-            <div class="loc-k">Workshop</div>
-            <div class="loc-v">{a.street}<span class="sr-only">, </span><small>{a.locality}, {a.city}, {a.postalCode}</small></div>
-          </div>
-          <div class="loc-item">
-            <div class="loc-k">Workshop hours</div>
-            <Hours />
-          </div>
-          {recoveries && (
-            <div class="loc-item">
-              <div class="loc-k">{BUSINESS.recoveriesNote}</div>
-              <div class="loc-v"><a href={`tel:${BUSINESS.phone.e164}`}>Call {BUSINESS.phone.display}</a></div>
+        <div class="band-loc">
+          <dl class="find-facts nums">
+            <div>
+              <dt>Workshop</dt>
+              <dd>{a.street}<span class="sr-only">, </span><small>{a.locality}, {a.city}, {a.postalCode}</small></dd>
             </div>
-          )}
+            <div>
+              <dt>Workshop hours</dt>
+              <dd class="hrs">
+                {formatHoursRows(BUSINESS.hours).map((r) => <Fragment><span>{r.days}</span>{' '}<span>{r.time}</span>{' '}</Fragment>)}
+              </dd>
+            </div>
+            {recoveries && (
+              <div>
+                <dt>{BUSINESS.recoveriesNote}</dt>
+                <dd><a class="find-tel" href={tel}>Call {BUSINESS.phone.display}</a></dd>
+              </div>
+            )}
+          </dl>
           <CtaButton href="/find-us/" variant="ghost">{placeLabel}</CtaButton>
         </div>
       )}
     </div>
-    <slot />
   </div>
 </section>

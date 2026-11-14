@@ -455,7 +455,9 @@ for (const route of have) {
     const ok = !!band && !!band.querySelector('a[href^="https://wa.me/27833349357"]') && !!band.querySelector('a[href="tel:+27833349357"]');
     report(ok, '14 structure', `${route} closing CTA band`, ok ? 'last section has a WhatsApp and a Call link' : 'last <main> section has no .contact band with both links');
     const call = root.querySelector('.nav a.nav-call');
-    report(!!call && call.getAttribute('href') === 'tel:+27833349357' && call.getAttribute('aria-label') === 'Call Noord Karavane', '14 structure', `${route} header Call button`, call ? 'tel link and aria-label ok' : 'no .nav a.nav-call');
+    // Redesign (2026-11-14): the header Call link shows the number as text (or "Call" on Recoveries) instead of a
+    // bare phone icon, so its accessible name now carries the number as well (the name must contain the visible text).
+    report(!!call && call.getAttribute('href') === 'tel:+27833349357' && call.getAttribute('aria-label') === 'Call Noord Karavane on 083 334 9357', '14 structure', `${route} header Call button`, call ? 'tel link and aria-label ok' : 'no .nav a.nav-call');
     // Recoveries: Call is the header's primary (filled) action; elsewhere WhatsApp booking is. The topbar on
     // Recoveries is the 24/7 line with the number and carries no workshop hours.
     const rec = route === '/services/recoveries/';
@@ -467,6 +469,268 @@ for (const route of have) {
   if (pages.has('/')) {
     const chips = pages.get('/').root.querySelectorAll('.hero-trust-item').map((n) => squash(n.text));
     report(!chips.some((c) => /whatsapp direct/i.test(c)), '14 structure', '/ trust chips', chips.join(' | '));
+  }
+}
+
+// 15. Site redesign (2026-11-14): the Home page's new structure and the shared chrome every page carries.
+// Every literal here is an oracle typed by hand from the approved prototype and the owner's facts, never read from src.
+{
+  const WA = 'https://wa.me/27833349357';
+  const TEL = 'tel:+27833349357';
+  const textParam = (href) => {
+    try {
+      return new URL(href).searchParams.get('text');
+    } catch {
+      return null;
+    }
+  };
+  const home = pages.get('/');
+  if (home) {
+    const root = home.root;
+    const h1 = squash(root.querySelector('h1')?.text ?? '');
+    report(h1 === 'Caravan workshop in Pretoria North. Keep her road-ready.', '15 redesign', '/ h1 says the place first, then the headline', h1);
+    const ids = ['services', 'why-us', 'reviews', 'recoveries', 'location', 'rentals'];
+    const missingIds = ids.filter((id) => !root.querySelector(`main [id="${id}"]`));
+    report(missingIds.length === 0, '15 redesign', '/ section ids', missingIds.length ? `missing: ${missingIds.join(', ')}` : ids.join(', '));
+
+    // Relocated hero lede: each of its three sentences still stands, in its new place.
+    const lede = squash(root.querySelector('.hero .lede')?.text ?? '');
+    report(lede === "You see what we found, and what it'll cost, before we pick up a spanner.", '15 redesign', '/ hero sentence', lede || 'no .hero .lede');
+    const servicesText = visibleText(root.querySelector('#services') ?? parse(''));
+    report(servicesText.includes('Caravan servicing, repairs, electrical and solar, 50 mm lift kits and recoveries, from 252 General Beyers Street.'), '15 redesign', '/ services intro sentence sits in #services');
+    const howText = visibleText(root.querySelector('#why-us') ?? parse(''));
+    report(howText.includes('Services and repairs start with an inspection.'), '15 redesign', '/ inspection sentence opens #why-us');
+
+    // Images: the hero photo is the one eager, high-priority image; everything else in <main> is lazy.
+    const heroImg = root.querySelector('.hero img');
+    report(!!heroImg && heroImg.getAttribute('loading') === 'eager' && heroImg.getAttribute('fetchpriority') === 'high', '15 redesign', '/ hero image is eager with fetchpriority high', heroImg ? `loading=${heroImg.getAttribute('loading')} fetchpriority=${heroImg.getAttribute('fetchpriority')}` : 'no .hero img');
+    const notLazy = root.querySelectorAll('main img').filter((i) => i !== heroImg && i.getAttribute('loading') !== 'lazy').map((i) => i.getAttribute('alt'));
+    report(root.querySelectorAll('main img').length >= 8 && notLazy.length === 0, '15 redesign', '/ every other image in main is lazy', `${root.querySelectorAll('main img').length} img, not lazy: [${notLazy.join(' | ')}]`);
+
+    // Price board: one linked row per service page, in route order.
+    const rows = root.querySelectorAll('#services a.board-row').map((a) => a.getAttribute('href'));
+    report(JSON.stringify(rows) === JSON.stringify(SERVICE_ROUTES), '15 redesign', '/ price board rows link to the five service pages', rows.join(' '));
+
+    // WhatsApp message builder: a plain wa.me link with the default message is in the markup (works with scripting off).
+    const send = root.querySelector('#why-us [data-compose] a[data-compose-send]')?.getAttribute('href');
+    report(!!send && send.startsWith(`${WA}?text=`) && textParam(send) === "Hi, I'd like to book a service. I can send a photo.", '15 redesign', '/ message builder falls back to a plain wa.me link', send ? JSON.stringify(textParam(send)) : 'no [data-compose] a[data-compose-send]');
+    const radios = root.querySelectorAll('#why-us [data-compose] input[type="radio"]');
+    report(radios.length === 5 && radios[0].hasAttribute('checked') && radios.filter((r) => r.hasAttribute('checked')).length === 1, '15 redesign', '/ message builder offers five needs, the first one chosen', `${radios.length} radio(s)`);
+
+    // Sample inspection report: four evidence photos and the stamp, all with alt text.
+    const evid = root.querySelectorAll('#why-us .rep-evid img');
+    const stamp = root.querySelector('#why-us .rep-foot img');
+    report(evid.length === 4 && !!stamp && (stamp.getAttribute('alt') ?? '').includes('083 334 9357'), '15 redesign', '/ sample report has four evidence photos and the stamp', `${evid.length} photo(s), stamp ${stamp ? 'present' : 'MISSING'}`);
+    const reportText = visibleText(root.querySelector('#why-us .rep') ?? parse(''));
+    report(reportText.includes('Example format, no customer data shown'), '15 redesign', '/ sample report is labelled as an example');
+
+    // Recoveries band.
+    const rec = root.querySelector('#recoveries');
+    const recText = rec ? visibleText(rec) : '';
+    report(squash(rec?.querySelector('h2')?.text ?? '') === 'Stuck far from home?' && recText.includes('Insurance-accredited caravan and trailer recoveries, nationwide and cross-border.'), '15 redesign', '/ recoveries band heading and sentence', recText.slice(0, 90) || 'no #recoveries');
+    const plates = (rec?.querySelectorAll('.plates li') ?? []).map((li) => `${squash(li.querySelector('b')?.text ?? '')}=${squash(li.querySelector('span')?.text ?? '')}`);
+    report(JSON.stringify(plates) === JSON.stringify(['BW=Botswana', 'MZ=Mozambique', 'ZW=Zimbabwe', 'NA=Namibia', 'SZ=Eswatini']), '15 redesign', '/ recoveries band shows the five country plates', plates.join(' '));
+    const recCall = rec?.querySelector(`a[href="${TEL}"]`);
+    report(!!recCall && squash(recCall.text) === 'Call 083 334 9357' && !!rec?.querySelector('a[href="/services/recoveries/"]'), '15 redesign', '/ recoveries band has the Call button and the link to the recoveries page');
+  }
+
+  // Oracle: the verified workshop hours as the top line prints them (hard-coded, never read from src).
+  const TOPBAR_HOURS = 'Mon\u2013Thu 08:00\u201316:00 \u00b7 Fri 08:00\u201314:00';
+  for (const route of have) {
+    const root = pages.get(route).root;
+    const emergency = route === '/services/recoveries/';
+    // The fixed bar on small screens replaces the old floating button: WhatsApp (the page's own message, check 12) and Call.
+    const bar = root.querySelector('body > .bar');
+    const ok = !!bar && !!bar.querySelector(`a.wa-float[href^="${WA}"]`) && !!bar.querySelector(`a[href="${TEL}"]`);
+    report(ok, '15 redesign', `${route} fixed bar`, ok ? 'WhatsApp and Call links' : 'no body > .bar with a.wa-float and a tel link');
+    // Source order is the reading and Tab order: Call comes first on Recoveries, WhatsApp first everywhere else.
+    const first = bar?.querySelector('a');
+    const firstIs = !first ? 'none' : first.getAttribute('href') === TEL ? 'Call' : first.classList.contains('wa-float') ? 'WhatsApp' : 'other';
+    report(firstIs === (emergency ? 'Call' : 'WhatsApp'), '15 redesign', `${route} fixed bar starts with ${emergency ? 'Call' : 'WhatsApp'} in the markup`, `first link: ${firstIs}`);
+    // The top line carries the plain hours as static text. There is no live "open now" line: the weekly hours know
+    // nothing about public holidays, so the page must not claim the workshop is open.
+    const topText = visibleText(root.querySelector('.topbar') ?? parse(''));
+    const hooks = root.querySelectorAll('[data-open-now], [data-hours]').length;
+    const claim = visibleText(root).match(/open now|closed now/i);
+    report(hooks === 0 && !claim, '15 redesign', `${route} makes no live open or closed claim`, hooks ? `${hooks} [data-open-now]/[data-hours] hook(s)` : claim ? `text says "${claim[0]}"` : '');
+    if (emergency) {
+      report(topText !== '' && !topText.includes('08:00'), '15 redesign', `${route} top line carries no workshop hours`, topText.slice(0, 80) || 'no .topbar');
+    } else {
+      report(topText.includes(TOPBAR_HOURS), '15 redesign', `${route} top line carries the hours as static text`, topText.slice(0, 80) || 'no .topbar');
+    }
+  }
+  // No shipped file (page or script) may still hold the live line's wording.
+  const liveWording = allFiles.filter((f) => /\.(html|js)$/.test(f) && /Open now until|Closed now\./.test(readFileSync(f, 'utf8'))).map((f) => relative(DIST, f));
+  report(liveWording.length === 0, '15 redesign', 'no built page or script carries the live open or closed wording', liveWording.join(', '));
+}
+
+// 16. Site redesign, phase 2 (2026-11-14): the service pages, Find us and the 404 page in the Home page's system.
+// Every literal here is an oracle typed by hand (the published headlines, the related links, the spec rows), never
+// read from src.
+{
+  const TEL = 'tel:+27833349357';
+  // The two display lines of each page headline. Joined by one space they are the headline as it was published.
+  const PAGE_HEROES = {
+    '/services/caravan-service/': ['Caravan and trailer service', 'in Pretoria North'],
+    '/services/repairs/': ['Caravan repairs', 'in Pretoria North'],
+    '/services/solar-electrical/': ['Caravan electrical and solar', 'in Pretoria North'],
+    '/services/recoveries/': ['Caravan and trailer recoveries,', 'nationwide and cross-border'],
+    '/services/lift-kits/': ['50 mm caravan lift kits,', 'fitted in Pretoria North'],
+    '/find-us/': ['Find the workshop', 'in Pretoria North'],
+  };
+  // Related services per page, in the order the page lists them. One related service is a sentence in the closing
+  // band (browser-check asserts it), so that page has no rows.
+  const RELATED = {
+    '/services/caravan-service/': ['/services/repairs/', '/services/solar-electrical/', '/services/lift-kits/'],
+    '/services/repairs/': ['/services/caravan-service/', '/services/solar-electrical/', '/services/recoveries/'],
+    '/services/solar-electrical/': [],
+    '/services/recoveries/': ['/services/repairs/', '/services/caravan-service/'],
+    '/services/lift-kits/': ['/services/caravan-service/', '/services/repairs/', '/services/solar-electrical/'],
+  };
+  const NO_HERO_PHOTO = '/services/recoveries/';
+  // Class names of the card system the redesign replaced. None may come back in any built page.
+  const OLD_CARDS = ['loc-card', 'loc-item', 'fact', 'chip-list', 'svc', 'price-cards', 'inspection-report', 'report-row', 'step-dot', 'promo', 'hero-panel', 'hero-grid', 'block', 'sec-title', 'notfound-links', 'related-grid'];
+  const oldCardsIn = (root) => OLD_CARDS.filter((c) => root.querySelector(`.${c}`));
+  const PLATES = ['BW=Botswana', 'MZ=Mozambique', 'ZW=Zimbabwe', 'NA=Namibia', 'SZ=Eswatini'];
+  const platesOf = (node) => (node?.querySelectorAll('.plates li') ?? []).map((li) => `${squash(li.querySelector('b')?.text ?? '')}=${squash(li.querySelector('span')?.text ?? '')}`);
+
+  for (const route of have.filter((r) => PAGE_HEROES[r])) {
+    const root = pages.get(route).root;
+    const [first, second] = PAGE_HEROES[route];
+    const hero = root.querySelector('main > header.hero.on-ink');
+    const h1 = hero?.querySelector('h1');
+    const hi = h1?.querySelectorAll('.hi') ?? [];
+    report(!!h1 && squash(h1.text) === `${first} ${second}` && hi.length === 1 && squash(hi[0].text) === second, '16 pages', `${route} hero is the ink field, headline in two lines with the words unchanged`, h1 ? `"${squash(h1.text)}" highlighted: ${hi.map((n) => `"${squash(n.text)}"`).join(', ') || 'none'}` : 'no main > header.hero.on-ink with an h1');
+    report(!!hero?.querySelector('nav.crumbs a[href="/"]'), '16 pages', `${route} breadcrumbs sit in the hero`);
+
+    const imgs = root.querySelectorAll('main img');
+    const heroImg = hero?.querySelector('.hero-photo img');
+    if (route === NO_HERO_PHOTO) {
+      report(!heroImg && JSON.stringify(platesOf(hero)) === JSON.stringify(PLATES), '16 pages', `${route} hero carries the five country plates and no photo`, platesOf(hero).join(' ') || 'no .plates in the hero');
+    } else {
+      const eager = imgs.filter((i) => i.getAttribute('loading') !== 'lazy');
+      report(!!heroImg && heroImg.getAttribute('loading') === 'eager' && heroImg.getAttribute('fetchpriority') === 'high' && eager.length === 1 && eager[0] === heroImg, '16 pages', `${route} hero photo is the one eager, high-priority image`, heroImg ? `loading=${heroImg.getAttribute('loading')} fetchpriority=${heroImg.getAttribute('fetchpriority')}; ${eager.length} image(s) in main not lazy` : 'no .hero-photo img');
+    }
+
+    const sections = root.querySelectorAll('main > section');
+    const notSec = sections.filter((s) => !s.classList.contains('sec')).map((s) => s.getAttribute('id') ?? '?');
+    const last = sections.at(-1);
+    report(notSec.length === 0 && !!last && last.classList.contains('band') && last.classList.contains('on-ink') && !!last.querySelector('h2'), '16 pages', `${route} sections use the shared section rhythm and end in the ink closing band`, notSec.length ? `not .sec: ${notSec.join(', ')}` : `last section: ${last?.getAttribute('class') ?? 'none'}`);
+    const old = oldCardsIn(root);
+    report(old.length === 0, '16 pages', `${route} has nothing left of the old card system`, old.map((c) => `.${c}`).join(' '));
+
+    // FAQ: every question row carries the drawn plus and minus; aria-expanded is never baked into the markup (the
+    // page's script sets it once it has bound, so it cannot go stale without scripting).
+    const summaries = root.querySelectorAll('details.faq-item > summary');
+    const noIcon = summaries.filter((s) => s.querySelectorAll('.faq-toggle svg').length !== 2).length;
+    const baked = summaries.filter((s) => s.hasAttribute('aria-expanded')).length;
+    report(summaries.length > 0 && noIcon === 0 && baked === 0, '16 pages', `${route} FAQ rows carry the plus and minus icons`, `${summaries.length} row(s), ${noIcon} without both icons, ${baked} with aria-expanded baked in`);
+
+    if (RELATED[route]) {
+      const rows = root.querySelectorAll('#related a.board-row').map((a) => a.getAttribute('href'));
+      report(JSON.stringify(rows) === JSON.stringify(RELATED[route]), '16 pages', `${route} related services are board rows to the other pages`, rows.join(' ') || 'no #related a.board-row');
+    }
+  }
+
+  const CARAVAN = '/services/caravan-service/';
+  if (pages.has(CARAVAN)) {
+    const root = pages.get(CARAVAN).root;
+    const prices = root.querySelectorAll('#pricing .board .price').map((p) => `${squash(p.querySelector('h3')?.text ?? '')}=${squash(p.querySelector('.amt')?.text ?? '')}`);
+    report(JSON.stringify(prices) === JSON.stringify(['Single axle, no brakes=R949from', 'Single axle with brakes=R1 499from', 'Double axle with brakes=R2 299from']), '16 pages', `${CARAVAN} packages are three rows of one price board`, prices.join(' | ') || 'no #pricing .board .price');
+    const rep = root.querySelector('#inspection-report .rep');
+    const stamp = rep?.querySelector('.rep-foot img');
+    report(!!rep && rep.querySelectorAll('.rep-evid img').length === 4 && rep.querySelectorAll('.rep-finding').length === 3 && (stamp?.getAttribute('alt') ?? '').includes('083 334 9357') && visibleText(rep).includes('Example format, no customer data shown'), '16 pages', `${CARAVAN} inspection report is the Home page's job card (three findings, four photos, the stamp, labelled as an example)`, rep ? `${rep.querySelectorAll('.rep-finding').length} finding(s), ${rep.querySelectorAll('.rep-evid img').length} photo(s)` : 'no #inspection-report .rep');
+    const steps = root.querySelectorAll('#process ol.steps > li h3').map((h) => squash(h.text));
+    report(JSON.stringify(steps) === JSON.stringify(['Message us', 'Inspection', 'Quote', 'The work', 'Sign-off']), '16 pages', `${CARAVAN} process is the five numbered steps`, steps.join(' > ') || 'no #process ol.steps');
+    const est = root.querySelector('#pricing [data-estimator]');
+    report(!!est && !est.hasAttribute('data-est-ready') && !!est.querySelector('.est-static') && !!est.querySelector('.est-live') && est.querySelectorAll('svg use[href="#i-wa"]').length === 1, '16 pages', `${CARAVAN} estimator ships unbound (its script marks it ready) and its button uses the shared WhatsApp icon`, est ? `data-est-ready ${est.hasAttribute('data-est-ready') ? 'BAKED IN' : 'absent'}` : 'no #pricing [data-estimator]');
+  }
+
+  const LIFT = '/services/lift-kits/';
+  if (pages.has(LIFT)) {
+    const root = pages.get(LIFT).root;
+    const specs = root.querySelectorAll('#lift-kit dl.specs > div').map((d) => `${squash(d.querySelector('dt')?.text ?? '')}=${squash(d.querySelector('dd')?.text ?? '')}`);
+    report(JSON.stringify(specs) === JSON.stringify(['Lift height=50 mm', 'Fit time=About 1 day', 'Warranty=12 months', 'Fitment=Most models']), '16 pages', `${LIFT} specs are one ruled table`, specs.join(' | ') || 'no #lift-kit dl.specs');
+    const alt = root.querySelector('header.hero .hero-photo img')?.getAttribute('alt') ?? '';
+    report(alt === 'Jurgens Penta with a 50 mm lift kit fitted at Noord Karavane' && root.querySelectorAll('#lift-kit img').length === 0, '16 pages', `${LIFT} the lift kit photo is the hero photo (shown once)`, alt || 'no hero photo');
+  }
+
+  const FIND = '/find-us/';
+  if (pages.has(FIND)) {
+    const root = pages.get(FIND).root;
+    const loc = root.querySelector('#location');
+    const hrs = (loc?.querySelectorAll('.find-facts .hrs span') ?? []).map((s) => squash(s.text));
+    report(JSON.stringify(hrs) === JSON.stringify(['Mon to Thu', '08:00 to 16:00', 'Fri', '08:00 to 14:00', 'Sat and Sun', 'closed']), '16 pages', `${FIND} hours are a table of day groups and times`, hrs.join(' | ') || 'no #location .find-facts .hrs');
+    const facts = (loc?.querySelectorAll('.find-facts > div > dt') ?? []).map((d) => squash(d.text));
+    report(JSON.stringify(facts) === JSON.stringify(['Address', 'Workshop hours', 'Call']) && !!loc?.querySelector(`.find-facts a[href="${TEL}"]`), '16 pages', `${FIND} address, hours and the number are one ruled list`, facts.join(' | '));
+    const sign = loc?.querySelector('figure.loc-photo img')?.getAttribute('alt') ?? '';
+    report(sign.includes('painted Noord Karavane sign') && !!loc?.querySelector('.map-card iframe[title]') && !!loc?.querySelector('.map-card .map-bar a[href*="maps.google.com"]'), '16 pages', `${FIND} street sign photo and the map card with its own Maps link`, sign || 'no figure.loc-photo img');
+    const links = (loc?.querySelectorAll('.loc-services a') ?? []).map((a) => a.getAttribute('href'));
+    report(JSON.stringify(links) === JSON.stringify(SERVICE_ROUTES), '16 pages', `${FIND} lists the five service pages`, links.join(' '));
+  }
+
+  {
+    const nf = parse(notFoundRaw);
+    const hero = nf.querySelector('main > header.hero.on-ink.notfound');
+    const h1 = hero?.querySelector('h1');
+    report(!!h1 && squash(h1.text) === 'Page not found.' && squash(h1.querySelector('.hi')?.text ?? '') === 'not found.', '16 pages', '/404.html hero is the ink field with the two-line headline', h1 ? squash(h1.text) : 'no main > header.hero.on-ink.notfound h1');
+    report(!!hero?.querySelector('a[href^="https://wa.me/27833349357"]') && !!hero?.querySelector(`a[href="${TEL}"]`) && !!hero?.querySelector('a[href="/"]'), '16 pages', '/404.html hero offers home, WhatsApp and Call');
+    const rows = nf.querySelectorAll('main a.board-row').map((a) => a.getAttribute('href'));
+    report(JSON.stringify(rows) === JSON.stringify([...SERVICE_ROUTES, '/find-us/']), '16 pages', '/404.html board rows lead to the five service pages and Find us', rows.join(' ') || 'no a.board-row');
+    const old = oldCardsIn(nf);
+    report(old.length === 0, '16 pages', '/404.html has nothing left of the old card system', old.map((c) => `.${c}`).join(' '));
+  }
+}
+
+// 17. Review round (2026-11-14): text that reads right with the tags stripped, heading levels, and the hooks the
+// two client scripts bind to. Every literal is an oracle typed by hand, never read from src.
+{
+  // Adjacent inline elements carry a real space between them, so a reader that strips the tags (a search snippet,
+  // a screen reader's line, copy and paste) never gets "Mon to Thu08:00".
+  const HOURS_TEXT = 'Mon to Thu 08:00 to 16:00 Fri 08:00 to 14:00 Sat and Sun closed';
+  for (const route of have) {
+    const hrs = pages.get(route).root.querySelectorAll('.hrs').map((n) => squash(n.text));
+    report(hrs.length > 0 && hrs.every((t) => t === HOURS_TEXT), '17 plain text', `${route} hours read "Mon to Thu 08:00 ..." with the tags stripped`, hrs.join(' | ') || 'no .hrs');
+  }
+  for (const route of ['/', '/services/recoveries/'].filter((r) => pages.has(r))) {
+    const plates = squash(pages.get(route).root.querySelector('.plates')?.text ?? '');
+    report(plates === 'BW Botswana MZ Mozambique ZW Zimbabwe NA Namibia SZ Eswatini', '17 plain text', `${route} country plates read code, space, name`, plates || 'no .plates');
+  }
+  for (const route of have.filter((r) => r !== '/services/recoveries/')) {
+    const top = squash(pages.get(route).root.querySelector('.topbar')?.text ?? '');
+    report(top === 'Mon–Thu 08:00–16:00 · Fri 08:00–14:00 Caravan workshop, 252 General Beyers Street, Pretoria North WhatsApp or call 083 334 9357', '17 plain text', `${route} top line reads as three spaced parts, the number once`, top || 'no .topbar');
+  }
+  if (pages.has('/')) {
+    const by = pages.get('/').root.querySelectorAll('#reviews .by').map((n) => squash(n.text));
+    const glued = by.filter((t) => !/\S \d{1,2} [A-Z][a-z]+ \d{4}$/.test(t));
+    report(by.length > 0 && glued.length === 0, '17 plain text', '/ review bylines read name, space, date', by.join(' | ') || 'no #reviews .by');
+  }
+
+  // Heading levels never skip one on the way down (h1 then h3 leaves a screen reader's outline with a hole).
+  const outlines = [...have.map((r) => [r, pages.get(r).root]), ['/404.html', parse(notFoundRaw)]];
+  for (const [route, root] of outlines) {
+    const levels = root.querySelectorAll('h1,h2,h3,h4,h5,h6').map((h) => Number(h.tagName[1]));
+    const skips = levels.map((l, i) => (l > (levels[i - 1] ?? 0) + 1 ? `h${levels[i - 1] ?? 0} then h${l}` : null)).filter(Boolean);
+    report(levels.length > 0 && skips.length === 0, '17 headings', `${route} heading levels never skip one`, skips.length ? [...new Set(skips)].join(', ') : levels.join(''));
+  }
+
+  // Client hooks. Each selector is what a client script looks up (it returns before binding when one is missing,
+  // leaving the static fallback), so it must be in the page AND still be the literal the shipped script asks for:
+  // a rename on either side alone fails here instead of quietly switching the feature off.
+  const shipped = allFiles.filter((f) => /\.(js|html)$/.test(f)).map((f) => readFileSync(f, 'utf8'));
+  const HOOKS = [
+    ['/services/caravan-service/', '[data-estimator]', ['[data-est-total]', '[data-est-cta]', '[data-axle]', '[data-addon]']],
+    ['/', 'form[data-compose]', ['[data-compose-preview]', '[data-compose-status]', '[data-compose-send]', 'input[name="van"]', 'input[name="need"]:checked']],
+  ];
+  for (const [route, rootSel, hooks] of HOOKS) {
+    if (!pages.has(route)) continue;
+    const scope = pages.get(route).root.querySelector(rootSel);
+    // node-html-parser has no :checked: the checked radio is the one that carries the attribute.
+    const inPage = (sel) => (scope ? scope.querySelectorAll(sel.replace(':checked', '[checked]')).length : 0);
+    const notInPage = hooks.filter((sel) => inPage(sel) === 0);
+    const notInScript = [rootSel, ...hooks].filter((sel) => !shipped.some((src) => src.includes(sel)));
+    report(!!scope && notInPage.length === 0, '17 client hooks', `${route} ${rootSel} carries every hook its script binds to`, !scope ? `no ${rootSel}` : notInPage.length ? `not in the page: ${notInPage.join(', ')}` : hooks.join(' '));
+    report(notInScript.length === 0, '17 client hooks', `${route} the shipped script still asks for the same selectors`, notInScript.length ? `in no built script: ${notInScript.join(', ')}` : `${hooks.length + 1} selectors found in the build`);
   }
 }
 

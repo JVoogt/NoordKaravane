@@ -1,5 +1,6 @@
 ---
-// Five-step workshop process on the Caravan service page. A real sequence, so the step numbers stay.
+// Five-step workshop process on the Caravan service page, in the Home page's numbered steps (the numerals are a
+// CSS counter on the ordered list). A real sequence, so it stays an ordered list.
 const steps = [
   { h: 'Message us', p: "WhatsApp the make, year and what's bothering you. Photos help." },
   { h: 'Inspection', p: 'A walk-around when it arrives: brakes, bearings, tyres, electrics and structure, logged with photos.' },
@@ -9,18 +10,18 @@ const steps = [
 ];
 ---
 
-<section id="process" class="block">
-  <div class="container">
+<section id="process" class="sec">
+  <div class="wrap sec-split">
     <div class="sec-head">
-      <h2 class="sec-title">How a caravan service works</h2>
+      <h2>How a caravan service works</h2>
     </div>
-
-    <ol class="process">
-      {steps.map((s, i) => (
+    <ol class="steps">
+      {steps.map((s) => (
         <li class="step">
-          <div class="step-dot" aria-hidden="true">{i + 1}</div>
-          <h3>{s.h}</h3>
-          <p>{s.p}</p>
+          <div>
+            <h3>{s.h}</h3>
+            <p>{s.p}</p>
+          </div>
         </li>
       ))}
     </ol>

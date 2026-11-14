@@ -1,17 +1,14 @@
 ---
-// Google trust module. Always complete on its own: the verified rating, the review count, the date it was checked
-// and a direct link to the reviews. Review excerpts render only for entries the owner approved in reviews.ts.
+// Google reviews, the two columns of the Home reviews section. Always complete on its own: the verified rating, the
+// review count, the date it was checked and a direct link to the reviews. Review excerpts render only for entries
+// the owner approved in reviews.ts; one of them (lead) is set large, the rest sit under it.
 import { BUSINESS } from '../data/business';
 import { REVIEWS } from '../data/reviews';
+import { pickReviews } from '../lib/reviews';
 
-interface Props {
-  /** Optional sentence beside the rating, e.g. what the reviews tend to mention. */
-  note?: string;
-}
-const { note } = Astro.props;
-
-const approved = REVIEWS.filter((r) => r.approved).slice(0, 3);
+const { lead, rest } = pickReviews(REVIEWS);
 const g = BUSINESS.google;
+const rating = g.rating.toFixed(1);
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const longDate = (iso: string): string => {
   const [y, m, d] = iso.split('-').map(Number);
@@ -19,27 +16,30 @@ const longDate = (iso: string): string => {
 };
 ---
 
-<div class="trust" id="reviews-list">
-  <div class="trust-score">
-    <p class="trust-big"><span class="trust-num">{g.rating.toFixed(1)}</span> on Google</p>
-    <p class="trust-meta">From {g.reviewCount} reviews, checked {longDate(g.asOf)}.</p>
-  </div>
-  {note && <p class="trust-note">{note}</p>}
-  <div class="profile-links">
+<div class="rev-score">
+  <p class="score nums" aria-hidden="true">{rating}</p>
+  <h2><span class="sr-only">{rating} </span>on Google</h2>
+  <p class="rev-meta nums">From {g.reviewCount} reviews, checked {longDate(g.asOf)}.</p>
+  <div class="rev-links">
     <a class="profile-link" href={BUSINESS.links.googleProfile} target="_blank" rel="noopener">Read our Google reviews</a>
     <a class="profile-link" href={BUSINESS.links.facebook} target="_blank" rel="noopener">Facebook page</a>
   </div>
-  {approved.length > 0 && (
-    <ul class="trust-quotes">
-      {approved.map((r) => (
-        <li class="review">
-          <blockquote class="review-body" lang={r.lang}>{r.text}</blockquote>
-          <p class="review-meta">
-            <span class="review-author">{r.name}</span>
-            <a class="review-date" href={r.url} target="_blank" rel="noopener">{longDate(r.date)}</a>
-          </p>
-        </li>
-      ))}
-    </ul>
-  )}
 </div>
+{lead && (
+  <div id="reviews-list">
+    <div class="q-big">
+      <blockquote class="review-body" lang={lead.lang}>{lead.text}</blockquote>
+      <p class="by review-meta"><b>{lead.name}</b>{' '}<a class="review-date" href={lead.url} target="_blank" rel="noopener">{longDate(lead.date)}</a></p>
+    </div>
+    {rest.length > 0 && (
+      <ul class="q-rest">
+        {rest.map((r) => (
+          <li>
+            <blockquote class="review-body" lang={r.lang}>{r.text}</blockquote>
+            <p class="by review-meta"><b>{r.name}</b>{' '}<a class="review-date" href={r.url} target="_blank" rel="noopener">{longDate(r.date)}</a></p>
+          </li>
+        ))}
+      </ul>
+    )}
+  </div>
+)}

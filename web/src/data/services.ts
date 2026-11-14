@@ -1,5 +1,5 @@
 // Pure: imports only the ServiceSlug type. Copy plan: docs/plans/2026-11-07-workshop-pages-content-refactor.md.
-// Consumers: Home ServiceCard list, Footer links, orgNode hasOfferCatalog, Service.astro related cards, breadcrumbs.
+// Consumers: the price board (ServiceBoard: Home, related services, 404), Footer links, orgNode hasOfferCatalog, breadcrumbs.
 import { SERVICE_SLUGS, type ServiceSlug } from './routes';
 
 export interface ServiceMeta {

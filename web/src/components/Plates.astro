@@ -1,0 +1,15 @@
+---
+// The countries we recover from across the border, drawn as number plates on the ink field: the Home recoveries
+// band and the Recoveries hero. Codes and names come from business.ts.
+import { BUSINESS } from '../data/business';
+
+interface Props {
+  /** Accessible name of the list. */
+  label?: string;
+}
+const { label = 'Cross-border recovery countries' } = Astro.props;
+---
+
+<ul class="plates" aria-label={label}>
+  {BUSINESS.crossBorder.map((c) => <Fragment><li><b>{c.code}</b>{' '}<span>{c.name}</span></li>{' '}</Fragment>)}
+</ul>

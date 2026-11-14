@@ -1,5 +1,10 @@
 ---
+import type { ImageMetadata } from 'astro';
 import { getCollection, render } from 'astro:content';
+import liftKit from '../../assets/lift-kit.jpg';
+import axle from '../../assets/svc-axle.jpg';
+import power from '../../assets/svc-power.jpg';
+import trailer from '../../assets/svc-trailer.jpg';
 import Service from '../../layouts/Service.astro';
 import CtaButton from '../../components/CtaButton.astro';
 import Estimator from '../../components/Estimator.astro';
@@ -8,6 +13,7 @@ import LiftKitSpecs from '../../components/LiftKitSpecs.astro';
 import ProcessSteps from '../../components/ProcessSteps.astro';
 import { BUSINESS } from '../../data/business';
 import { AXLE_OPTIONS, fmtR, type AxleId } from '../../data/pricing';
+import type { ServiceSlug } from '../../data/routes';
 import { waUrl } from '../../lib/whatsapp';
 
 export async function getStaticPaths() {
@@ -17,10 +23,36 @@ export async function getStaticPaths() {
 
 const { entry } = Astro.props;
 const { Content } = await render(entry);
-const id = entry.id;
+const id = entry.id as ServiceSlug;
 // The caravan page shows its markdown (the service checklist) inside the pricing section, beside the packages,
 // so the section order stays hero, pricing, inspection report, process, FAQ. Other pages put it under the hero.
 const bodyUnderHero = id !== 'caravan-service' && (entry.body ?? '').trim().length > 0;
+
+// The hero photo of each page: one real workshop photo that shows that service. The alt text says what is in the
+// picture. Recoveries has no photo; its hero carries the country plates (Service.astro).
+const HERO_PHOTOS: Partial<Record<ServiceSlug, { src: ImageMetadata; alt: string; position?: string; caption?: string }>> = {
+  'caravan-service': {
+    src: trailer,
+    alt: `An off-road camping trailer standing between two red vehicle lifts in the ${BUSINESS.name} workshop`,
+    position: '42% 50%',
+  },
+  repairs: {
+    src: axle,
+    alt: 'The axle, leaf spring and wheel of a trailer, seen from underneath',
+    position: '55% 50%',
+  },
+  'solar-electrical': {
+    src: power,
+    alt: 'A panel with a red and a blue Anderson plug, a switch and a covered power inlet',
+    position: '50% 50%',
+  },
+  'lift-kits': {
+    src: liftKit,
+    alt: `Jurgens Penta with a 50 mm lift kit fitted at ${BUSINESS.name}`,
+    position: '50% 60%',
+    caption: 'Fitted at our workshop',
+  },
+};
 
 // Static package rows for the caravan page. Amounts come from pricing.ts; the estimator next to them does the choosing.
 const packages: Array<{ id: AxleId; name: string }> = [
@@ -28,25 +60,20 @@ const packages: Array<{ id: AxleId; name: string }> = [
   { id: 'braked-1', name: 'Single axle with brakes' },
   { id: 'braked-2', name: 'Double axle with brakes' },
 ];
-const amountOf = (axle: AxleId): string => fmtR(AXLE_OPTIONS.find((o) => o.id === axle)!.price);
+const amountOf = (axleId: AxleId): string => fmtR(AXLE_OPTIONS.find((o) => o.id === axleId)!.price);
 ---
 
-<Service entry={entry} bodyColumns={id === 'repairs'} emergency={id === 'recoveries'} body={bodyUnderHero}>
+<Service entry={entry} photo={HERO_PHOTOS[id]} bodyColumns={id === 'repairs'} emergency={id === 'recoveries'} body={bodyUnderHero}>
   {bodyUnderHero && <Content />}
   {id === 'recoveries' && (
     <p slot="tag" class="hero-badge-row"><span class="hero-badge">{BUSINESS.recoveriesNote}</span></p>
-  )}
-  {id === 'recoveries' && (
-    <ul slot="hero-extra" class="chip-list" aria-label="Countries we recover from, besides South Africa">
-      {BUSINESS.crossBorder.map((c) => <li>{c.name}</li>)}
-    </ul>
   )}
 
   {id === 'caravan-service' && (
     <Fragment slot="extras">
       {/* A long page with four jobs: jump links to each, plain anchors, not sticky (the header already is). */}
       <nav class="page-nav" aria-label="On this page">
-        <div class="container">
+        <div class="wrap">
           <ul>
             <li><a href="#pricing">Prices</a></li>
             <li><a href="#included">Included</a></li>
@@ -55,15 +82,15 @@ const amountOf = (axle: AxleId): string => fmtR(AXLE_OPTIONS.find((o) => o.id ==
           </ul>
         </div>
       </nav>
-      <section id="pricing" class="block">
-        <div class="container">
-          <div class="sec-head">
-            <h2 class="sec-title">Caravan service packages and prices</h2>
-            <p class="sec-sub">Every package covers the same checklist. The price follows the axles and brakes, because that is where the hours go.</p>
+      <section id="pricing" class="sec">
+        <div class="wrap">
+          <div class="sec-top">
+            <h2>Caravan service packages and prices</h2>
+            <p>Every package covers the same checklist. The price follows the axles and brakes, because that is where the hours go.</p>
           </div>
           <div class="pricing-wrap">
             <div class="pricing-main">
-              <div class="price-cards">
+              <div class="board nums">
                 {packages.map((p) => (
                   <div class="price">
                     <h3>{p.name}</h3>
@@ -77,7 +104,7 @@ const amountOf = (axle: AxleId): string => fmtR(AXLE_OPTIONS.find((o) => o.id ==
           </div>
           <div class="book-row">
             <p>Know which package you need?</p>
-            <CtaButton href={waUrl(entry.data.whatsappText)} variant="primary" external>{entry.data.ctaLabel}</CtaButton>
+            <CtaButton href={waUrl(entry.data.whatsappText)} variant="primary" icon="wa" external>{entry.data.ctaLabel}</CtaButton>
           </div>
         </div>
       </section>

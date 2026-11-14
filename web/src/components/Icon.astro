@@ -1,0 +1,9 @@
+---
+// One icon from the sprite in Base.astro. Decorative: the label beside it carries the meaning.
+interface Props {
+  name: 'wa' | 'tel' | 'go' | 'plus' | 'minus';
+}
+const { name } = Astro.props;
+---
+
+<svg class="ico" aria-hidden="true" focusable="false"><use href={`#i-${name}`} /></svg>

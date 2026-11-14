@@ -62,3 +62,11 @@ export function priceAmount(id: string): number {
 export function assertRelatedOk(slug: string, related: readonly string[]): void {
   if (related.includes(slug)) throw new Error(`services/${slug}.md lists itself in related`);
 }
+
+/** safety and checklist are drawn by the emergency hero only (Service.astro). The schema cannot see which layout a
+    page gets, so the layout calls this: a page that sets them and would not show them fails the build. */
+export function assertEmergencyFields(slug: string, data: { safety?: unknown; checklist?: unknown }, emergency: boolean): void {
+  if (emergency) return;
+  const set = (['safety', 'checklist'] as const).filter((k) => data[k] !== undefined);
+  if (set.length > 0) throw new Error(`services/${slug}.md sets ${set.join(' and ')}, which only an emergency page shows`);
+}

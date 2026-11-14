@@ -1,0 +1,35 @@
+---
+// WhatsApp message builder (Home, step 1). Works without JS: the choices and the preview stay hidden and the Send
+// link carries the default message, baked in here at build time. Once scripts/compose.ts has bound the form it marks
+// it data-compose-ready: the choices show, and the preview and the link's href follow every change. Wording lives
+// in lib/compose.
+import { composeMessage, NEEDS, VAN_MAX } from '../lib/compose';
+import { waUrl } from '../lib/whatsapp';
+import Icon from './Icon.astro';
+
+const initial = composeMessage(NEEDS[0].phrase);
+---
+
+<form class="compose" data-compose>
+  <div class="compose-live">
+    <fieldset>
+      <legend>What do you need?</legend>
+      <div class="picks">
+        {NEEDS.map((n, i) => (
+          <label><input type="radio" name="need" value={n.phrase} checked={i === 0} /><span>{n.label}</span></label>
+        ))}
+      </div>
+    </fieldset>
+    <label class="compose-label" for="compose-van">Make and year</label>
+    <input type="text" id="compose-van" name="van" placeholder="Jurgens Exclusive, 2014" autocomplete="off" maxlength={VAN_MAX} />
+    <p class="bubble" data-compose-preview>{initial}</p>
+    {/* What a screen reader is told: the same message, written here once the visitor stops typing
+        (scripts/compose.ts). The bubble above changes on every key, so it is not the live region. */}
+    <p class="sr-only" data-compose-status aria-live="polite"></p>
+  </div>
+  <a class="btn btn-primary" data-compose-send href={waUrl(initial)} target="_blank" rel="noopener"><Icon name="wa" />Send on WhatsApp</a>
+</form>
+
+<script>
+  import '../scripts/compose';
+</script>

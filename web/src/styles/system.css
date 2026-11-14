@@ -1,0 +1,135 @@
+/* The page system (site redesign, 2026-11-14): the patterns every page is built from. The ink hero field, the
+   section rhythm, the price board, numbered steps, the job card, country plates and the ruled list of facts.
+   Loaded by Base.astro on every page; home.css and pages.css only add what is theirs.
+   Colours and fonts come from tokens.css only. */
+
+.sec { padding-block: var(--sec); }
+
+/* ============ HERO: THE INK FIELD ============ */
+.hero { position: relative; background: var(--field); color: var(--field-ink); }
+.hero-in { display: grid; grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr); min-height: min(74svh, 680px); }
+.hero-copy { display: flex; justify-content: flex-end; align-self: center; padding: clamp(48px, 6vw, 88px) 0 clamp(72px, 8vw, 104px) var(--gutter); }
+.hero-text { width: min(100%, 712px); padding-right: clamp(28px, 5vw, 80px); }
+.hero h1 { font-family: var(--f-display); font-weight: 400; }
+/* The second line of a headline, in the field's highlight. Once per page. */
+.hero h1 .hi { display: block; color: var(--field-hi); }
+.lede { margin-top: 20px; max-width: 34ch; font-size: clamp(1.2rem, 1.7vw, 1.45rem); line-height: 1.35; font-weight: 600; }
+.hero .hero-actions { margin: 32px 0 0; gap: 16px; }
+
+.hero-photo { position: relative; z-index: 1; min-height: 340px; }
+.hero-photo picture { position: absolute; inset: 0; }
+.hero-photo img { width: 100%; height: 100%; object-fit: cover; object-position: 46% 50%; }
+.hero .tread { position: absolute; left: 0; right: 0; bottom: 16px; pointer-events: none; }
+
+/* ============ SECTION HEAD ============ */
+.sec-top { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px 40px; margin-bottom: clamp(24px, 3vw, 40px); }
+.sec-top p { max-width: 46ch; color: var(--text-dim); }
+
+/* ============ THE PRICE BOARD ============ */
+.board { border-top: 3px solid var(--ink); }
+.board-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 15rem 11rem 28px;
+  align-items: center;
+  gap: 8px 28px;
+  padding: 28px 16px;
+  border-bottom: 1px solid var(--rule);
+  transition: background-color .25s var(--ease), color .25s var(--ease);
+}
+.board-need { font-size: clamp(1.15rem, 1.8vw, 1.5rem); line-height: 1.3; }
+/* The name of the work: an h3 under a section heading, an h2 on the 404 page (ServiceBoard's heading prop). One
+   look for both, so the last four declarations put back what the page-wide h2 rules would change. */
+.board-row .board-name {
+  font-family: var(--f-display); font-weight: 400; font-size: 1.65rem; line-height: 1; letter-spacing: 0.02em; color: var(--orange-deep);
+  text-transform: none; text-wrap: wrap; overflow-wrap: normal; min-width: auto;
+}
+.board-price { font-weight: 700; }
+.board-row .ico { width: 24px; height: 24px; }
+.board-row:hover { background: var(--ink); color: var(--white); }
+.board-row:hover .board-name { color: var(--orange-hi); }
+
+/* ============ NUMBERED STEPS ============ */
+.steps { counter-reset: s; margin-top: 32px; }
+.steps > li { counter-increment: s; display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 0 20px; padding-block: 28px; border-top: 1px solid var(--rule); }
+.steps > li::before { content: counter(s); font-family: var(--f-display); font-size: 3.4rem; line-height: 0.85; color: var(--orange-deep); }
+.steps h3 { font-family: var(--f-display); font-weight: 400; font-size: 1.75rem; line-height: 1; letter-spacing: 0.015em; }
+.steps p { margin-top: 8px; max-width: 52ch; color: var(--text-dim); }
+
+/* ============ THE JOB CARD ============ */
+/* White card stock with a hazard-stripe top edge: the sample inspection report, and the estimator (pages.css). */
+.rep, .estimator { position: relative; padding: clamp(24px, 3vw, 32px); border-radius: 4px; background: var(--card); box-shadow: var(--sh-report); }
+.rep::before, .estimator::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 8px; border-radius: 4px 4px 0 0; background: repeating-linear-gradient(90deg, var(--orange) 0 22px, var(--ink) 22px 44px); }
+.rep-head { display: flex; justify-content: space-between; align-items: start; gap: 16px; margin-top: 8px; padding-bottom: 16px; border-bottom: 2px solid var(--ink); }
+.rep-title { font-family: var(--f-display); font-size: 1.9rem; line-height: 1; letter-spacing: 0.015em; }
+.rep-sub { margin-top: 8px; font-size: 0.875rem; color: var(--text-dim); }
+.rep-status { padding: 8px 12px; border-radius: 3px; background: var(--ink); color: var(--white); font-weight: 700; font-size: 0.875rem; white-space: nowrap; }
+.rep-finding { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 16px; padding-block: 16px; border-bottom: 1px solid var(--rule); }
+.rep-finding strong { font-size: 1.08rem; font-weight: 700; }
+.rep-finding p { grid-column: 1 / -1; color: var(--text-dim); font-size: 0.98rem; }
+.rep-state { font-size: 0.85rem; font-weight: 700; color: var(--orange-deep); white-space: nowrap; }
+.rep-state.ok { color: var(--ok); }
+.rep-evid { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
+.rep-evid img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 3px; }
+.rep-foot { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-top: 20px; }
+.rep-foot p { max-width: 30ch; font-size: 0.95rem; font-weight: 600; }
+.rep-foot img { width: 140px; transform: rotate(-5deg); opacity: 0.72; mix-blend-mode: multiply; }
+
+/* ============ COUNTRY PLATES ============ */
+/* As many plates to a row as fit at 5.5rem each (room for "Mozambique"), then they wrap: five in a row where the
+   column is wide, three and two where it is narrow. Never five squeezed into a column too narrow for the names. */
+.plates { display: grid; grid-template-columns: repeat(auto-fit, minmax(5.5rem, 1fr)); gap: 12px; }
+.plates li { padding: 12px 4px; border: 2px solid var(--field-ink); border-radius: 5px; text-align: center; }
+.plates b { display: block; font-family: var(--f-display); font-weight: 400; font-size: clamp(1.9rem, 3.6vw, 3rem); line-height: 0.9; letter-spacing: 0.04em; }
+.plates span { display: block; margin-top: 8px; font-size: 0.8125rem; font-weight: 600; }
+
+/* ============ RULED LIST OF FACTS ============ */
+/* Address, hours and the number: a term and its value per ruled row. On ink (the closing band) the rules and the
+   dim text switch to the field's. */
+.find-facts { border-top: 3px solid var(--ink); }
+.find-facts > div { display: grid; grid-template-columns: 9.5rem minmax(0, 1fr); align-items: baseline; gap: 16px; padding-block: 16px; border-bottom: 1px solid var(--rule); }
+.find-facts dt { font-weight: 600; color: var(--text-dim); }
+.find-facts dd { font-weight: 600; }
+.find-facts dd small { display: block; font-weight: 400; font-size: 1rem; color: var(--text-dim); }
+.hrs { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 20px; }
+.hrs span:nth-child(odd) { font-weight: 400; color: var(--text-dim); }
+.find-tel { display: inline-flex; align-items: center; min-height: 44px; margin-block: -12px; color: var(--orange-deep); text-decoration: underline; text-underline-offset: 3px; }
+.find-tel:hover { color: var(--ink); }
+.on-ink .find-facts { border-top-color: var(--field-ink); }
+.on-ink .find-facts > div { border-bottom-color: var(--field-rule); }
+.on-ink .find-facts dt, .on-ink .find-facts dd small, .on-ink .hrs span:nth-child(odd) { color: var(--field-dim); }
+.on-ink .find-tel { color: var(--field-ink); }
+.on-ink .find-tel:hover { color: var(--field-hi); }
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 1080px) {
+  .board-row { grid-template-columns: minmax(0, 1fr) 11rem 28px; }
+  .board-row .board-name { grid-column: 1; grid-row: 1; }
+  .board-need { grid-column: 1; grid-row: 2; }
+  .board-price { grid-column: 2; grid-row: 1 / span 2; text-align: right; }
+  .board-row .ico { grid-row: 1 / span 2; }
+}
+@media (max-width: 860px) {
+  .hero-in { grid-template-columns: minmax(0, 1fr); min-height: 0; }
+  .hero-copy { justify-content: flex-start; padding: 44px var(--edge) 64px; }
+  .hero-text { width: 100%; padding-right: 0; }
+  .hero-photo { height: 340px; }
+  .hero .tread { display: none; }
+}
+@media (max-width: 560px) {
+  .board-row { grid-template-columns: minmax(0, 1fr) 24px; padding-inline: 4px; }
+  .board-price { grid-column: 1; grid-row: 3; text-align: left; color: var(--text-dim); }
+  .board-row:hover .board-price { color: var(--on-ink-dim); }
+  .board-row .ico { grid-column: 2; grid-row: 1 / span 3; }
+  /* Five plates in a row leave no room for "Mozambique" on a phone: three and two. */
+  .plates { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .find-facts > div { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .find-tel { margin-block: -8px; }
+  .steps > li { grid-template-columns: 40px minmax(0, 1fr); gap: 0 12px; }
+  .steps > li::before { font-size: 2.7rem; }
+  .rep-foot img { width: 112px; }
+  .rep-evid { gap: 4px; }
+  .rep-head { flex-wrap: wrap; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .board-row { transition: none; }
+}

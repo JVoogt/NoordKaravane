@@ -1,48 +1,19 @@
 ---
-// Inspection report proof block on the Caravan service page: what the visitor gets after the walk-around.
-// The rows are an example format, labelled as such; no customer data.
+// Inspection report proof block on the Caravan service page: what the visitor gets after the walk-around, in
+// words, beside the same sample job card the Home page shows (SampleReport: one component, one data source).
 import { servicePath } from '../data/routes';
-
-const rows = [
-  { k: 'Wheel bearing play detected', v: 'Recommend a bearing service before long-distance towing.', evidence: '4 photos', low: false },
-  { k: 'Roof latch and gas strut check', v: 'Parts listed separately, so you can approve the repair or leave it.', evidence: '2 notes', low: false },
-  { k: 'Solar controller and battery health', v: 'Reading logged and explained.', evidence: 'Passed', low: true },
-];
+import SampleReport from './SampleReport.astro';
 ---
 
-<section id="inspection-report" class="block">
-  <div class="container">
-    <div class="sec-head">
-      <h2 class="sec-title">What the inspection report shows</h2>
-    </div>
-
-    <div class="inspection-wrap">
+<section id="inspection-report" class="sec">
+  <div class="wrap inspection-wrap">
+    <div>
+      <h2>What the inspection report shows</h2>
       <div class="inspection-summary">
         <p>Each finding gets photos and a note. Safety work is listed apart from the nice-to-haves, so you can decide what to do now and what can wait. Nothing extra gets done without your go-ahead.</p>
-        <p class="inspection-links">Worn bearings, brakes or woodrot become a <a href={servicePath('repairs')}>caravan repair</a> quote. Battery or solar trouble goes to <a href={servicePath('solar-electrical')}>electrical and solar</a>.</p>
-      </div>
-
-      <div class="inspection-report" role="group" aria-label="Example inspection report format">
-        <div class="report-head">
-          <div>
-            <div class="report-title">Service inspection summary</div>
-            <div class="est-total-note">Example format, no customer data shown</div>
-          </div>
-          <div class="report-status">Quote ready</div>
-        </div>
-        <div class="report-list">
-          {rows.map((r) => (
-            <div class="report-row">
-              <span class:list={['report-sev', { low: r.low }]} aria-hidden="true"></span>
-              <div class="report-copy">
-                <strong>{r.k}</strong>
-                <span>{r.v}</span>
-              </div>
-              <span class="report-evidence">{r.evidence}</span>
-            </div>
-          ))}
-        </div>
+        <p class="inspection-links">Worn bearings, brakes or woodrot become a <a class="link" href={servicePath('repairs')}>caravan repair</a> quote. Battery or solar trouble goes to <a class="link" href={servicePath('solar-electrical')}>electrical and solar</a>.</p>
       </div>
     </div>
+    <SampleReport />
   </div>
 </section>

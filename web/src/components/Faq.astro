@@ -1,6 +1,9 @@
 ---
-// Native details/summary: works without JS. The same FaqItem[] feeds faqNode() for the JSON-LD.
+// A ruled accordion of native details/summary: it opens and closes without JS. The same FaqItem[] feeds faqNode()
+// for the JSON-LD. The plus and minus are drawn icons; the script below only mirrors each row's state into
+// aria-expanded, and sets that attribute itself, so the markup never carries a state nothing keeps in sync.
 import { expandTokens, type FaqItem } from '../lib/faq';
+import Icon from './Icon.astro';
 
 interface Props {
   items: FaqItem[];
@@ -10,16 +13,16 @@ const { items } = Astro.props;
 
 <div class="faq-list">
   {items.map((item, i) => (
-    <details class:list={['faq-item', { 'faq-wide': !!item.list }]}>
+    <details class="faq-item">
       <summary class="faq-q">
         <span class="faq-num">{String(i + 1).padStart(2, '0')}</span>
         <span>{expandTokens(item.q)}</span>
-        <span class="faq-toggle" aria-hidden="true"></span>
+        <span class="faq-toggle" aria-hidden="true"><Icon name="plus" /><Icon name="minus" /></span>
       </summary>
       <div class="faq-a">
         <p>{expandTokens(item.a)}</p>
         {item.list && item.list.length > 0 && (
-          <ul class="svc-checklist">
+          <ul>
             {item.list.map((li) => <li>{expandTokens(li)}</li>)}
           </ul>
         )}
@@ -28,3 +31,13 @@ const { items } = Astro.props;
     </details>
   ))}
 </div>
+
+<script>
+  document.querySelectorAll<HTMLDetailsElement>('details.faq-item').forEach((item) => {
+    const summary = item.querySelector('summary');
+    if (!summary) return;
+    const sync = (): void => summary.setAttribute('aria-expanded', String(item.open));
+    item.addEventListener('toggle', sync);
+    sync();
+  });
+</script>

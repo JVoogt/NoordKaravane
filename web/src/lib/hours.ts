@@ -84,11 +84,17 @@ function shortLabel(days: DayKey[]): string {
   return `${SHORT[days[0]]} to ${SHORT[days[days.length - 1]]}`;
 }
 
+/** One row per group, days and times apart, for an hours table. */
+export function formatHoursRows(hours: Hours): Array<{ days: string; time: string }> {
+  return groupHours(hours).map((g) => ({
+    days: shortLabel(g.days),
+    time: g.opens !== null ? `${g.opens} to ${g.closes}` : 'closed',
+  }));
+}
+
 /** One line per group, for the Hours component. */
 export function formatHoursLines(hours: Hours): string[] {
-  return groupHours(hours).map((g) =>
-    g.opens !== null ? `${shortLabel(g.days)} ${MIDDOT} ${g.opens} to ${g.closes}` : `${shortLabel(g.days)} ${MIDDOT} closed`,
-  );
+  return formatHoursRows(hours).map((r) => `${r.days} ${MIDDOT} ${r.time}`);
 }
 
 function longLabel(days: DayKey[]): string {

@@ -1,0 +1,301 @@
+/* Service pages, Find us and the 404 page (site redesign, 2026-11-14, phase 2): the Home page's system applied to
+   the rest of the site. Loaded by PageHero.astro, which every one of those pages renders. The shared patterns
+   (hero field, price board, numbered steps, job card, plates, ruled facts) live in system.css; this file holds
+   what these pages add. Colours and fonts come from tokens.css only. */
+
+/* Headlines on these pages are long enough to wrap. Bebas Neue draws capitals whatever is typed, so setting the
+   text in capitals changes nothing once it has loaded, and lets the capitals stand-in (tokens.css) break the lines
+   on the same words before it has: the headline does not re-wrap, and the page under it does not move. */
+.hero .h1-page, .checklist-title, .hero--page ~ section h2 { font-family: var(--f-display-caps); text-transform: uppercase; }
+
+/* Text measures on these pages are set in em, never ch. 1ch is the width of "0" in whichever font is showing, and
+   the stand-in's is about 15% narrower than Barlow's, so a ch measure changes when the web font arrives and the
+   paragraph re-wraps. An em measure is the same in both. */
+
+/* ============ PAGE HERO ============ */
+.hero--page .hero-in { min-height: min(62svh, 560px); }
+.hero--page .hero-copy { padding-top: clamp(24px, 3vw, 40px); }
+.h1-page { font-size: clamp(2.6rem, 4.6vw, 4.25rem); line-height: 0.94; letter-spacing: 0.01em; text-wrap: balance; overflow-wrap: break-word; min-width: 0; }
+/* The lede on these pages is a full paragraph, so it is set as body text. */
+.hero--page .lede { max-width: 31em; font-size: clamp(1.0625rem, 1.3vw, 1.2rem); line-height: 1.5; font-weight: 400; }
+/* A hero with nothing in its second column (404). */
+.hero--solo .hero-in { grid-template-columns: minmax(0, 1fr); }
+.hero--solo .hero-copy { justify-content: flex-start; padding-inline: var(--edge); }
+.hero--solo .hero-text { width: min(100%, 760px); padding-right: 0; }
+
+/* Breadcrumbs: quiet, on the field, above the headline. */
+.crumbs { margin-bottom: 12px; font-size: 0.875rem; color: var(--field-dim); }
+.crumbs ol { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.crumbs li + li::before { content: '/'; margin-right: 8px; }
+.crumbs a { display: inline-flex; align-items: center; min-width: 44px; min-height: 44px; padding-right: 4px; text-decoration: underline; text-underline-offset: 3px; }
+.crumbs a:hover { color: var(--field-ink); }
+.crumbs [aria-current="page"] { display: inline-flex; align-items: center; min-height: 44px; color: var(--field-ink); }
+
+/* Hero facts: one ruled line under the actions, a term over its value per column. */
+.hero-facts { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); margin-top: 36px; padding-top: 20px; border-top: 1px solid var(--field-rule); }
+.hero-facts > div + div { margin-left: 20px; padding-left: 20px; border-left: 1px solid var(--field-rule); }
+.hero-facts dt { font-size: 0.875rem; color: var(--field-dim); }
+.hero-facts dd { margin-top: 4px; font-weight: 600; font-size: 0.98rem; line-height: 1.3; }
+.hero-proof { margin-top: 8px; font-size: 0.9rem; color: var(--field-dim); }
+.hero-proof a { display: inline-flex; align-items: center; min-height: 44px; text-decoration: underline; text-underline-offset: 3px; }
+.hero-proof a:hover { color: var(--field-ink); }
+/* A caption on the hero photo (Lift kits). */
+.hero-cap { position: absolute; left: 16px; bottom: 16px; padding: 8px 12px; border-radius: 4px; background: var(--card); color: var(--ink); font-size: 0.875rem; font-weight: 600; }
+
+/* Recoveries: the 24/7 claim under the headline, the safety line under the buttons, then the lede. */
+.hero-badge-row { margin-top: 16px; }
+.hero-badge { display: inline-flex; align-items: center; min-height: 32px; padding: 4px 12px; border-radius: 4px; background: var(--orange); color: var(--ink); font-weight: 700; font-size: 0.95rem; line-height: 1; }
+/* Weight 700, not 600: the bold stand-in font (tokens.css) is closest to Barlow at 700, so this line, which is
+   always on the first screen, wraps the same before and after the web font arrives. */
+.hero-safety { max-width: 29.25em; margin-top: 24px; font-weight: 700; }
+.hero--page .hero-safety + .lede { margin-top: 12px; }
+/* Recoveries has no photo: the second column carries what to send and the country plates, on the field. */
+.hero-side { display: flex; align-self: start; padding: clamp(40px, 5vw, 72px) var(--gutter) clamp(72px, 8vw, 104px) 0; }
+.hero-side-in { width: min(100%, 528px); }
+.checklist-title { font-size: 1.9rem; line-height: 1; }
+.checklist ul { margin-top: 16px; border-top: 3px solid var(--field-ink); }
+.checklist li { padding-block: 12px; border-bottom: 1px solid var(--field-rule); line-height: 1.4; }
+.hero-area { margin-top: 32px; }
+.hero-area .hero-facts { margin-top: 24px; padding-top: 0; border-top: 0; }
+
+/* ============ WORKING SECTIONS ============ */
+/* The sections under a page hero alternate the two daylight grounds; the closing band is ink. */
+.hero--page ~ section.sec:nth-of-type(even):not(.band) { background: var(--ground-2); }
+/* A section head here is a long headline with its sentence under it. (On Home the sentence sits beside a short
+   headline; a long one would leave it beside or under depending on a few pixels of headline width.) */
+.hero--page ~ section .sec-top { display: block; }
+.hero--page ~ section .sec-top p { max-width: 27em; margin-top: 12px; }
+/* A heading column beside its content. */
+.sec-split { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.6fr); gap: 32px clamp(32px, 5vw, 80px); align-items: start; }
+.sec-head p { margin-top: 16px; max-width: 22.5em; color: var(--text-dim); }
+/* The heading stays in view beside a long list, from the width where only the 68px bar is pinned above it. */
+@media (min-width: 1081px) {
+  .sec-split > .sec-head { position: sticky; top: 96px; }
+}
+
+/* Service body (markdown): ruled sub-heads, ruled lists. Repairs sets its three kinds of repair side by side;
+   the others set two columns, each H2 starting one, so the markdown needs no wrappers. */
+.svc-body h2 { padding-top: 16px; border-top: 3px solid var(--ink); font-size: clamp(1.75rem, 2.6vw, 2.25rem); line-height: 1; }
+.svc-body p { max-width: 34.875em; margin-top: 12px; color: var(--text-dim); text-wrap: pretty; }
+.svc-body ul { margin-top: 16px; border-top: 1px solid var(--rule); }
+.svc-body li { padding: 12px 4px; border-bottom: 1px solid var(--rule); line-height: 1.4; }
+.svc-body ul + p { margin-top: 20px; }
+.svc-body a { font-weight: 600; color: var(--orange-deep); text-decoration: underline; text-underline-offset: 3px; }
+.svc-body a:hover { color: var(--ink); }
+@media (min-width: 861px) {
+  .svc-cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(3, auto); grid-auto-flow: column; column-gap: clamp(28px, 4vw, 56px); }
+  .svc-split { columns: 2; column-gap: clamp(32px, 5vw, 80px); }
+  .svc-split > h2 ~ h2 { break-before: column; }
+  .svc-split > * { break-inside: avoid; }
+}
+@media (max-width: 860px) {
+  .svc-body > * + h2 { margin-top: 40px; }
+}
+
+/* ============ CARAVAN SERVICE ============ */
+/* Jump links under the hero: plain anchors, not sticky (the header already is). */
+.page-nav { background: var(--ground-2); border-bottom: 1px solid var(--rule); }
+.page-nav ul { display: flex; flex-wrap: wrap; gap: 0 8px; padding-block: 8px; }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 12px; border-radius: 4px; font-size: 0.95rem; font-weight: 600; }
+.page-nav li:first-child a { margin-left: -12px; }
+.page-nav a:hover { background: var(--ink); color: var(--white); }
+
+/* Packages: three rows of one price board, the checklist under them, the estimator beside. */
+.pricing-wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 0.95fr); gap: 48px clamp(40px, 6vw, 88px); align-items: start; }
+.price { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 20px; padding: 20px 4px; border-bottom: 1px solid var(--rule); }
+.price h3 { font-size: 1.15rem; font-weight: 600; line-height: 1.3; }
+.price .amt { font-family: var(--f-display); font-size: 2.4rem; line-height: 1; white-space: nowrap; }
+.price .amt sub { margin-left: 8px; font-family: var(--f-body); font-size: 0.875rem; font-weight: 600; color: var(--text-dim); vertical-align: baseline; }
+.svc-includes { margin-top: 40px; }
+.svc-includes h3 { font-family: var(--f-display); font-weight: 400; font-size: 1.75rem; line-height: 1; letter-spacing: 0.015em; }
+.svc-includes ul { margin-top: 16px; border-top: 1px solid var(--rule); }
+.svc-includes li { padding: 12px 4px; border-bottom: 1px solid var(--rule); line-height: 1.4; }
+.book-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px 28px; margin-top: clamp(40px, 5vw, 64px); padding-top: 24px; border-top: 3px solid var(--ink); }
+.book-row p { font-size: 1.15rem; font-weight: 600; }
+
+/* The estimator: a job card (system.css). Its controls match the Home message builder's: field edges at 3:1, the
+   chosen option filled ink. The live controls show only once scripts/estimator has bound them and marked the card
+   ready; until then, and whenever that script does not run, the plain add-on list and the neutral enquiry link show. */
+.estimator h3 { margin-top: 8px; font-family: var(--f-display); font-weight: 400; font-size: 1.9rem; line-height: 1; letter-spacing: 0.015em; }
+.estimator > p { margin-top: 8px; padding-bottom: 16px; border-bottom: 2px solid var(--ink); font-size: 1rem; color: var(--text-dim); }
+.est-live, .est-live-only { display: none; }
+.estimator[data-est-ready] .est-live-only { display: inline; }
+.estimator[data-est-ready] .est-live { display: block; }
+.estimator[data-est-ready] .est-static { display: none; }
+.est-field { margin-top: 20px; }
+.est-label { margin-bottom: 12px; font-weight: 600; font-size: 0.95rem; }
+.est-opts { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+.est-checks { display: grid; gap: 8px; }
+.est-opt, .est-chk {
+  min-height: 48px;
+  padding: 12px 16px;
+  border: 1.5px solid var(--field-edge);
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.98rem;
+  text-align: left;
+  white-space: nowrap;
+  transition: background-color .15s, border-color .15s, color .15s;
+}
+.est-chk { display: flex; justify-content: space-between; align-items: center; gap: 12px; width: 100%; }
+.est-opt:hover, .est-chk:hover { border-color: var(--ink); }
+.est-opt[aria-pressed="true"], .est-chk[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--white); }
+.est-opt:focus-visible, .est-chk:focus-visible { outline-offset: 2px; }
+.est-chk-left { display: flex; align-items: center; gap: 12px; }
+.est-chk .box { flex: none; display: grid; place-items: center; width: 20px; height: 20px; border: 1.5px solid var(--field-edge); border-radius: 3px; }
+.est-chk[aria-pressed="true"] .box { border-color: var(--white); }
+.est-chk[aria-pressed="true"] .box::after { content: ''; width: 10px; height: 5px; border-left: 2px solid var(--white); border-bottom: 2px solid var(--white); transform: rotate(-45deg) translate(1px, -1px); }
+.est-chk-price { font-size: 0.9rem; font-weight: 600; color: var(--text-dim); white-space: nowrap; }
+.est-chk[aria-pressed="true"] .est-chk-price { color: var(--white); }
+.est-static-list { border-top: 1px solid var(--rule); }
+.est-static-list li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 4px; border-bottom: 1px solid var(--rule); }
+.est-total { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 16px; margin-top: 24px; padding-top: 16px; border-top: 2px solid var(--ink); }
+.est-total-label { font-weight: 600; font-size: 0.95rem; }
+.est-total-amt { font-family: var(--f-display); font-size: 2.9rem; line-height: 1; color: var(--orange-deep); text-align: right; }
+/* "Not sure": the small "From" before the amount says the total is a starting price. */
+.est-from { margin-right: 4px; font-family: var(--f-body); font-size: 0.875rem; color: var(--text-dim); vertical-align: middle; }
+.est-total-note { margin-top: 4px; font-size: 0.875rem; line-height: 1.4; color: var(--text-dim); }
+.est-static .est-total-note { margin-top: 16px; }
+.est-cta { width: 100%; margin-top: 20px; }
+.estimator .est-cta:hover { background: var(--ink-deep); }
+.est-opt:active, .est-chk:active { transform: translateY(1px); }
+
+/* What the inspection report shows: the words beside the job card. */
+.inspection-wrap { display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); gap: 40px clamp(40px, 6vw, 96px); align-items: start; }
+.inspection-summary { margin-top: 20px; }
+.inspection-summary p { max-width: 29.25em; }
+.inspection-summary p + p { margin-top: 16px; color: var(--text-dim); }
+/* On this page the report is the subject of its section, so its finding text is body size. */
+#inspection-report .rep-finding p { font-size: 1rem; }
+
+/* How a caravan service works: the numbered steps beside their heading, under one ink rule. */
+.sec-split .steps { margin-top: 0; border-top: 3px solid var(--ink); }
+.sec-split .steps > li:first-child { border-top: 0; }
+.sec-split .steps p { max-width: 30.5em; }
+
+/* ============ LIFT KITS ============ */
+.kit { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr); gap: 40px clamp(40px, 6vw, 96px); align-items: start; }
+.kit-price { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 16px; margin-top: 28px; }
+.kit-price .amt { font-family: var(--f-display); font-size: clamp(4.5rem, 9vw, 7rem); line-height: 0.85; color: var(--orange-deep); }
+.kit-price .unit { font-weight: 600; color: var(--text-dim); }
+.kit-sub { max-width: 25.875em; margin-top: 20px; color: var(--text-dim); }
+.specs { border-top: 3px solid var(--ink); }
+.specs > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 16px; padding: 16px 4px; border-bottom: 1px solid var(--rule); }
+.specs dt { font-weight: 600; color: var(--text-dim); }
+.specs dd { font-family: var(--f-display); font-size: 1.75rem; line-height: 1; letter-spacing: 0.015em; }
+.kit .btn { margin-top: 32px; }
+
+/* ============ FAQ: A RULED ACCORDION ============ */
+/* Native details, so it opens without scripting. Faq.astro's script only mirrors the state into aria-expanded. */
+.faq-list { border-top: 3px solid var(--ink); }
+.faq-item { border-bottom: 1px solid var(--rule); }
+.faq-q { display: grid; grid-template-columns: minmax(0, 1fr) 24px; align-items: center; gap: 20px; min-height: 52px; padding: 12px 4px; font-size: clamp(1.1rem, 1.5vw, 1.25rem); font-weight: 600; line-height: 1.3; list-style: none; cursor: pointer; }
+.faq-q::-webkit-details-marker { display: none; }
+.faq-q:focus-visible { outline-offset: -3px; }
+/* The number span stays in the markup (verify reads the question from the second span) but is not shown. */
+.faq-num { display: none; }
+.faq-toggle { display: grid; width: 24px; height: 24px; color: var(--orange-deep); }
+.faq-toggle .ico { grid-area: 1 / 1; width: 24px; height: 24px; }
+.faq-toggle .ico:last-child, .faq-item[open] .faq-toggle .ico:first-child { display: none; }
+.faq-item[open] .faq-toggle .ico:last-child { display: block; }
+.faq-q:hover .faq-toggle { color: var(--ink); }
+.faq-a { max-width: 34.875em; padding: 0 4px 24px; }
+.faq-a p { color: var(--text-dim); }
+.faq-a p + p { margin-top: 12px; color: var(--text); }
+/* An answer with a list (content schema: faq[].list). */
+.faq-a ul { margin-top: 12px; border-top: 1px solid var(--rule); }
+.faq-a li { padding-block: 8px; border-bottom: 1px solid var(--rule); color: var(--text-dim); }
+
+/* ============ CLOSING BAND ============ */
+/* The last section of every page: an ink band with the WhatsApp and Call actions and, beside them, the workshop
+   facts as a ruled list. Scoped to .band: on Home, .contact is only a hook on the Find the workshop block. */
+.band { background: var(--field); color: var(--field-ink); }
+.band .contact { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); gap: 40px clamp(40px, 6vw, 96px); align-items: start; }
+.band .contact--solo { grid-template-columns: minmax(0, 1fr); }
+.contact-text { margin-top: 16px; max-width: 28.125em; font-size: 1.1rem; color: var(--field-dim); }
+.contact-actions { margin-top: 32px; }
+.contact-aside { margin-top: 28px; color: var(--field-dim); }
+.contact-aside a { font-weight: 600; color: var(--field-ink); text-decoration: underline; text-underline-offset: 3px; }
+.contact-aside a:hover { color: var(--field-hi); }
+.band-loc .btn { margin-top: 28px; }
+
+/* ============ FIND US ============ */
+/* Facts and the written directions on the left, the map and the street sign on the right. On one column the map
+   follows the facts. The last row takes the slack of the taller column, so the sign sits straight under the map. */
+.loc-grid { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); grid-template-areas: "facts map" "text map" "text photo"; grid-template-rows: auto auto minmax(0, 1fr); gap: 40px clamp(40px, 6vw, 88px); align-items: start; }
+.loc-facts { grid-area: facts; }
+.map-card { grid-area: map; }
+.loc-photo { grid-area: photo; }
+.loc-text { grid-area: text; }
+/* The map card: the address, GPS and the Maps link sit in a bar on the frame itself, so the box is useful before,
+   without and after the map. Square corners, one ink rule on top. */
+.map-card { border-top: 3px solid var(--ink); background: var(--card); box-shadow: var(--sh-card); }
+.map-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; padding: 16px 20px; border-bottom: 1px solid var(--rule); }
+.map-bar-addr { display: grid; gap: 4px; line-height: 1.35; }
+.map-bar-addr strong { font-weight: 600; }
+.map-bar-addr span { font-size: 0.95rem; color: var(--text-dim); }
+.loc-map { position: relative; min-height: 320px; background: var(--ground-2); }
+.loc-map iframe { position: relative; display: block; width: 100%; height: 100%; min-height: 320px; border: 0; }
+.loc-map-wait { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; font-size: 0.95rem; color: var(--text-dim); }
+/* Tabbing into Google's map controls: show where focus went. */
+.loc-map:focus-within, .loc-map iframe:focus, .loc-map iframe.has-focus { outline: 3px solid var(--focus); outline-offset: -3px; }
+/* Cropped to the painted wall (the lower half of the photo). */
+.loc-photo img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; object-position: 50% 62%; border-radius: 4px; }
+.loc-photo figcaption { margin-top: 12px; font-size: 0.95rem; color: var(--text-dim); }
+.loc-text h2 { padding-top: 16px; border-top: 3px solid var(--ink); font-size: clamp(1.75rem, 2.6vw, 2.25rem); line-height: 1; }
+.loc-text * + h2 { margin-top: 40px; }
+.loc-text p { max-width: 34.875em; margin-top: 12px; color: var(--text-dim); }
+.loc-text p a { font-weight: 600; color: var(--orange-deep); text-decoration: underline; text-underline-offset: 3px; }
+.loc-text p a:hover { color: var(--ink); }
+.loc-services { margin-top: 16px; border-top: 1px solid var(--rule); }
+.loc-services a { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 48px; padding: 8px 4px; border-bottom: 1px solid var(--rule); font-weight: 600; }
+.loc-services .ico { width: 20px; height: 20px; color: var(--orange-deep); }
+.loc-services a:hover { background: var(--ink); color: var(--white); }
+.loc-services a:hover .ico { color: var(--orange-hi); }
+
+/* ============ BOARD ROWS ON THESE PAGES ============ */
+/* A row with a name only (404: Find us): the name keeps the names' column, the arrow its own. */
+.board .board-row--plain .board-name { grid-column: 1 / span 2; }
+@media (min-width: 1081px) {
+  .board .board-row--plain .board-name { grid-column: 2 / span 2; }
+  /* Beside a heading the board is narrower: the name over the problem line, as it is set below 1081px. */
+  .sec-split .board-row { grid-template-columns: minmax(0, 1fr) 11rem 28px; }
+  .sec-split .board-row .board-name { grid-column: 1; grid-row: 1; }
+  .sec-split .board-need { grid-column: 1; grid-row: 2; }
+  .sec-split .board-price { grid-column: 2; grid-row: 1 / span 2; text-align: right; }
+  .sec-split .board-row .ico { grid-row: 1 / span 2; }
+}
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 1080px) {
+  .pricing-wrap, .inspection-wrap { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 860px) {
+  .hero--page .hero-copy { padding-top: 16px; padding-bottom: 48px; }
+  .hero--page .hero-photo { height: 300px; }
+  .hero-side { padding: 0 var(--edge) 56px; }
+  .hero-side-in { width: 100%; }
+  .sec-split, .kit, .band .contact { grid-template-columns: minmax(0, 1fr); }
+  .loc-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "facts" "map" "photo" "text"; grid-template-rows: none; }
+}
+@media (max-width: 560px) {
+  .hero-facts { grid-auto-flow: row; }
+  .hero-facts > div { display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); align-items: baseline; gap: 12px; padding-block: 8px; }
+  .hero-facts > div + div { margin-left: 0; padding-left: 0; border-left: 0; border-top: 1px solid var(--field-rule); }
+  .hero-facts dd { margin-top: 0; }
+  .book-row .btn, .kit .btn { width: 100%; }
+  .board .board-row--plain .board-name { grid-column: 1; }
+  .loc-map, .loc-map iframe { min-height: 260px; }
+}
+/* Estimator on the narrowest phones: one column of axle options, the add-on price under its label and the total
+   stacked, so no button label wraps. */
+@media (max-width: 400px) {
+  .est-opts { grid-template-columns: minmax(0, 1fr); }
+  .est-chk { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: start; gap: 4px; }
+  .est-chk-price { padding-left: 32px; }
+  .est-total { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .est-total-amt { text-align: left; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .est-opt, .est-chk { transition: none; }
+}

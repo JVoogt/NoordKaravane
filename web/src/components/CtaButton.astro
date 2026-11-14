@@ -1,10 +1,15 @@
 ---
+import Icon from './Icon.astro';
+
 interface Props {
   href: string;
-  variant?: 'primary' | 'ghost' | 'whatsapp';
+  /** primary: the filled action. ghost: the outlined second choice. Both take their colours from the section they sit in. */
+  variant?: 'primary' | 'ghost';
   external?: boolean;
+  /** Optional icon before the label. */
+  icon?: 'wa' | 'tel';
 }
-const { href, variant = 'primary', external = false } = Astro.props;
+const { href, variant = 'primary', external = false, icon } = Astro.props;
 ---
 
 <a
@@ -13,5 +18,5 @@ const { href, variant = 'primary', external = false } = Astro.props;
   target={external ? '_blank' : undefined}
   rel={external ? 'noopener' : undefined}
 >
-  <slot />
+  {icon && <Icon name={icon} />}<slot />
 </a>

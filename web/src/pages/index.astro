@@ -1,31 +1,34 @@
 ---
 import { Picture } from 'astro:assets';
-import liftKit from '../assets/lift-kit.jpg';
+import '../styles/home.css';
+import bench from '../assets/bench.jpg';
+import hub from '../assets/hub.jpg';
+import workshop from '../assets/workshop.jpg';
 import Base from '../layouts/Base.astro';
-import ContactBand from '../components/ContactBand.astro';
 import CtaButton from '../components/CtaButton.astro';
+import MessageBuilder from '../components/MessageBuilder.astro';
+import Plates from '../components/Plates.astro';
 import Reviews from '../components/Reviews.astro';
-import ServiceCard from '../components/ServiceCard.astro';
+import SampleReport from '../components/SampleReport.astro';
+import ServiceBoard from '../components/ServiceBoard.astro';
 import TrustStrip from '../components/TrustStrip.astro';
 import { BUSINESS } from '../data/business';
 import { ADDONS, AXLE_OPTIONS, fmtR } from '../data/pricing';
 import { servicePath } from '../data/routes';
-import { SERVICE_LIST } from '../data/services';
+import { SAMPLE_FINDINGS } from '../data/sample-report';
+import { formatHoursRows } from '../lib/hours';
 import { buildGraph, jsonLd, orgNode } from '../lib/schema';
 import { WA_TEXT, waUrl } from '../lib/whatsapp';
 
 const a = BUSINESS.address;
+const tel = `tel:${BUSINESS.phone.e164}`;
 const from = fmtR(Math.min(...AXLE_OPTIONS.map((o) => o.price)));
 const axle = (id: string): string => fmtR(AXLE_OPTIONS.find((o) => o.id === id)!.price);
 const liftKitPrice = fmtR(ADDONS.find((o) => o.id === 'lift-kit')!.price);
 const graph = buildGraph([orgNode()]);
 const description = `Caravan workshop at ${a.street}, ${a.locality}: services from ${from}, repairs, electrical and solar, lift kits and insurance-accredited recoveries.`;
-
-const steps = [
-  { h: "Tell us what's going on", p: "Send a WhatsApp with the make and year, what it's doing, and a photo if you have one." },
-  { h: 'We inspect and report', p: 'On the ramp we check the running gear, electrics and structure, and write it up with photos.' },
-  { h: 'You approve the quote', p: 'Safety work is listed apart from the nice-to-haves. Nothing extra happens until you say yes.' },
-];
+// The tag hung on the hero photo is the first finding of the sample report further down the page.
+const finding = SAMPLE_FINDINGS[0];
 ---
 
 <Base
@@ -34,93 +37,173 @@ const steps = [
   path="/"
   jsonLd={jsonLd(graph)}
 >
-  <header class="hero hero--home">
-    <div class="container hero-grid">
-      <div class="hero-main">
-        <h1 class="hero-title">
-          <span class="hero-title-place">Caravan workshop in {a.locality}<span class="sr-only">. </span></span>
-          Keep her <span class="accent">road-ready.</span>
-        </h1>
-        <p class="hero-lede">
-          Caravan servicing, repairs, electrical and solar, 50 mm lift kits and recoveries, from {a.street}. Services and repairs start with an inspection: you see what we found, and what it'll cost, before we pick up a spanner.
-        </p>
-        <div class="hero-actions">
-          <CtaButton href={waUrl(WA_TEXT.book)} variant="primary" external>Book on WhatsApp</CtaButton>
-          <CtaButton href={servicePath('caravan-service') + '#pricing'} variant="ghost">Service packages from {from}</CtaButton>
+  <header class="hero on-ink">
+    <div class="hero-in">
+      <div class="hero-copy">
+        <div class="hero-text">
+          {/* The place comes first in the document (and for search); the layout sets it under the headline. */}
+          <h1>
+            <span class="h1-place">Caravan workshop in {a.locality}<span class="sr-only">. </span></span>
+            <span class="h1-say">Keep her <span class="hi">road-ready.</span></span>
+          </h1>
+          <p class="lede">You see what we found, and what it'll cost, before we pick up a spanner.</p>
+          <div class="cta-row hero-actions">
+            <CtaButton href={waUrl(WA_TEXT.book)} variant="primary" icon="wa" external>Book on WhatsApp</CtaButton>
+            <CtaButton href={servicePath('caravan-service') + '#pricing'} variant="ghost">Services from {from}</CtaButton>
+          </div>
+          <TrustStrip />
         </div>
-        <TrustStrip />
       </div>
-
-      <div class="hero-media">
+      <div class="hero-photo">
         <Picture
-          src={liftKit}
+          src={hub}
           formats={['avif', 'webp']}
           fallbackFormat="jpg"
-          widths={[480, 640, 900]}
-          sizes="(max-width: 1100px) 480px, 560px"
-          quality={70}
-          alt="Caravan with a lift kit in the Noord Karavane workshop"
+          widths={[480, 860, 1100]}
+          sizes="(max-width: 860px) 100vw, 53vw"
+          quality={62}
+          alt="A caravan brake assembly and stub axle with the hub removed, on the lift in the Noord Karavane workshop"
           loading="eager"
           fetchpriority="high"
           decoding="async"
         />
+        <div class="hero-tag" role="group" aria-label="Example inspection finding">
+          <div class="hero-tag-t">{finding.k}</div>
+          <p class="hero-tag-p">{finding.v}</p>
+          <div class="hero-tag-f nums"><span>{finding.evidence} attached</span><span>Waiting for your go-ahead</span></div>
+          <p class="hero-tag-k">Example finding from an inspection report.</p>
+        </div>
       </div>
     </div>
+    <div class="tread" aria-hidden="true"></div>
   </header>
 
-  <section id="services" class="block">
-    <div class="container">
-      <div class="sec-head">
-        <h2 class="sec-title">What does your caravan need?</h2>
+  <section id="services" class="sec">
+    <div class="wrap">
+      <div class="sec-top">
+        <h2>What does your caravan need?</h2>
+        <p>Caravan servicing, repairs, electrical and solar, 50 mm lift kits and recoveries, from {a.street}.</p>
       </div>
-      <div class="svc-grid">
-        {SERVICE_LIST.map((s) => <ServiceCard slug={s.slug} compact />)}
+      <ServiceBoard />
+      <div class="board-notes">
+        <p class="svc-prices nums">
+          A service costs {axle('unbraked-1')} for a single axle without brakes, up to {axle('braked-2')} for a double axle with brakes. A 50 mm lift kit is {liftKitPrice} fitted. Repairs and solar work are quoted before we start, and the solar quote is free.
+        </p>
+        <p class="svc-help">
+          Not sure what it's called? <a href={waUrl(WA_TEXT.describe)} target="_blank" rel="noopener">Send a photo on WhatsApp</a> and tell us what it's doing.
+        </p>
       </div>
-      <p class="svc-prices">
-        A service costs {axle('unbraked-1')} for a single axle without brakes, up to {axle('braked-2')} for a double axle with brakes. A 50 mm lift kit is {liftKitPrice} fitted. Repairs and solar work are quoted before we start, and the solar quote is free.
-      </p>
-      <p class="svc-help">
-        Not sure what it's called? <a href={waUrl(WA_TEXT.describe)} target="_blank" rel="noopener">Send a photo on WhatsApp</a> and tell us what it's doing.
-      </p>
     </div>
   </section>
 
-  <section id="why-us" class="block">
-    <div class="container how-grid">
-      <div class="how-main">
-        <div class="sec-head">
-          <h2 class="sec-title">How a job runs here</h2>
-        </div>
-        <ol class="how-steps">
-          {steps.map((s, i) => (
-            <li>
-              <span class="how-n" aria-hidden="true">{i + 1}</span>
-              <div>
-                <h3>{s.h}</h3>
-                <p>{s.p}</p>
-              </div>
-            </li>
-          ))}
+  <section id="why-us" class="sec how">
+    <div class="wrap how-grid">
+      <div>
+        <h2>How a job runs here</h2>
+        <p class="how-lede">Services and repairs start with an inspection.</p>
+        <ol class="steps how-steps">
+          <li>
+            <div>
+              <h3>Tell us what's going on</h3>
+              <p>Send a WhatsApp with the make and year, what it's doing, and a photo if you have one.</p>
+              <MessageBuilder />
+            </div>
+          </li>
+          <li>
+            <div>
+              <h3>We inspect and report</h3>
+              <p>On the ramp we check the running gear, electrics and structure, and write it up with photos.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <h3>You approve the quote</h3>
+              <p>Safety work is listed apart from the nice-to-haves. Nothing extra happens until you say yes.</p>
+              <a class="link steps-link" href={servicePath('caravan-service') + '#process'}>See the service process</a>
+            </div>
+          </li>
         </ol>
-        <a class="text-link" href={servicePath('caravan-service') + '#process'}>See the service process</a>
       </div>
-      <aside id="reviews" class="how-proof" aria-label="Google reviews">
-        <Reviews />
-      </aside>
+
+      <div class="proofcol">
+        <figure>
+          <Picture
+            src={bench}
+            formats={['avif', 'webp']}
+            fallbackFormat="jpg"
+            widths={[480, 800, 1200]}
+            sizes="(max-width: 860px) 100vw, 45vw"
+            quality={62}
+            alt="A Noord Karavane technician working on the nose box of an off-road trailer in the workshop"
+            loading="lazy"
+            decoding="async"
+          />
+        </figure>
+        <SampleReport />
+      </div>
     </div>
   </section>
 
-  <ContactBand
-    id="location"
-    heading="Find the workshop"
-    text={`${a.street}, ${a.locality}. WhatsApp us before you tow in, so we can book you a slot.`}
-    waText={WA_TEXT.findUs}
-    placeLabel="Map and directions"
-  >
-    <p id="rentals" class="contact-aside">
-      Don't own a caravan yet? <a href={BUSINESS.links.kampi} target="_blank" rel="noopener">Rent one through Kampi</a>, our partner rental marketplace.
-    </p>
-  </ContactBand>
+  <section id="reviews" class="sec rev on-ink" aria-label="Google reviews">
+    <div class="wrap rev-grid">
+      <Reviews />
+    </div>
+  </section>
+
+  <section id="recoveries" class="sec rec on-ink">
+    <div class="wrap rec-grid">
+      <div>
+        <h2>Stuck far from home?</h2>
+        <p>Insurance-accredited caravan and trailer recoveries, nationwide and cross-border.</p>
+        <div class="cta-row">
+          <CtaButton href={tel} variant="primary" icon="tel">Call {BUSINESS.phone.display}</CtaButton>
+          <CtaButton href={servicePath('recoveries')} variant="ghost">How recoveries work</CtaButton>
+        </div>
+      </div>
+      <Plates />
+    </div>
+  </section>
+
+  <section id="location" class="sec find">
+    <div class="wrap find-grid">
+      <figure>
+        <Picture
+          src={workshop}
+          formats={['avif', 'webp']}
+          fallbackFormat="jpg"
+          widths={[480, 800, 1200]}
+          sizes="(max-width: 860px) 100vw, 50vw"
+          quality={62}
+          alt="Inside the Noord Karavane workshop: a caravan between the lifts, with the workbench along the window wall"
+          loading="lazy"
+          decoding="async"
+        />
+        <figcaption>Inside the workshop at {a.street}.</figcaption>
+      </figure>
+      {/* .contact: the closing block of every page carries a WhatsApp and a Call link (verify check 14). */}
+      <div class="contact">
+        <h2>Find the workshop</h2>
+        <p class="find-lede">{a.street}, {a.locality}. WhatsApp us before you tow in, so we can book you a slot.</p>
+        <dl class="find-facts nums">
+          <div><dt>Workshop</dt><dd>{a.street}<span class="sr-only">, </span><small>{a.locality}, {a.city}, {a.postalCode}</small></dd></div>
+          <div>
+            <dt>Workshop hours</dt>
+            <dd class="hrs">
+              {formatHoursRows(BUSINESS.hours).map((r) => <Fragment><span>{r.days}</span>{' '}<span>{r.time}</span>{' '}</Fragment>)}
+            </dd>
+          </div>
+          <div><dt>Call</dt><dd><a class="find-tel" href={tel}>{BUSINESS.phone.display}</a></dd></div>
+        </dl>
+        <div class="cta-row">
+          <CtaButton href={waUrl(WA_TEXT.findUs)} variant="primary" icon="wa" external>WhatsApp {BUSINESS.phone.display}</CtaButton>
+          <CtaButton href="/find-us/" variant="ghost">Map and directions</CtaButton>
+        </div>
+        <p id="rentals" class="find-aside">
+          Don't own a caravan yet? <a class="link" href={BUSINESS.links.kampi} target="_blank" rel="noopener">Rent one through Kampi</a>, our partner rental marketplace.
+        </p>
+      </div>
+    </div>
+  </section>
 
   <script>
     import '../scripts/legacy-hash';

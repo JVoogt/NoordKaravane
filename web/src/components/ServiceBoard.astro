@@ -1,0 +1,30 @@
+---
+// The price board: one ruled row per service, the visitor's problem first (in their words), then the name of the
+// work and the price tag. Each row is one link to the service page. Home shows every service; a service page shows
+// its related ones; the 404 page adds a row of its own (default slot). Names, needs and tags come from services.ts.
+import { servicePath, type ServiceSlug } from '../data/routes';
+import { SERVICE_LIST, serviceMeta } from '../data/services';
+import Icon from './Icon.astro';
+
+interface Props {
+  /** The services to list, in this order. Default: all of them. */
+  slugs?: readonly ServiceSlug[];
+  /** Heading level of the service names: h3 under a section's h2 (the default), h2 where the board sits straight
+      under the page headline (the 404 page). The look is the same either way (.board-name, system.css). */
+  heading?: 'h2' | 'h3';
+}
+const { slugs, heading: Name = 'h3' } = Astro.props;
+const services = slugs ? slugs.map(serviceMeta) : SERVICE_LIST;
+---
+
+<div class="board">
+  {services.map((s) => (
+    <a class="board-row" href={servicePath(s.slug)}>
+      <p class="board-need">{s.need}</p>
+      <Name class="board-name">{s.name}</Name>
+      <span class="board-price nums">{s.tag}</span>
+      <Icon name="go" />
+    </a>
+  ))}
+  <slot />
+</div>

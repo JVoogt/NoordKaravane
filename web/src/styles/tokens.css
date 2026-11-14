@@ -1,43 +1,123 @@
-/* Design tokens: values are verbatim from the old landing page :root (site/index.html). */
+/* Design tokens (site redesign, 2026-11-14): the approved prototype's token set, Ink colour field.
+   Every colour and font family on the site comes from this block; nothing else holds a colour literal. */
 :root {
-  --ink:        #0e0f11;
-  --ink-2:      #17181c;
-  --ink-3:      #1e2025;
-  --line:       rgba(235, 230, 221, 0.10);
-  --line-2:     rgba(235, 230, 221, 0.18);
-  --paper:      #ebe6dd;
-  --paper-dim:  rgba(235, 230, 221, 0.62);
-  --paper-low:  rgba(235, 230, 221, 0.58);
-  --orange:     #e95e1d;
-  --orange-2:   #ff7a3b;
-  --orange-low: rgba(233, 94, 29, 0.12);
-  /* Brand orange fails on paper (2.78:1). For orange text and marks on paper surfaces only: 4.6:1 on the darkest paper tint. */
-  --orange-on-paper: #a63d0f;
-  --whatsapp:   #25D366;
-  --whatsapp-hover: #3ddb7c;
-  --whatsapp-ink:   #062e16;
+  /* Brand */
+  --ink:         #0e0f11;
+  --ink-deep:    #060709;
+  --paper:       #ebe6dd;
+  --white:       #fdfdfb;
+  --orange:      #e95e1d;
+  --orange-hi:   #ff7a3b;
+  /* Brand orange fails as text on the light grounds (about 3:1). Orange text and marks on light surfaces use this. */
+  --orange-deep: #a63d0f;
+  --wa:          #25d366;
+  --wa-hi:       #3ddb7c;
+  --wa-ink:      #062e16;
+  --wa-bubble:   #dcf8c6;
+  --wa-bubble-ink: #0b2b12;
+  --ok:          #17743a;
 
-  /* Semantic surfaces and lines (2026-11-08 polish: every literal that lived in components.css, same values). */
-  --surface-faint:  rgba(235, 230, 221, 0.035); /* chips, pills and the Call button on ink */
-  --topbar-line:    rgba(0, 0, 0, 0.15);        /* hairline under the orange topbar */
-  --mask-solid:     #000;                       /* opaque stop of the quick-nav fade mask */
-  --shadow-float:   0 6px 0 rgba(0, 0, 0, 0.35), 0 10px 24px rgba(0, 0, 0, 0.35); /* floating WhatsApp: offset, no glow */
-  /* The paper (inspection report) section: ink at low strengths. */
-  --paper-ink-dim:  rgba(14, 15, 17, 0.68);
-  --paper-line:     rgba(14, 15, 17, 0.12);
-  --paper-line-soft: rgba(14, 15, 17, 0.10);
-  --paper-tint-1:   rgba(14, 15, 17, 0.035);
-  --paper-tint-2:   rgba(14, 15, 17, 0.055);
-  --paper-raised:   rgba(245, 242, 237, 0.72);
-  --sev-ok:         #22c55e;                    /* report row that passed */
-  --focus:          var(--orange-2);
+  /* Working surfaces: daylight grey, with white card stock. */
+  --ground:      #f3f3f0;
+  --ground-2:    #e7e7e2;
+  --card:        #fdfdfb;
+  --text:        #0e0f11;
+  --text-dim:    #4a4b50;
+  --rule:        rgba(14, 15, 17, 0.16);
+  --field-edge:  #6b6c72;
 
-  --f-display:  'Bebas Neue', 'Barlow', system-ui, sans-serif;
-  --f-body:     'Barlow', system-ui, -apple-system, sans-serif;
-  --f-mono:     'Barlow', system-ui, sans-serif;
+  /* On ink: the top line, the pinned nav, the reviews section, the footer and the fixed bar. */
+  --on-ink:      #ebe6dd;
+  --on-ink-dim:  #b8b3aa;
+  --ink-rule:    rgba(235, 230, 221, 0.18);
+  --ink-tint:    rgba(235, 230, 221, 0.06);
 
-  --gap:        28px;
-  --section-y:  clamp(48px, 6vw, 84px);
-  --container:  min(1320px, 92vw);
-  --gutter:     clamp(20px, 4vw, 48px);
+  /* The colour field (hero and recoveries band): Ink. */
+  --field:       var(--ink);
+  --field-ink:   var(--paper);
+  --field-hi:    var(--orange-hi);
+  --field-dim:   var(--on-ink-dim);
+  --field-rule:  rgba(235, 230, 221, 0.22);
+  --tread-c:     rgba(233, 94, 29, 0.5);
+  --tread-foot:  rgba(233, 94, 29, 0.55);
+
+  /* Buttons read these; a section on ink overrides them (see .on-ink in chrome.css). */
+  --btn-bg:      var(--ink);
+  --btn-fg:      var(--white);
+  --btn-ico:     var(--wa);
+  --btn-line:    var(--ink);
+  --btn-line-fg: var(--white);
+  /* Focus ring on the light grounds. Brand orange is under 3:1 on --ground-2, so the ring uses the deep orange
+     there; surfaces on ink switch it to paper (chrome.css). */
+  --focus:       var(--orange-deep);
+
+  --sh-btn:      0 10px 24px -10px rgba(0, 0, 0, 0.55);
+  --sh-tag:      0 2px 0 rgba(0, 0, 0, 0.08), 0 24px 40px -16px rgba(0, 0, 0, 0.6);
+  --sh-hole:     inset 0 1px 2px rgba(0, 0, 0, 0.45);
+  --sh-card:     0 1px 0 rgba(0, 0, 0, 0.05), 0 20px 32px -24px rgba(0, 0, 0, 0.4);
+  --sh-report:   0 1px 0 rgba(0, 0, 0, 0.05), 0 32px 60px -32px rgba(0, 0, 0, 0.5);
+  --mask-solid:  #000; /* opaque stop of the quick-link row's fade mask */
+
+  --f-display:   'Bebas Neue', 'Bebas Neue Fallback', 'Barlow', sans-serif;
+  /* Headlines set with text-transform: uppercase (pages.css): their stand-in is scaled for capitals. */
+  --f-display-caps: 'Bebas Neue', 'Bebas Neue Caps Fallback', 'Barlow', sans-serif;
+  --f-body:      'Barlow', 'Barlow Fallback', system-ui, sans-serif;
+
+  --max:         1240px;
+  --gutter:      clamp(20px, 4vw, 48px);
+  --edge:        max(var(--gutter), calc((100% - var(--max)) / 2));
+  --sec:         clamp(64px, 8vw, 112px);
+  --gap:         28px;
+  --ease:        cubic-bezier(0.16, 1, 0.3, 1);
+  --tread:       url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='46' height='36'%3E%3Cpath d='M0 0h13l9 16H9zM9 20h13l-9 16H0zM25 0h13l8 16H33zM33 20h13l-8 16H25z'/%3E%3C/svg%3E");
+
+  /* Sticky header heights, for anchor and focus scrolling (base.css). */
+  --nav-h:       68px;
+  --quicknav-h:  60px;
+  /* The fixed WhatsApp and Call bar at 860px and below (chrome.css): 52px buttons, 12px padding, 1px rule. */
+  --bar-h:       77px;
+}
+
+/* Stand-ins for the two web fonts while they load: a local sans scaled to each font's width and vertical
+   metrics, so text wraps on the same words and nothing moves when the real face swaps in. Measured on the site's
+   own text against Arial (Liberation Sans has the same widths): Bebas Neue is 74.5% as wide, Barlow 96% at
+   weight 400 and 92% at 600 and 700 (against Arial Bold). */
+@font-face {
+  font-family: 'Bebas Neue Fallback';
+  src: local('Arial'), local('Liberation Sans'), local('Helvetica Neue'), local('Roboto');
+  size-adjust: 74.5%;
+  ascent-override: 120.8%;
+  descent-override: 40.3%;
+  line-gap-override: 0%;
+}
+/* The same stand-in for text that is set in capitals. Bebas Neue has capitals only, so a headline typed in mixed
+   case is far narrower in the mixed-case stand-in above than in Bebas, by a different amount for every headline
+   (64% to 83% on this site's headlines). Capital for capital the two faces keep one ratio (57%, within 2.5%), so
+   a long headline breaks on the same words in both. Same vertical metrics as above (0.9 up, 0.3 down). */
+@font-face {
+  font-family: 'Bebas Neue Caps Fallback';
+  src: local('Arial'), local('Liberation Sans'), local('Helvetica Neue'), local('Roboto');
+  size-adjust: 57.1%;
+  ascent-override: 157.6%;
+  descent-override: 52.5%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: 'Barlow Fallback';
+  font-weight: 400;
+  src: local('Arial'), local('Liberation Sans'), local('Helvetica Neue'), local('Roboto');
+  size-adjust: 96%;
+  ascent-override: 104.2%;
+  descent-override: 20.8%;
+  line-gap-override: 0%;
+}
+/* Weights 600 and 700 both resolve to this face. */
+@font-face {
+  font-family: 'Barlow Fallback';
+  font-weight: 700;
+  src: local('Arial Bold'), local('Liberation Sans Bold'), local('Helvetica Neue Bold'), local('Roboto Bold');
+  size-adjust: 92%;
+  ascent-override: 108.7%;
+  descent-override: 21.7%;
+  line-gap-override: 0%;
 }
