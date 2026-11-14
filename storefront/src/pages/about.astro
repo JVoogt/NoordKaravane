@@ -1,5 +1,6 @@
 ---
 import { u } from '~/lib/url';
 import ContentPage from '~/components/ContentPage.astro';
+import { brand } from '~/lib/brand';
 ---
-<ContentPage collection="pages" id="about" path={u('/about')} fallbackTitle="About Noord Karavane" />
+<ContentPage collection="pages" id="about" path={u('/about')} fallbackTitle={brand.key === 'kampi' ? 'About Kampi Store' : 'About Noord Karavane'} />

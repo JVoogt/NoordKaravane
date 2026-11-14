@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { u } from '../lib/url';
 import { quoteHref } from '../lib/quote';
+import { clientCopy } from '@brand-copy';
+
+const { buyDeliveryLine: bdl, quoteLine: ql } = clientCopy;
 
 interface V { id: string; sku: string; price: number | null; options: Record<string, string> }
 interface Opt { name: string; values: string[] }
@@ -89,7 +92,7 @@ export default function ProductBuy(p: Props) {
         <div class="grid gap-3">
           <a class="btn btn--lg w-full" href={quoteHref(u('/contact'), [p.title + (variant ? ' (' + Object.values(variant.options).join(' / ') + ')' : '')])}>Request a quote</a>
           <p class="flex items-start gap-2 text-[0.95rem] text-muted">
-            <span>This is a large item, so we quote delivery for you. Or <strong class="text-ink">collect free</strong> from the workshop. Reply usually within two working days.</span>
+            <span>{ql.before}<strong class="text-ink">{ql.strong}</strong>{ql.after}</span>
           </p>
         </div>
       ) : (
@@ -99,7 +102,7 @@ export default function ProductBuy(p: Props) {
         </button>
         <p class="mt-3 flex items-start gap-2 text-[0.95rem] text-muted">
           <svg class="mt-0.5 shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7" /><circle cx="7" cy="18" r="1.6" /><circle cx="17" cy="18" r="1.6" /></svg>
-          <span>Free delivery over {zar(p.freeShipping)}, or <strong class="text-ink">collect free</strong> from the workshop.</span>
+          <span>{bdl.beforePrice}{zar(p.freeShipping)}{bdl.afterPrice}<strong class="text-ink">{bdl.strong}</strong>{bdl.after}</span>
         </p>
       </div>
       )}

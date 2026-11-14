@@ -3,11 +3,12 @@ import { u } from '~/lib/url';
 import Base from '~/layouts/Base.astro';
 import Cart from '~/islands/Cart.tsx';
 import { business } from '~/lib/business';
+import { brand } from '~/lib/brand';
 import { getCatalogue, quoteOnlyHandles } from '~/lib/products';
 const { products } = await getCatalogue();
 const quoteHandles = quoteOnlyHandles(products);
 ---
-<Base title="Your cart" description="Review your Noord Karavane cart." path={u('/cart')} noindex floatingChat={false}>
+<Base title="Your cart" description={`Review your ${brand.siteName} cart.`} path={u('/cart')} noindex floatingChat={false}>
   <div class="wrap pb-16 pt-12">
     <h1 class="display mb-8 text-[clamp(2.6rem,8vw,5rem)]">Your cart</h1>
     <Cart client:load freeShipping={business.shipping.free_shipping_threshold_zar} quoteHandles={quoteHandles} />

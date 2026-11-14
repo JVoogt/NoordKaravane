@@ -39,13 +39,14 @@ export const STORE_BRANDS: Record<BrandKey, StoreBrand> = {
     landing: { href: '/', label: 'Workshop & servicing' }, newsletter: true, whatsappGreeting: 'Hi Noord Karavane! ', showSellerLine: false,
     tagline: null, heroFeature: null,
   },
-  // Task 2.2 fills the Kampi values (brand-copy.md section 1).
+  // brand-copy.md section 1 (design pack docs/design/kampi-storefront, approved 2026-11-14).
   kampi: {
-    key: 'kampi', siteName: 'Noord Karavane', titleSuffix: 'Noord Karavane', themeColor: '#0e0f11',
-    logo: { header: '/logo-transparent.png', footer: '/logo-white.png', alt: 'Noord Karavane' },
-    icon192: '/icon-192.png', appleTouchIcon: '/apple-touch-icon.png', ogDefault: '/og-default.png',
-    landing: { href: '/', label: 'Workshop & servicing' }, newsletter: true, whatsappGreeting: 'Hi Noord Karavane! ', showSellerLine: false,
-    tagline: null, heroFeature: null,
+    key: 'kampi', siteName: 'Kampi Store', titleSuffix: 'Kampi Store', themeColor: '#5f6f3a',
+    logo: { header: '/kampi/logo.svg', footer: '/kampi/logo-light.png', alt: 'Kampi' },
+    icon192: '/kampi/icon-192.png', appleTouchIcon: '/kampi/apple-touch-icon.png', ogDefault: '/kampi/og-default.png',
+    landing: { href: 'https://kampi.co.za', label: 'Rent a caravan' }, newsletter: false, whatsappGreeting: 'Hi Kampi Store! ', showSellerLine: true,
+    tagline: 'Camping gear, caravan kit, braai tools and first aid kits for South African road trips. Delivered countrywide or collected in Pretoria North. Pay by EFT.',
+    heroFeature: 'kampi-foldaway-camp-fan',
   },
 };
 

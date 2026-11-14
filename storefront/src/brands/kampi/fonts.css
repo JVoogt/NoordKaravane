@@ -1,0 +1,12 @@
+/* Montserrat, self-hosted from @fontsource/montserrat (latin 400 to 800); the CSP allows font-src 'self' only. */
+@font-face { font-family: 'Montserrat'; font-style: normal; font-weight: 400; font-display: swap; src: url('../../../node_modules/@fontsource/montserrat/files/montserrat-latin-400-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Montserrat'; font-style: normal; font-weight: 500; font-display: swap; src: url('../../../node_modules/@fontsource/montserrat/files/montserrat-latin-500-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Montserrat'; font-style: normal; font-weight: 600; font-display: swap; src: url('../../../node_modules/@fontsource/montserrat/files/montserrat-latin-600-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Montserrat'; font-style: normal; font-weight: 700; font-display: swap; src: url('../../../node_modules/@fontsource/montserrat/files/montserrat-latin-700-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Montserrat'; font-style: normal; font-weight: 800; font-display: swap; src: url('../../../node_modules/@fontsource/montserrat/files/montserrat-latin-800-normal.woff2') format('woff2'); }
+/* Kampi Display: the same files under an alias. NK draws .display and .btn at weight 400 and .label at 600
+   with font-synthesis: none, so 400 maps to the 800 file and 600 to the 700 file (DESIGN.md section 3). */
+@font-face { font-family: 'Kampi Display'; font-style: normal; font-weight: 400; font-display: swap; src: url('../../../node_modules/@fontsource/montserrat/files/montserrat-latin-800-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Kampi Display'; font-style: normal; font-weight: 600; font-display: swap; src: url('../../../node_modules/@fontsource/montserrat/files/montserrat-latin-700-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Kampi Display'; font-style: normal; font-weight: 700; font-display: swap; src: url('../../../node_modules/@fontsource/montserrat/files/montserrat-latin-700-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Kampi Display'; font-style: normal; font-weight: 800; font-display: swap; src: url('../../../node_modules/@fontsource/montserrat/files/montserrat-latin-800-normal.woff2') format('woff2'); }

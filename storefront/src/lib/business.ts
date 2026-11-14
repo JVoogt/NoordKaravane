@@ -1,6 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { env } from './env';
+import { BRAND, brand } from './brand';
+import { mergeBrandDisplay } from './brands';
 
 export interface Business {
   brand: string; domain: string; tagline: string;
@@ -72,8 +74,32 @@ export function fill(text: string): string {
 }
 
 export const isPlaceholder = (v: unknown) => typeof v === 'string' && /\{\{.*\}\}/.test(v);
-/** Digits only, or null while the WhatsApp number is still a placeholder. */
+
+let brandCached: Business | null = null;
+/**
+ * The business values this store shows (plan DD7). NK: exactly loadBusiness(). Kampi: NK's contact display values
+ * (WhatsApp, socials, tagline) are never shown on the Kampi store; only `brands.kampi.*` may fill them, so with no
+ * Kampi value the WhatsApp chip and links render nothing (DESIGN.md 13: WhatsApp omitted at launch). Legal identity
+ * values are always NK's (the seller), whatever the block says.
+ */
+export function brandBusiness(): Business {
+  if (BRAND === 'nk') return loadBusiness();
+  if (brandCached) return brandCached;
+  const own = { ...loadBusiness(), whatsapp: '', instagram: '', facebook: '', tagline: brand.tagline ?? '' };
+  brandCached = mergeBrandDisplay(own, BRAND);
+  return brandCached;
+}
+
+/** Digits only, or null while the WhatsApp number is still a placeholder (or, on Kampi, not configured). */
 export const whatsappNumber = (): string | null => {
-  const w = String(loadBusiness().whatsapp || '').replace(/\D/g, '');
-  return w.length >= 9 && !isPlaceholder(loadBusiness().whatsapp) ? w : null;
+  const raw = brandBusiness().whatsapp;
+  const w = String(raw || '').replace(/\D/g, '');
+  return w.length >= 9 && !isPlaceholder(raw) ? w : null;
+};
+
+/** The seller's name for Kampi seller lines: NK's legal name, or its brand name while the legal name is a placeholder. */
+export const sellerName = (): string => {
+  const b = loadBusiness();
+  const v = typeof b.legal_name === 'string' ? b.legal_name.trim() : '';
+  return v && !v.includes('{{') && !v.includes('REPLACE_ME') ? v : b.brand;
 };

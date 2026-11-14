@@ -3,6 +3,8 @@ import ProductCard from './ProductCard.astro';
 import type { Product, Category } from '~/lib/products';
 import { categoryFamily, inCategory, topCategories } from '~/lib/products';
 import { u } from '~/lib/url';
+import { brand } from '~/lib/brand';
+const KAMPI = brand.key === 'kampi';
 
 interface Props { products: Product[]; categories: Category[]; error?: string; basePath: string; lockedCategory?: string }
 const { products, categories, error, basePath, lockedCategory } = Astro.props;
@@ -39,7 +41,7 @@ const active = [!lockedCategory && cat, search].filter(Boolean).length;
     )}
     <div class="field min-w-52 flex-1 sm:max-w-xs">
       <label for="q" class="label text-muted">Search</label>
-      <input id="q" name="q" type="search" value={q.get('q') || ''} class="input !min-h-11 !py-2" placeholder="e.g. battery, camera, braai" autocomplete="off" />
+      <input id="q" name="q" type="search" value={q.get('q') || ''} class="input !min-h-11 !py-2" placeholder={KAMPI ? 'e.g. fan, braai, first aid' : 'e.g. battery, camera, braai'} autocomplete="off" />
     </div>
     <div class="field min-w-44">
       <label for="sort" class="label text-muted">Sort</label>
@@ -65,7 +67,7 @@ const active = [!lockedCategory && cat, search].filter(Boolean).length;
   </ul>
 ) : (
   <div class="mx-auto max-w-xl border border-dashed border-ink-3 px-8 py-14 text-center">
-    <p class="font-display text-4xl">Nothing here.</p>
+    <p class="font-display text-4xl">{KAMPI ? 'No gear matches that.' : 'Nothing here.'}</p>
     <p class="mt-2 text-muted">{products.length ? 'No products match those filters. Loosen one and try again.' : 'The catalogue is still loading. Check back soon.'}</p>
     {active > 0 && <a class="btn btn--ghost mt-5" href={basePath}>Clear filters</a>}
   </div>

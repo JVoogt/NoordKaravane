@@ -1,6 +1,6 @@
 import { siteUrl } from './env';
 import { decodeEntities } from './format';
-import { business, whatsappNumber, isPlaceholder } from './business';
+import { business, brandBusiness, whatsappNumber, isPlaceholder } from './business';
 import { u } from './url';
 import type { Product } from './products';
 
@@ -13,7 +13,7 @@ const leadDays = () => {
 };
 
 export function organizationLd() {
-  const sameAs = [business.instagram, business.facebook].filter((u) => u && !isPlaceholder(u));
+  const sameAs = [brandBusiness().instagram, brandBusiness().facebook].filter((u) => u && !isPlaceholder(u));
   const wa = whatsappNumber();
   return {
     '@context': 'https://schema.org', '@type': 'Organization', '@id': siteUrl() + '/#org',

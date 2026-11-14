@@ -35,8 +35,10 @@ export default defineConfig({
   vite: {
     plugins: [tailwindcss()],
     build: { chunkSizeWarningLimit: 800 },
-    // Build-time only: no code reads process.env.BRAND at runtime (the runtime image has no BRAND).
-    define: { 'import.meta.env.BRAND': JSON.stringify(BRAND) },
+    // Build-time only: no code reads process.env.BRAND at runtime (the runtime image has no BRAND). A bare constant, not
+    // import.meta.env.BRAND: Astro rewrites non-PUBLIC import.meta.env reads in server code to process.env (runtime),
+    // which would silently resolve to nk in the Kampi container.
+    define: { __BRAND__: JSON.stringify(BRAND) },
     resolve: { alias: { '@brand-copy': brandFile('copy.ts'), '@brand': brandFile('index.ts') } },
   },
 });

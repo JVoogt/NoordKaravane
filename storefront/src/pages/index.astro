@@ -7,6 +7,9 @@ import { business } from '~/lib/business';
 import { u, LANDING } from '~/lib/url';
 import { CATEGORY_IMAGES } from '~/lib/category-config';
 import { zar } from '~/lib/format';
+import { brand } from '~/lib/brand';
+import KampiHero from '~/components/kampi/Hero.astro';
+const KAMPI = brand.key === 'kampi';
 
 const { products, categories, error } = await getCatalogue();
 if (error) Astro.response.headers.set('Cache-Control', 'no-store');
@@ -15,13 +18,13 @@ const tops = topCategories(categories).map((c) => ({ ...c, n: products.filter((p
 const imgFor = (h: string) => CATEGORY_IMAGES[h] ? { src: u(CATEGORY_IMAGES[h]), alt: '' } : products.find((p) => inCategory(p, categoryFamily(categories, h)) && p.images[0])?.images[0];
 ---
 <Base
-  title="Caravan & camping gear shop"
-  description="Lithium batteries, lighting, water pumps, towing cameras, braai gear and first aid kits for caravans and campers. Picked and fitted by a caravan workshop in Pretoria North. Pay by EFT."
+  title={KAMPI ? 'Camping, caravan and braai gear' : 'Caravan & camping gear shop'}
+  description={KAMPI ? 'Camping gear, caravan kit, braai tools and first aid kits for South African road trips. Delivered countrywide or collected in Pretoria North. Pay by EFT.' : 'Lithium batteries, lighting, water pumps, towing cameras, braai gear and first aid kits for caravans and campers. Picked and fitted by a caravan workshop in Pretoria North. Pay by EFT.'}
   path={u('/')}
   noindex={filtered}
   jsonld={[breadcrumbLd([{ name: 'Home', path: '/' }, { name: 'Shop', path: u('/') }])]}
 >
-  <section class="border-b border-ink-3">
+  {' '}{KAMPI ? <KampiHero products={products} /> : <section class="border-b border-ink-3">
     <div class="wrap grid gap-8 pb-12 pt-14 lg:grid-cols-[1.4fr_1fr] lg:items-end lg:pb-16 lg:pt-20">
       <div>
         <p class="label text-wine">Noord Karavane shop</p>
@@ -38,19 +41,19 @@ const imgFor = (h: string) => CATEGORY_IMAGES[h] ? { src: u(CATEGORY_IMAGES[h]),
         <li class="border-l-2 border-wine pl-4"><strong class="text-ink">Fitting available</strong> at the workshop for batteries, cameras and electrics</li>
       </ul>
     </div>
-  </section>
+  </section>}{' '}
 
   {tops.length > 0 && !filtered && (
     <section class="wrap py-12" aria-labelledby="cats-title">
-      <h2 id="cats-title" class="display text-[clamp(2rem,5vw,3rem)]">Shop by category</h2>
+      <h2 id="cats-title" class={'display text-[clamp(2rem,5vw,3rem)]' + (KAMPI ? ' kampi-h2' : '')}>Shop by category</h2>
       <ul class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {tops.map((c) => {
           const im = imgFor(c.handle);
           return (
             <li>
               <a href={u(`/category/${c.handle}/`)} class="group grid grid-cols-[5.5rem_1fr] items-center gap-4 border border-ink-3 bg-paper-2 p-3 no-underline transition-colors hover:border-wine">
-                <span class="block aspect-square overflow-hidden bg-paper-3">{im && <img src={im.src} alt="" width="176" height="176" loading="lazy" class="h-full w-full object-contain" />}</span>
-                <span><span class="block font-display text-[1.6rem] leading-none tracking-[0.03em] group-hover:text-wine-lit">{c.name}</span><span class="mt-1 block text-[0.9rem] text-muted">{c.n} {c.n === 1 ? 'product' : 'products'}</span></span>
+                <span class={'block aspect-square overflow-hidden bg-paper-3' + (KAMPI ? ' kampi-well' : '')}>{im && <img src={im.src} alt="" width="176" height="176" loading="lazy" class="h-full w-full object-contain" />}</span>
+                <span><span class={'block font-display text-[1.6rem] leading-none tracking-[0.03em] group-hover:text-wine-lit' + (KAMPI ? ' kampi-tile-name' : '')}>{c.name}</span><span class="mt-1 block text-[0.9rem] text-muted">{c.n} {c.n === 1 ? 'product' : 'products'}</span></span>
               </a>
             </li>
           );
@@ -60,7 +63,7 @@ const imgFor = (h: string) => CATEGORY_IMAGES[h] ? { src: u(CATEGORY_IMAGES[h]),
   )}
 
   <section id="products" class="wrap pb-10 pt-6" aria-labelledby="all-title">
-    <h2 id="all-title" class="display mb-6 text-[clamp(2rem,5vw,3rem)]">All products</h2>
+    <h2 id="all-title" class={'display mb-6 text-[clamp(2rem,5vw,3rem)]' + (KAMPI ? ' kampi-h2' : '')}>All products</h2>
     <ShopList products={products} categories={categories} error={error} basePath={u('/')} />
   </section>
 </Base>

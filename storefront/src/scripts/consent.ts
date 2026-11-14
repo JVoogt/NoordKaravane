@@ -2,6 +2,7 @@ import * as CookieConsent from 'vanilla-cookieconsent';
 import 'vanilla-cookieconsent/dist/cookieconsent.css';
 import { clientEnv } from './env';
 import { u } from '../lib/url';
+import { clientCopy } from '@brand-copy';
 
 const env = clientEnv();
 type Item = { item_id: string; item_name: string; item_variant?: string; price?: number; quantity?: number };
@@ -115,7 +116,7 @@ CookieConsent.run({
       en: {
         consentModal: {
           title: 'A quick word about cookies',
-          description: 'We use a few essential cookies to run the shop (your cart, your checkout). With your OK we also use analytics and marketing cookies to see what is working and to show our tees to people who might love them. Your call, and you can change it any time.',
+          description: clientCopy.consentIntro,
           acceptAllBtn: 'Accept all',
           acceptNecessaryBtn: 'Essential only',
           showPreferencesBtn: 'Choose',
@@ -131,7 +132,7 @@ CookieConsent.run({
             { title: 'Your privacy', description: `Pick what you are comfortable with. Essential cookies cannot be switched off because the shop does not work without them. Details are in our <a href="${u('/legal/cookies')}">cookie policy</a>.` },
             { title: 'Essential', description: 'Keeps your cart and checkout working and remembers this choice.', linkedCategory: 'necessary' },
             { title: 'Analytics', description: 'Google Analytics 4 tells us which pages and products people look at, so we can improve the shop. Anonymous and aggregated.', linkedCategory: 'analytics' },
-            { title: 'Marketing', description: 'Meta Pixel lets us measure our Facebook ads and show our products to people who visited. Also used for ad measurement through Google.', linkedCategory: 'marketing' },
+            { title: 'Marketing', description: clientCopy.consentMarketing, linkedCategory: 'marketing' },
           ],
         },
       },

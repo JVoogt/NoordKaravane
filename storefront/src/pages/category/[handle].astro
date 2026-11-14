@@ -5,6 +5,8 @@ import { getCatalogue } from '~/lib/products';
 import { breadcrumbLd } from '~/lib/seo';
 import { u } from '~/lib/url';
 import { CATEGORY_IMAGES } from '~/lib/category-config';
+import { brand } from '~/lib/brand';
+const KAMPI = brand.key === 'kampi';
 
 const { handle } = Astro.params;
 const { products, categories, error } = await getCatalogue();
@@ -15,12 +17,12 @@ const parent = cat.parent ? categories.find((c) => c.handle === cat.parent) : nu
 const filtered = [...Astro.url.searchParams.keys()].some((k) => ['sort', 'q'].includes(k));
 const crumbs = [{ name: 'Home', path: '/' }, { name: 'Shop', path: u('/') }, ...(parent ? [{ name: parent.name, path: u(`/category/${parent.handle}/`) }] : []), { name: cat.name, path: u(`/category/${cat.handle}/`) }];
 ---
-<Base title={`${cat.name} for caravans & camping`} description={`Shop ${cat.name.toLowerCase()} from Noord Karavane, a caravan workshop in Pretoria North. Pay by EFT, delivered countrywide or collect from us.`} path={u(`/category/${cat.handle}/`)} noindex={filtered} jsonld={[breadcrumbLd(crumbs)]}>
+<Base title={KAMPI ? `${cat.name} for caravans and camping` : `${cat.name} for caravans & camping`} description={KAMPI ? `Shop ${cat.name.toLowerCase()} at Kampi Store. Pay by EFT, delivered countrywide or collected in Pretoria North.` : `Shop ${cat.name.toLowerCase()} from Noord Karavane, a caravan workshop in Pretoria North. Pay by EFT, delivered countrywide or collect from us.`} path={u(`/category/${cat.handle}/`)} noindex={filtered} jsonld={[breadcrumbLd(crumbs)]}>
   <div class="rail" aria-hidden="true"></div>
   <div class="wrap pb-6 pt-10">
     <nav aria-label="Breadcrumb" class="mb-5 text-[0.92rem]"><ol class="flex flex-wrap gap-x-2">{crumbs.slice(1).map((c, i, a) => <li>{i < a.length - 1 ? <><a href={c.path}>{c.name}</a> <span aria-hidden="true">/</span></> : <span aria-current="page" class="text-muted">{c.name}</span>}</li>)}</ol></nav>
     <div class="flex items-center gap-5">
-      {CATEGORY_IMAGES[cat.handle] && <img src={u(CATEGORY_IMAGES[cat.handle])} alt="" width="112" height="112" class="h-20 w-20 shrink-0 object-contain bg-paper-3 sm:h-28 sm:w-28" />}
+      {CATEGORY_IMAGES[cat.handle] && <img src={u(CATEGORY_IMAGES[cat.handle])} alt="" width="112" height="112" class={'h-20 w-20 shrink-0 object-contain bg-paper-3 sm:h-28 sm:w-28' + (KAMPI ? ' kampi-well' : '')} />}
       <h1 class="display text-[clamp(2.8rem,9vw,6rem)]">{cat.name}</h1>
     </div>
   </div>

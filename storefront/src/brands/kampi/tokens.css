@@ -1,0 +1,276 @@
+/* ==========================================================================
+   Kampi Store tokens for the BRAND=kampi storefront build
+   Imported only by src/brands/kampi/index.ts (the `@brand` alias on a
+   BRAND=kampi build), so none of this reaches the NK bundle. Base.astro
+   imports `@brand` after global.css: the later file wins on equal specificity.
+
+   Source of truth for every value: Kampi-v2/DESIGN.md (the 2021 identity
+   manual's palette) and kampi-shop/theme/kampi-shop.css, checked against the
+   live kampi.co.za on 2026-11-14 (--kampi-cream #FCF6E3, --kampi-khaki
+   #5f6f3a, theme-color #5f6f3a, Montserrat 800 headings).
+
+   Structure
+     1. NK token names, Kampi values (unlayered :root, beats Tailwind @theme)
+     2. Kampi-only additions (flagged: new names the NK file does not have)
+     3. Scoped grounds: token re-declarations for the two dark Kampi grounds
+     4. Kampi component layer: the few rules tokens cannot reach (approved by JP
+        2026-11-14, DESIGN.md section 13: R1 to R3, P1, P2, P3, P5; P4 dropped)
+
+   Light only. color-scheme: light. No dark mode for the Kampi brand.
+   NK names keep their structural meaning, but on a light theme they read
+   literally again: paper* = cream grounds, ink* = Night text and hairlines,
+   wine* = Kampi Khaki, the one action colour.
+   Contrast figures are WCAG 2.x ratios against --color-paper unless stated.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. NK token names, Kampi values
+   Every name in NK global.css @theme and :root is mapped. Nothing is left
+   at its NK value.
+   -------------------------------------------------------------------------- */
+:root {
+  /* Foreground */
+  --color-ink: #2c2c2c;        /* Kampi Night. Body and heads. 12.9:1 */
+  --color-ink-2: #3d3622;      /* Kampi Mud dark. Quotes, strong secondary. 11.9:1 */
+  --color-ink-3: #e8d3a5;      /* Lilac Skies dark. Hairlines only, never text or a field edge */
+
+  /* Grounds, page first, then deeper */
+  --color-paper: #fcf6e3;      /* Kampi Cream. The page. Never white */
+  --color-paper-2: #f4ebd0;    /* Cream sink. Bands, summaries, panels */
+  --color-paper-3: #f8e9c9;    /* Lilac Skies light. Image wells, hover, selected choice */
+
+  /* NK's lit accent pair, used as text in a few places (free-shipping line) */
+  --color-moss: #7a8f4f;       /* Khaki light. Decorative only: 3.3:1, never text */
+  --color-moss-deep: #4a5a28;  /* Khaki dark. "You have free shipping." 7.0:1 */
+  --color-earth: #5a5034;      /* Kampi Mud. 7.4:1 */
+
+  /* The accent. NK calls it wine; on Kampi it is the One Olive voice */
+  --color-wine: #5f6f3a;       /* Kampi Khaki. Buttons, links, focus, selection. 5.1:1, cream on it 5.1:1 */
+  --color-wine-lit: #4a5a28;   /* Khaki dark. On cream, "lit" means darker: hover and emphasis text. 7.0:1 */
+
+  --color-muted: #4a4a4a;      /* Kampi Ash. Secondary text. 8.2:1 on paper, 6.7:1 on paper-3 */
+  --color-muted-ink: #4a4a4a;
+  --color-glow: #bb8a45;       /* Kampi Sand. Punctuation only (rules, one stamp), never text on cream (2.8:1) */
+
+  /* Type. One family. "Kampi Display" is Montserrat under an alias, see DESIGN.md "Type":
+     NK sets .display and .btn at font-weight 400 with font-synthesis: none,
+     so the alias maps its 400 face to the Montserrat 800 file and its 600 face
+     to the 700 file. That keeps the fix inside the token layer. */
+  --font-display: 'Kampi Display', 'Montserrat', system-ui, sans-serif;
+  --font-serif: 'Montserrat', system-ui, sans-serif;
+  --font-sans: 'Montserrat', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-type: 'Montserrat', system-ui, sans-serif;
+
+  --breakpoint-xs: 26rem;      /* unchanged */
+
+  /* NK :root block */
+  --focus: var(--color-wine);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);   /* Kampi ease-out-quint, no bounce */
+  --gutter: clamp(1rem, 4vw, 2.5rem);           /* unchanged: 16px at 390 */
+  color-scheme: light;
+}
+
+/* --------------------------------------------------------------------------
+   2. Kampi-only additions (NEW NAMES, flagged)
+   Each one exists because no NK name carries the role. All prefixed --kampi-.
+   -------------------------------------------------------------------------- */
+:root {
+  /* ADDITION: grounds the NK palette has no name for */
+  --kampi-olive-ground: #4a5a28;  /* Khaki dark. The home hero field. Cream on it 7.0:1 */
+  --kampi-night-green: #232816;   /* Footer ground. Cream on it 14.0:1 */
+  --kampi-on-dark: #fcf6e3;       /* Text on the two dark grounds */
+  --kampi-on-dark-muted: #c9c2a8; /* Secondary text on night-green. 8.5:1 */
+
+  /* ADDITION: Sand, emphasis only (5% of a screen at most) */
+  --kampi-sand: #bb8a45;          /* Rules and the one stamp. Night text on it 4.5:1 */
+  --kampi-sand-light: #d6a45c;    /* Sand on dark grounds: hero pop, footer hover. 6.7:1 on night-green */
+
+  /* ADDITION: semantic. NK reuses its accent for errors (global.css:149-150);
+     on Kampi the accent is green, and a green error reads as success. */
+  --kampi-error: #b91c1c;         /* Alert Red. 6.0:1 on paper, 5.4:1 on paper-2 */
+  --kampi-success: #15803d;       /* Alert Green. Paid, confirmed. 4.6:1 */
+  --kampi-warn: #b45309;          /* Alert Amber. Pending, unconfirmed price. 4.7:1 */
+
+  /* ADDITION: field edge. NK draws inputs in full ink (global.css:142). */
+  --kampi-field-edge: #7c6e4a;    /* Mud light. 4.6:1, clears the 3:1 field-edge rule */
+  --kampi-placeholder: #6b6248;   /* replaces NK's literal #8b857a (global.css:147). 5.6:1 */
+
+  /* ADDITION: shape. NK is 2px everywhere; Kampi is calm-rounded */
+  --kampi-radius-control: 8px;    /* buttons, inputs, choices, option boxes */
+  --kampi-radius-card: 16px;      /* product photo wells, panels */
+  --kampi-radius-pill: 9999px;    /* chips, badges, the cart count */
+
+  /* ADDITION: green-dark elevation. Every shadow is rgba(28, 32, 18, *) */
+  --kampi-shadow-press: 0 4px 0 rgba(28, 32, 18, 0.28);       /* button at rest */
+  --kampi-shadow-press-down: 0 1px 0 rgba(28, 32, 18, 0.28);  /* button :active */
+  --kampi-shadow-lift: 0 6px 0 rgba(28, 32, 18, 0.16);        /* product well at rest */
+  --kampi-shadow-lift-hi: 0 10px 0 rgba(28, 32, 18, 0.16);    /* product well on hover */
+  --kampi-shadow-tag: 10px 10px 0 rgba(28, 32, 18, 0.35);     /* the hero product on olive */
+  --kampi-shadow-card: 0 8px 32px rgba(28, 32, 18, 0.10);     /* resting panel: cart and checkout summaries */
+  --kampi-backdrop: rgba(28, 32, 18, 0.6);                    /* dialog and cookie overlay */
+}
+
+/* --------------------------------------------------------------------------
+   3. Scoped grounds (token re-declarations, no new rules)
+   Tailwind 4 utilities read var(--color-*), so re-declaring the tokens on a
+   container re-themes everything inside it.
+   -------------------------------------------------------------------------- */
+
+/* Footer: NK paints it with .band-ink, which is paper-2 (Footer.astro:16).
+   Kampi's footer is Night Green. Hooked on the existing id="footer". */
+#footer {
+  --color-paper: var(--kampi-night-green);
+  --color-paper-2: var(--kampi-night-green);
+  --color-paper-3: #2e3420;
+  --color-ink: var(--kampi-on-dark);
+  --color-ink-3: rgba(252, 246, 227, 0.16);
+  --color-muted: var(--kampi-on-dark-muted);
+  --color-wine: var(--kampi-sand-light);
+  --color-wine-lit: var(--kampi-sand-light);
+  --focus: var(--kampi-sand-light);
+  border-top: 0;
+}
+
+/* Home hero (Kampi branch of index.astro only): the olive field. */
+[data-ground='olive'] {
+  --color-paper: var(--kampi-olive-ground);
+  --color-paper-2: var(--kampi-olive-ground);
+  --color-ink: var(--kampi-on-dark);
+  --color-ink-3: rgba(252, 246, 227, 0.22);
+  --color-muted: var(--kampi-on-dark);
+  --color-wine: var(--kampi-on-dark);       /* the hero's one loud button is cream */
+  --color-wine-lit: var(--kampi-sand-light);
+  --focus: var(--kampi-sand-light);         /* 3.4:1 on the olive field */
+  background: var(--kampi-olive-ground);
+  color: var(--kampi-on-dark);
+}
+
+/* --------------------------------------------------------------------------
+   4. Kampi component layer (JP 2026-11-14: R1-R3, P1, P2, P3, P5; P4 dropped)
+   Rules on shared NK class names that no token reaches. They live in the
+   Kampi-only file, so NK output stays byte-identical (S-R1).
+   R = required for the plan's stated look; P = recommended polish.
+   -------------------------------------------------------------------------- */
+
+/* R1. Buttons rest on khaki, not Night. NK sets --bg: var(--color-ink) inside
+   .btn itself (global.css:116), so a token cannot reach it. */
+.btn {
+  --bg: var(--color-wine); --bd: var(--color-wine); --fg: var(--color-paper);
+  border-radius: var(--kampi-radius-control);
+  box-shadow: var(--kampi-shadow-press);
+  text-transform: none; letter-spacing: 0; font-size: 1rem; line-height: 1.2;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s, transform 0.1s var(--ease-out), box-shadow 0.1s var(--ease-out);
+}
+.btn:hover:not(:disabled) { --bg: var(--color-wine-lit); --bd: var(--color-wine-lit); --fg: var(--color-paper); }
+.btn:active:not(:disabled) { transform: translateY(3px); box-shadow: var(--kampi-shadow-press-down); }
+.btn--ghost { --bg: transparent; --fg: var(--color-wine); --bd: var(--color-wine); box-shadow: none; }
+.btn--ghost:hover:not(:disabled) { --bg: var(--color-paper-3); --fg: var(--color-wine-lit); --bd: var(--color-wine-lit); }
+.btn--ghost:active:not(:disabled) { transform: translateY(1px); box-shadow: none; }
+.btn--lg { min-height: 3.25rem; font-size: 1.05rem; }
+[data-ground='olive'] .btn { --fg: var(--kampi-olive-ground); box-shadow: 0 4px 0 rgba(28, 32, 18, 0.45); }
+[data-ground='olive'] .btn:hover:not(:disabled) { --bg: var(--color-paper-3); --bd: var(--color-paper-3); --fg: var(--kampi-olive-ground); }  /* olive on lilac-light 5.9:1; sand-light would be 3.4:1 */
+[data-ground='olive'] .btn--ghost { --fg: var(--kampi-on-dark); --bd: var(--kampi-on-dark); box-shadow: none; }
+[data-ground='olive'] .btn--ghost:hover:not(:disabled) { --bg: transparent; --fg: var(--kampi-sand-light); --bd: var(--kampi-sand-light); }
+
+/* R2. Errors are red. NK paints .err and invalid fields in the accent (global.css:149-150). */
+.err { color: var(--kampi-error); }
+.input[aria-invalid='true'] { border-color: var(--kampi-error); box-shadow: 0 0 0 1px var(--kampi-error); }
+#submit-err { border-color: var(--kampi-error); }  /* the boxed place-order error, Checkout.tsx submitErr (by id, not a utility) */
+
+/* R3. Literal colours in NK that ignore tokens and look wrong on cream. */
+.input::placeholder { color: var(--kampi-placeholder); }                     /* global.css:147 */
+.opt.is-off .opt__box { color: var(--kampi-field-edge); }                    /* global.css:239 */
+dialog::backdrop { background: var(--kampi-backdrop); }                      /* global.css:210 */
+#cc-main {                                                                   /* global.css:213-225 */
+  --cc-toggle-off-bg: var(--kampi-field-edge);
+  --cc-toggle-readonly-bg: var(--color-moss);
+  --cc-overlay-bg: var(--kampi-backdrop);
+  --cc-btn-primary-hover-bg: var(--color-wine-lit);
+  --cc-btn-primary-hover-border-color: var(--color-wine-lit);
+  --cc-modal-border-radius: var(--kampi-radius-card);
+  --cc-btn-border-radius: var(--kampi-radius-control);
+}
+
+/* P1. Case and tracking. NK sets uppercase and 0.06 to 0.12em tracking on
+   .display, .label and .badge (global.css:85, 95, 192). Kampi keeps capitals
+   for the one home hero head (.display--caps) and sets the rest in sentence
+   case, as Kampi DESIGN.md "Uppercase Discipline" asks. */
+.display { text-transform: none; letter-spacing: -0.015em; line-height: 1.04; }
+.display--caps { text-transform: uppercase; letter-spacing: 0.01em; line-height: 1.02; }
+.label { text-transform: none; letter-spacing: 0; font-size: 0.85rem; font-family: var(--font-sans); font-weight: 700; }
+.badge {
+  text-transform: none; letter-spacing: 0; font-size: 0.82rem;
+  border: 0; border-radius: var(--kampi-radius-pill);
+  background: var(--color-paper-3); color: var(--color-ink); padding-inline: 0.75rem;
+}
+.badge--wine { background: var(--color-wine); color: var(--color-paper); }
+.prose-nk h1, .prose-nk h2 { text-transform: none; letter-spacing: -0.01em; }  /* global.css:174-175 */
+/* Display-face titles that NK capitalises with the `uppercase` utility (cart lines, checkout summary,
+   delivery and payment option names in Cart.tsx and Checkout.tsx). Long backend option names such as
+   "Pudo Locker (locker-to-locker)" wrap to three capital lines at 390 px otherwise. P4 is dropped, so the
+   markup carries a brand-gated .kampi-nocaps on those titles (Cart.tsx, Checkout.tsx, faq.astro). */
+.kampi-nocaps, .choice__body strong { text-transform: none; }
+/* Legal and content prose: table heads in sentence case; quotes as a cream-sink block, not a side stripe (global.css:184, 186). */
+.prose-nk th { text-transform: none; letter-spacing: 0; font-size: 0.9rem; }
+.prose-nk blockquote { border-left: 0; padding: 1rem 1.25rem; background: var(--color-paper-2); border-radius: var(--kampi-radius-control); }
+
+/* P2. Shape: controls at 8px, photo wells at 16px with the green-dark lift. */
+.input { border: 2px solid var(--kampi-field-edge); border-radius: var(--kampi-radius-control); background: var(--color-paper); }
+.input:hover { background: var(--color-paper); border-color: var(--color-ink-2); }
+/* A read-only value drawn with .input (Checkout.tsx "Country") must not look editable. */
+p.input, p.input:hover { background: var(--color-paper-2); border-color: var(--color-ink-3); }
+.opt__box { border-radius: var(--kampi-radius-control); border-color: var(--kampi-field-edge); }
+.opt input:checked + .opt__box { background: var(--color-wine); border-color: var(--color-wine); color: var(--color-paper); }
+.choice { border-radius: var(--kampi-radius-control); background: var(--color-paper); border-color: var(--color-ink-3); }
+.choice:hover { background: var(--color-paper-3); }
+.choice.is-on { background: var(--color-paper-3); }
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible { border-radius: 4px; }
+.frame__photo {
+  border-radius: var(--kampi-radius-card); outline: 1.5px solid var(--color-ink-3); outline-offset: -1.5px;
+  background: var(--color-paper-3); box-shadow: var(--kampi-shadow-lift);
+  transition: transform 0.22s var(--ease-out), box-shadow 0.22s var(--ease-out);
+}
+.frame__photo img { mix-blend-mode: multiply; }  /* white product backdrops take the well's cream */
+.frame:hover .frame__photo img:first-child { transform: none; }  /* one hover signal: the well lifts, the photo stays (NK scales it, global.css:163) */
+.frame:hover .frame__photo { transform: translateY(-4px); box-shadow: var(--kampi-shadow-lift-hi); }
+.frame:hover .frame__title { color: var(--color-wine-lit); }
+.frame .typed { color: var(--color-wine-lit); font-weight: 800; }  /* price reads olive, never sand */
+.rail { background: var(--kampi-sand); }
+/* The hero product on the olive field: a cream tag with the hard green-dark offset (the signature). */
+[data-ground='olive'] .frame__photo { background: var(--kampi-on-dark); outline: 0; box-shadow: var(--kampi-shadow-tag); }
+[data-ground='olive'] .frame:hover .frame__photo { box-shadow: 13px 13px 0 rgba(28, 32, 18, 0.35); }
+[data-ground='olive'] .frame .typed, [data-ground='olive'] .frame:hover .frame__title { color: var(--kampi-on-dark); }
+/* P5. Links read khaki, as on kampi.co.za. NK lets bare links inherit the text colour (global.css:133). */
+a:not([class]), .link { color: var(--color-wine); }
+a:not([class]):hover, .link:hover { color: var(--color-wine-lit); }
+
+/* Wells and panels (JP 2026-11-14: P4 dropped). NK draws image wells and summary panels with utilities only,
+   so the Kampi markup adds a brand-gated class instead of this file styling Tailwind class names:
+   .kampi-well on image wells (Cart.tsx, Checkout.tsx, [handle].astro, index.astro, category/[handle].astro),
+   .kampi-panel on summary and Pudo panels (Cart.tsx, Checkout.tsx). Islands read the class from @brand-copy. */
+.kampi-well { border-radius: var(--kampi-radius-control); }
+.kampi-well img, img.kampi-well { mix-blend-mode: multiply; }
+.kampi-panel { border-radius: var(--kampi-radius-card); border-width: 1.5px; border-color: var(--color-ink-3); box-shadow: var(--kampi-shadow-card); }
+/* Product cards in a two-up phone grid: the name and price share one row in NK (ProductCard.astro), so long
+   names wrap to five lines and prices clip. Below 40rem the price drops under the name. Keyed off the card's
+   own structure (the row after .frame__photo), not a utility class. */
+.frame__title { min-width: 0; overflow-wrap: break-word; }
+@media (max-width: 39.99rem) { .frame__photo + div { flex-direction: column; align-items: flex-start; gap: 0.2rem; } }
+/* Room under the footer so the fixed WhatsApp chip never covers its last line. */
+#footer { padding-bottom: 4.5rem; }
+
+/* P3. No sideways scroll at any width (NK has no guard). clip, not hidden, so the sticky header still sticks. */
+html, body { overflow-x: clip; }
+
+@media (prefers-reduced-motion: reduce) {
+  .btn, .frame__photo { transition: none; }
+  .btn:active:not(:disabled), .frame:hover .frame__photo { transform: none; }
+}
+
+/* --------------------------------------------------------------------------
+   5. Kampi classes on shared markup (brand-gated in the .astro and island
+   source; NK renders none of them). Unlayered, so they beat the utilities
+   they sit next to.
+   -------------------------------------------------------------------------- */
+.kampi-h2 { font-size: clamp(1.9rem, 4.5vw, 2.8rem); }                       /* section heads (DESIGN.md 3) */
+.kampi-tile-name { font-size: 1.3rem; line-height: 1.15; letter-spacing: 0; } /* category tile names */
