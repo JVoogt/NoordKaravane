@@ -174,6 +174,21 @@ export function usableValue(v: unknown): string | null {
 }
 
 let kampiInvalidLogged = false
+const optionalIgnoredLogged = new Set<string>()
+
+/** The brands.kampi error line, once per process (missing, invalid ids, or an invalid required key). */
+function logKampiInvalid(reason: string) {
+  if (kampiInvalidLogged) return
+  kampiInvalidLogged = true
+  console.error(`[business] brands.kampi invalid: ${reason}; Kampi orders use NK branding`)
+}
+
+/** An optional display key that is blank or a placeholder is dropped; warned once per key per process. */
+function warnOptionalIgnored(key: string) {
+  if (optionalIgnoredLogged.has(key)) return
+  optionalIgnoredLogged.add(key)
+  console.warn(`[business] brands.kampi.${key} ignored: blank or placeholder`)
+}
 
 const HEX = /^#[0-9a-fA-F]{6}$/
 const CHANNEL_ID = /^sc_[A-Za-z0-9]+$/
@@ -204,7 +219,8 @@ function checkKampiBlock(raw: unknown): { ok: KampiBrandConfig } | { reason: str
   const shop_url = httpsUrl(r.shop_url)
   if (!shop_url) return { reason: "shop_url must be an https:// URL" }
   let logo_url: string | null = null
-  if (r.logo_url != null) {
+  if (r.logo_url != null && usableValue(r.logo_url) === null) warnOptionalIgnored("logo_url")
+  else if (r.logo_url != null) {
     logo_url = httpsUrl(r.logo_url)
     if (!logo_url) return { reason: "logo_url must be an https:// URL or null" }
   }
@@ -223,31 +239,76 @@ function checkKampiBlock(raw: unknown): { ok: KampiBrandConfig } | { reason: str
   for (const k of OPTIONAL_TEXT) {
     if (r[k] == null) continue
     const v = usableValue(r[k])
-    if (!v) return { reason: `${k} is blank or a placeholder` }
-    ok[k] = v
+    if (v) ok[k] = v
+    else warnOptionalIgnored(k)
   }
   return { ok }
 }
 
-/**
- * The validated brands.kampi block, or null when it is missing (silently) or invalid (logged once per process with
- * console.error; Kampi orders then use NK branding). Never throws. cfg defaults to getBusinessConfig().
- */
-export function kampiBrandConfig(cfg?: BusinessConfig): KampiBrandConfig | null {
-  let raw: unknown
+/** The raw brands.kampi value, or a thrown-read marker (logged). */
+function rawKampiBlock(cfg?: BusinessConfig): { raw: unknown } | null {
   try {
-    raw = (cfg ?? getBusinessConfig()).brands?.kampi
-  } catch {
+    return { raw: (cfg ?? getBusinessConfig()).brands?.kampi }
+  } catch (e: any) {
+    console.error(`[business] could not read brands.kampi (${e?.message ?? e}); Kampi orders use NK branding`)
     return null
   }
-  if (raw === undefined) return null
-  const res = checkKampiBlock(raw)
-  if ("ok" in res) return res.ok
-  if (!kampiInvalidLogged) {
-    kampiInvalidLogged = true
-    console.error(`[business] brands.kampi invalid: ${res.reason}; Kampi orders use NK branding`)
+}
+
+/**
+ * The validated brands.kampi block, or null when it is missing or invalid (either logged once per process with
+ * console.error; Kampi orders then use NK branding). A blank or placeholder optional display key (tagline, whatsapp,
+ * instagram, facebook, logo_url) is dropped with a one-time warn and never invalidates the block. Never throws.
+ * cfg defaults to getBusinessConfig().
+ */
+export function kampiBrandConfig(cfg?: BusinessConfig): KampiBrandConfig | null {
+  const read = rawKampiBlock(cfg)
+  if (!read) return null
+  if (read.raw === undefined) {
+    logKampiInvalid("missing")
+    return null
   }
+  const res = checkKampiBlock(read.raw)
+  if ("ok" in res) return res.ok
+  logKampiInvalid(res.reason)
   return null
+}
+
+/**
+ * The configured Kampi sales channel ids (brands.kampi.sales_channel_ids), validated on their own: the styling keys
+ * do not matter here, so behaviour that depends only on the channel (product auto-link, staff channel label, CAPI)
+ * keeps working when a display key is broken. Empty (and logged once) when the block is missing or any id is
+ * unusable. Never throws.
+ */
+export function kampiChannelIds(cfg?: BusinessConfig): string[] {
+  const read = rawKampiBlock(cfg)
+  if (!read) return []
+  if (read.raw === undefined) {
+    logKampiInvalid("missing")
+    return []
+  }
+  const ids = (read.raw as Record<string, unknown> | null)?.sales_channel_ids
+  if (!Array.isArray(ids) || !ids.length || ids.some((id) => usableValue(id) === null || !CHANNEL_ID.test(String(id).trim()))) {
+    logKampiInvalid(`sales_channel_ids has no usable list of sc_ ids`)
+    return []
+  }
+  return ids.map((id) => String(id).trim())
+}
+
+/**
+ * Which store an order's sales channel belongs to, from the real channel: the store's default channel is NK's own,
+ * a configured Kampi id (kampiChannelIds) is Kampi, anything else (including a missing id or an unknown default) is
+ * unknown. Pure apart from the cfg default.
+ */
+export function orderChannel(
+  salesChannelId: string | null | undefined,
+  defaultChannelId: string | null | undefined,
+  cfg?: BusinessConfig
+): "nk" | "kampi" | "unknown" {
+  if (!salesChannelId) return "unknown"
+  if (defaultChannelId && salesChannelId === defaultChannelId) return "nk"
+  if (kampiChannelIds(cfg).includes(salesChannelId)) return "kampi"
+  return "unknown"
 }
 
 function nkBrand(): Brand {
@@ -267,14 +328,19 @@ function kampiBrand(k: KampiBrandConfig, cfg: BusinessConfig): Brand {
   }
 }
 
-/** The brand an order on this sales channel is sold under: Kampi iff a valid brands.kampi lists the id. Never throws. */
+/**
+ * The brand an order on this sales channel is sold under: Kampi iff a valid brands.kampi lists the id. Never throws.
+ * Styling only: behaviour (CAPI, staff channel label, auto-link) decides from the real channel (orderChannel,
+ * kampiChannelIds), and an order on an unknown channel is warned where the store default is known (staff label, CAPI).
+ */
 export function brandFor(salesChannelId: string | null | undefined, cfg?: BusinessConfig): Brand {
   try {
     if (!salesChannelId) return nkBrand()
     const c = cfg ?? getBusinessConfig()
     const k = kampiBrandConfig(c)
     return k && k.sales_channel_ids.includes(salesChannelId) ? kampiBrand(k, c) : nkBrand()
-  } catch {
+  } catch (e: any) {
+    console.error(`[business] brandFor(${salesChannelId}) failed (${e?.message ?? e}); using NK branding`)
     return nkBrand()
   }
 }
@@ -286,7 +352,8 @@ export function brandByKey(key: BrandKey | null | undefined, cfg?: BusinessConfi
     const c = cfg ?? getBusinessConfig()
     const k = kampiBrandConfig(c)
     return k ? kampiBrand(k, c) : nkBrand()
-  } catch {
+  } catch (e: any) {
+    console.error(`[business] brandByKey(${key}) failed (${e?.message ?? e}); using NK branding`)
     return nkBrand()
   }
 }

@@ -68,8 +68,8 @@ export type EmailData = {
   admin_url?: string
   /** Customer emails: the brand the order was sold under (orderEmailData). Absent means NK. */
   brand?: BrandKey
-  /** Staff alerts: the channel the order came in on (staffOrderEmailData). Absent means NK. */
-  channel_label?: "NK" | "Kampi"
+  /** Staff alerts: the channel the order came in on (staffOrderEmailData): "NK", "Kampi" or "Unknown channel (<id>)". Absent means NK. */
+  channel_label?: string
 }
 
 const esc = (s: unknown) =>
@@ -190,7 +190,7 @@ function bankBlock(t: Theme, ref: string): { html: string; text: string } {
   const SANS = t.body
   const row = (k: string, v: string, bold = false) =>
     `<tr><td style="padding:6px 12px 6px 0;font-size:14px;color:${C.earth};">${k}</td><td style="padding:6px 0;font-size:15px;${bold ? "font-weight:bold;" : ""}">${esc(v)}</td></tr>`
-  const html = `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px 0;background:#e8e0cc;width:100%;"><tr><td style="padding:14px 18px;">
+  const html = `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px 0;background:${t.brand.key === "nk" ? "#e8e0cc" : C.cream};width:100%;"><tr><td style="padding:14px 18px;">
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="font-family:${SANS};">
 ${row("Account name", b.account_name)}${row("Bank", b.bank_name)}${row("Account number", b.account_number)}${row("Branch code", b.branch_code)}${row("Account type", b.account_type)}${row("Payment reference", ref, true)}
 </table></td></tr></table>`

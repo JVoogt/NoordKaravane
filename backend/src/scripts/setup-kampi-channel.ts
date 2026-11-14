@@ -16,7 +16,7 @@ const PAGE = 200
  * Idempotent setup of the Kampi store's sales channel. Run: npx medusa exec ./src/scripts/setup-kampi-channel.ts
  * Each step is find-or-create:
  *   1. the "Kampi" sales channel
- *   2. the "Kampi" publishable key, linked to exactly the Kampi channel (any other channel is removed from it, so a
+ *   2. the "Kampi" publishable key (never a revoked one), linked to exactly the Kampi channel (any other channel is removed from it, so a
  *      cart created with this key always lands on the Kampi channel)
  *   3. the channel linked to the "Noord Karavane Workshop" stock location (shipping options list for Kampi carts)
  *   4. every product linked to the Kampi channel
@@ -41,9 +41,14 @@ export default async function setupKampiChannel({ container }: ExecArgs) {
   }
   const kampiId: string = channel.id
 
-  // 2. Publishable key, linked to exactly the Kampi channel
+  // 2. Publishable key, linked to exactly the Kampi channel. A revoked key is never reused: if only revoked ones
+  // exist, a new key is created.
   const keyFields = ["id", "token", "sales_channels.id"]
-  let key = await found("api_key", { title: KAMPI_KEY_TITLE, type: "publishable" }, keyFields)
+  const kampiKeys = (await query.graph({ entity: "api_key", fields: [...keyFields, "revoked_at"], filters: { title: KAMPI_KEY_TITLE, type: "publishable" } }))
+    .data as any[]
+  let key = kampiKeys.find((k) => k.revoked_at == null)
+  const revokedSkipped = kampiKeys.filter((k) => k.revoked_at != null).length
+  if (revokedSkipped) logger.warn(`[kampi-channel] skipped ${revokedSkipped} revoked "${KAMPI_KEY_TITLE}" key(s)`)
   const keyCreated = !key
   if (!key) {
     const { result } = await createApiKeysWorkflow(container).run({

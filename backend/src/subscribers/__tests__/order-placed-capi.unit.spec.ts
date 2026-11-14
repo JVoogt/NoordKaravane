@@ -50,15 +50,21 @@ const order = (salesChannelId: string) => ({
   payment_collections: [{ id: "paycol_1", payments: [{ id: "pay_1", provider_id: "pp_eft_eft", captured_at: null }] }],
 })
 
-function fakeContainer(o: any) {
+function fakeContainer(o: any, store: "ok" | "fails" = "ok") {
   const logger = { info: jest.fn(), warn: jest.fn(), error: jest.fn() }
+  const listStores = async () => {
+    if (store === "fails") throw new Error("store down")
+    return [{ id: "store_1", default_sales_channel_id: "sc_WEBSHOP" }]
+  }
   const query = { graph: jest.fn(async () => ({ data: [o] })) }
   const notification = { createNotifications: jest.fn(async (n: any) => n) }
   return {
+    logger,
     resolve: (key: string) => {
       if (key === ContainerRegistrationKeys.QUERY) return query
       if (key === ContainerRegistrationKeys.LOGGER) return logger
       if (key === Modules.NOTIFICATION) return notification
+      if (key === Modules.STORE) return { listStores }
       throw new Error(`unexpected resolve ${key}`)
     },
   }
@@ -76,5 +82,53 @@ describe("order.placed Meta CAPI scope", () => {
     await orderPlacedHandler({ event: { data: { id: "order_01ABC" } }, container: fakeContainer(order("sc_WEBSHOP")) } as any)
     expect(sendPurchase).toHaveBeenCalledTimes(1)
     expect((sendPurchase.mock.calls[0] as any[])[0]).toMatchObject({ eventId: "evt_1", sourceUrl: "https://noordkaravane.co.za/shop/checkout" })
+  })
+})
+
+/** The order-placed module with a config that has no brands block at all (a fresh module graph, so a fresh config cache). */
+function handlerWithoutKampiBlock() {
+  const p = path.join(tmp, "business-no-kampi.json")
+  fs.writeFileSync(p, JSON.stringify({ ...exampleTop, email_orders: "orders@example.com" }))
+  const prev = process.env.BUSINESS_CONFIG_PATH
+  process.env.BUSINESS_CONFIG_PATH = p
+  let h: any
+  jest.isolateModules(() => {
+    h = require("../order-placed").default
+    require("../../lib/business").getBusinessConfig() // prime this module graph's config cache while the path points here
+  })
+  process.env.BUSINESS_CONFIG_PATH = prev
+  return h
+}
+
+describe("order.placed Meta CAPI decides from the real channel, not the brand block", () => {
+  beforeEach(() => {
+    jest.spyOn(console, "error").mockImplementation(() => {})
+    jest.spyOn(console, "warn").mockImplementation(() => {})
+  })
+  afterEach(() => jest.restoreAllMocks())
+
+  it("Kampi block missing, order on a non-default channel: no CAPI, and a warn naming the order and channel", async () => {
+    const handler = handlerWithoutKampiBlock()
+    const c = fakeContainer(order("sc_A"))
+    await handler({ event: { data: { id: "order_01ABC" } }, container: c } as any)
+    expect(sendPurchase).not.toHaveBeenCalled()
+    expect(c.logger.warn.mock.calls.map((x: any[]) => String(x[0]))).toContain(
+      "[meta-capi] order_01ABC is on sales channel sc_A, not the store default sc_WEBSHOP; no CAPI Purchase sent"
+    )
+  })
+
+  it("Kampi block missing, NK default-channel order: one CAPI call (NK unchanged)", async () => {
+    const handler = handlerWithoutKampiBlock()
+    await handler({ event: { data: { id: "order_01ABC" } }, container: fakeContainer(order("sc_WEBSHOP")) } as any)
+    expect(sendPurchase).toHaveBeenCalledTimes(1)
+  })
+
+  it("the store default cannot be read: no CAPI, and a warn", async () => {
+    const c = fakeContainer(order("sc_WEBSHOP"), "fails")
+    await orderPlacedHandler({ event: { data: { id: "order_01ABC" } }, container: c } as any)
+    expect(sendPurchase).not.toHaveBeenCalled()
+    expect(c.logger.warn.mock.calls.map((x: any[]) => String(x[0]))).toContain(
+      "[meta-capi] order_01ABC is on sales channel sc_WEBSHOP, not the store default unknown; no CAPI Purchase sent"
+    )
   })
 })

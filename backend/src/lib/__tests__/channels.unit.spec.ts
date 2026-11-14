@@ -9,16 +9,16 @@ jest.mock("@medusajs/medusa/core-flows", () => ({
 const kampiIds = jest.fn((): string[] | null => ["sc_A", "sc_X"])
 jest.mock("../business", () => ({
   ...jest.requireActual("../business"),
-  kampiBrandConfig: () => {
-    const ids = kampiIds()
-    return ids ? { sales_channel_ids: ids } : null
-  },
+  kampiChannelIds: () => kampiIds() ?? [],
 }))
 
-import { KAMPI_CHANNEL_NAME, KAMPI_KEY_TITLE, autoLinkChannelIds, linkProductToChannels, missingChannelLinks } from "../channels"
+import { KAMPI_CHANNEL_NAME, KAMPI_KEY_TITLE, autoLinkChannelIds, linkProductToChannels, missingChannelLinks, storeDefaultChannelId } from "../channels"
 
-function container(opts: { defaultChannel?: string | null; existing?: string[]; productChannels?: string[] | null } = {}) {
-  const listStores = jest.fn(async () => [{ id: "store_1", default_sales_channel_id: opts.defaultChannel === undefined ? "sc_DEFAULT" : opts.defaultChannel }])
+function container(opts: { defaultChannel?: string | null; existing?: string[]; productChannels?: string[] | null; storeFails?: boolean } = {}) {
+  const listStores = jest.fn(async () => {
+    if (opts.storeFails) throw new Error("store down")
+    return [{ id: "store_1", default_sales_channel_id: opts.defaultChannel === undefined ? "sc_DEFAULT" : opts.defaultChannel }]
+  })
   const listSalesChannels = jest.fn(async (filter: { id: string[] }) => filter.id.filter((id) => (opts.existing ?? ["sc_A"]).includes(id)).map((id) => ({ id })))
   const graph = jest.fn(async () => ({ data: [{ id: "prod_1", sales_channels: opts.productChannels === null ? null : (opts.productChannels ?? []).map((id) => ({ id })) }] }))
   const c: any = {
@@ -95,12 +95,54 @@ describe("autoLinkChannelIds", () => {
   })
 })
 
+describe("autoLinkChannelIds with configured ids missing from this database", () => {
+  it("warns once across calls when none of the configured ids exist here", async () => {
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {})
+    let mod: typeof import("../channels") | undefined
+    jest.isolateModules(() => {
+      mod = require("../channels")
+    })
+    await expect(mod!.autoLinkChannelIds(container({ existing: [] }).c)).resolves.toEqual(["sc_DEFAULT"])
+    await expect(mod!.autoLinkChannelIds(container({ existing: [] }).c)).resolves.toEqual(["sc_DEFAULT"])
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(String(warn.mock.calls[0][0])).toBe(
+      "[channel-link] brands.kampi.sales_channel_ids [sc_A, sc_X] has no channel in this database; new products link to the default channel only"
+    )
+    warn.mockRestore()
+  })
+})
+
+describe("storeDefaultChannelId", () => {
+  it("is the store's default channel, read once per container", async () => {
+    const { c, listStores } = container()
+    await expect(storeDefaultChannelId(c)).resolves.toBe("sc_DEFAULT")
+    await expect(storeDefaultChannelId(c)).resolves.toBe("sc_DEFAULT")
+    expect(listStores).toHaveBeenCalledTimes(1)
+  })
+
+  it("is null, with a warn, when the store lookup throws; never throws", async () => {
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {})
+    const { c } = container({ storeFails: true })
+    await expect(storeDefaultChannelId(c)).resolves.toBeNull()
+    expect(String(warn.mock.calls[0][0])).toBe("[channels] could not read the store default sales channel: store down")
+    warn.mockRestore()
+  })
+})
+
 describe("linkProductToChannels", () => {
   it("links each missing channel once and returns them", async () => {
     const { c } = container({ productChannels: ["sc_DEFAULT"] })
     await expect(linkProductToChannels(c, "prod_1", ["sc_DEFAULT", "sc_A"])).resolves.toEqual(["sc_A"])
     expect(run).toHaveBeenCalledTimes(1)
     expect(run).toHaveBeenCalledWith({ input: { id: "sc_A", add: ["prod_1"] } })
+  })
+
+  it("names the channel whose link failed", async () => {
+    run.mockImplementationOnce(async () => {
+      throw new Error("workflow down")
+    })
+    const { c } = container({ productChannels: [] })
+    await expect(linkProductToChannels(c, "prod_1", ["sc_DEFAULT", "sc_A"])).rejects.toThrow("link to sc_DEFAULT failed: workflow down")
   })
 
   it("makes no workflow call when nothing is missing", async () => {

@@ -7,7 +7,7 @@ jest.mock("@medusajs/medusa/core-flows", () => ({
 }))
 jest.mock("../../lib/business", () => ({
   ...jest.requireActual("../../lib/business"),
-  kampiBrandConfig: () => ({ sales_channel_ids: ["sc_K"] }),
+  kampiChannelIds: () => ["sc_K"],
 }))
 
 import productChannelLink, { config } from "../product-channel-link"
@@ -65,7 +65,7 @@ describe("product.created channel link subscriber", () => {
   it.each([["graph"], ["listStores"], ["listSalesChannels"]] as const)("resolves and warns when %s throws (P9)", async (what) => {
     const { c, logger } = fake(["sc_D"], { [what]: true })
     await expect(productChannelLink(event(c))).resolves.toBeUndefined()
-    expect(logs(logger.warn)).toMatch(/^\[channel-link\] prod_1: .+ down$/)
+    expect(logs(logger.warn)).toMatch(/^\[channel-link\] prod_1: targets (unknown|sc_D, sc_K): .+ down; rerun setup-kampi-channel$/)
   })
 
   it("resolves and warns when the link workflow throws (P9)", async () => {
@@ -74,6 +74,6 @@ describe("product.created channel link subscriber", () => {
     })
     const { c, logger } = fake(["sc_D"])
     await expect(productChannelLink(event(c))).resolves.toBeUndefined()
-    expect(logs(logger.warn)).toBe("[channel-link] prod_1: workflow down")
+    expect(logs(logger.warn)).toBe("[channel-link] prod_1: targets sc_D, sc_K: link to sc_K failed: workflow down; rerun setup-kampi-channel")
   })
 })

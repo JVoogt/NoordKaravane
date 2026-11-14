@@ -53,8 +53,9 @@ describe("brand context", () => {
     expect(shopUrl()).toBe("https://staging.example.test/shop")
   })
 
-  it("no brands block: NK, and nothing is logged", () => {
+  it("no brands block: NK, and the missing block is logged once", () => {
     const { brandFor } = load()
+    brandFor("sc_B", cfgWith(undefined))
     const b = brandFor("sc_A", cfgWith(undefined))
     expect(b).toEqual({
       key: "nk",
@@ -65,7 +66,8 @@ describe("brand context", () => {
       fromName: "Noord Karavane",
       sellerLine: null,
     })
-    expect(error).not.toHaveBeenCalled()
+    expect(error).toHaveBeenCalledTimes(1)
+    expect(String(error.mock.calls[0][0])).toBe("[business] brands.kampi invalid: missing; Kampi orders use NK branding")
   })
 
   const invalid: [string, unknown][] = [
@@ -86,6 +88,62 @@ describe("brand context", () => {
     expect(brandFor("sc_B", cfg).key).toBe("nk")
     expect(error).toHaveBeenCalledTimes(1)
     expect(String(error.mock.calls[0][0])).toMatch(/^\[business\] brands\.kampi invalid: .+; Kampi orders use NK branding$/)
+  })
+
+  const blankOptional: [string, Record<string, unknown>, string][] = [
+    ["a blank tagline", { tagline: "" }, "tagline"],
+    ["a placeholder instagram", { instagram: "{{X}}" }, "instagram"],
+    ["a blank logo_url", { logo_url: "" }, "logo_url"],
+    ["a placeholder logo_url", { logo_url: "{{LOGO}}" }, "logo_url"],
+  ]
+  it.each(blankOptional)("%s is dropped with one warn and the block stays valid", (_label, over, key) => {
+    const { brandFor, kampiBrandConfig } = load()
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {})
+    const cfg = cfgWith(kampiBlock({ tagline: "Example gear", ...over }))
+    const k = kampiBrandConfig(cfg)
+    kampiBrandConfig(cfg)
+    expect(k).not.toBeNull()
+    expect(brandFor("sc_A", cfg).key).toBe("kampi")
+    expect(key in k!).toBe(key === "logo_url")
+    if (key === "logo_url") {
+      expect(k!.logo_url).toBeNull()
+      expect(brandFor("sc_A", cfg).logoUrl).toBeNull()
+    }
+    if (key === "tagline") expect(k!.tagline).toBeUndefined()
+    expect(error).not.toHaveBeenCalled()
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(String(warn.mock.calls[0][0])).toBe(`[business] brands.kampi.${key} ignored: blank or placeholder`)
+  })
+
+  it("a non-blank logo_url that is not https stays fatal", () => {
+    const { kampiBrandConfig } = load()
+    expect(kampiBrandConfig(cfgWith(kampiBlock({ logo_url: "http://store.example.test/logo.png" })))).toBeNull()
+    expect(String(error.mock.calls[0][0])).toMatch(/^\[business\] brands\.kampi invalid: logo_url/)
+  })
+
+  it("kampiChannelIds reads only sales_channel_ids: a broken palette still yields the ids", () => {
+    const { kampiChannelIds } = load()
+    expect(kampiChannelIds(cfgWith(kampiBlock({ palette: { ink: "red" } })))).toEqual(["sc_A", "sc_B"])
+    expect(kampiChannelIds(cfgWith(kampiBlock({ name: "" })))).toEqual(["sc_A", "sc_B"])
+  })
+
+  it("kampiChannelIds is empty for a missing block, placeholder ids or a non-list", () => {
+    const { kampiChannelIds } = load()
+    expect(kampiChannelIds(cfgWith(undefined))).toEqual([])
+    expect(kampiChannelIds(example as any)).toEqual([])
+    expect(kampiChannelIds(cfgWith(kampiBlock({ sales_channel_ids: "sc_A" })))).toEqual([])
+    expect(kampiChannelIds(cfgWith(kampiBlock({ sales_channel_ids: ["sc_A", "{{ID}}"] })))).toEqual([])
+  })
+
+  it("orderChannel: the store default is nk, a configured Kampi id is kampi, anything else unknown", () => {
+    const { orderChannel } = load()
+    const cfg = cfgWith(kampiBlock({ palette: undefined }))
+    expect(orderChannel("sc_D", "sc_D", cfg)).toBe("nk")
+    expect(orderChannel("sc_A", "sc_D", cfg)).toBe("kampi")
+    expect(orderChannel("sc_Z", "sc_D", cfg)).toBe("unknown")
+    expect(orderChannel(null, "sc_D", cfg)).toBe("unknown")
+    expect(orderChannel("sc_D", null, cfg)).toBe("unknown")
+    expect(orderChannel("sc_A", "sc_D", cfgWith(undefined))).toBe("unknown")
   })
 
   it("the committed example config holds a placeholder brands.kampi block, which is invalid by design", () => {

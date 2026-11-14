@@ -201,18 +201,18 @@ describe("Kampi email footer placeholders (P17)", () => {
 describe("staff alerts stay NK for a Kampi order (P16)", () => {
   it("staffOrderEmailData drops brand and labels the channel", () => {
     const { orders } = loadWith(config())
-    const k = orders.staffOrderEmailData(order("sc_A"))
+    const k = orders.staffOrderEmailData(order("sc_A"), {}, "sc_WEBSHOP")
     expect("brand" in k).toBe(false)
     expect(k.channel_label).toBe("Kampi")
     expect(k.order_url).toBe("https://store.example.test/order/confirmed/order_01ABC")
-    const n = orders.staffOrderEmailData(order("sc_WEBSHOP"))
+    const n = orders.staffOrderEmailData(order("sc_WEBSHOP"), {}, "sc_WEBSHOP")
     expect("brand" in n).toBe(false)
     expect(n.channel_label).toBe("NK")
   })
 
   it.each(["staff-new-order", "staff-order-paid"] as const)("%s: NK shell, [Kampi] subject, Channel: Kampi", (t) => {
     const { templates, orders, business, from } = loadWith(config())
-    const k = orders.staffOrderEmailData(order("sc_A"))
+    const k = orders.staffOrderEmailData(order("sc_A"), {}, "sc_WEBSHOP")
     const r = templates.renderEmail(t, k)
     const nk = templates.renderEmail(t, { ...k, channel_label: "NK" })
     expect(r.subject.startsWith("[Kampi] ")).toBe(true)
@@ -225,5 +225,51 @@ describe("staff alerts stay NK for a Kampi order (P16)", () => {
     expect(r.html).not.toContain("Example Store")
     expect(from.fromHeader("NK <a@b.co>", business.brandByKey(k.brand))).toBe("NK <a@b.co>")
     expect(from.fromHeader(undefined, business.brandByKey(k.brand))).toBe(from.DEFAULT_FROM)
+  })
+})
+
+describe("staff channel label comes from the real channel (P1 review)", () => {
+  let warn: jest.SpyInstance
+  beforeEach(() => {
+    warn = jest.spyOn(console, "warn").mockImplementation(() => {})
+    jest.spyOn(console, "error").mockImplementation(() => {})
+  })
+  afterEach(() => jest.restoreAllMocks())
+
+  it("a channel that is neither the default nor Kampi: Unknown channel (<id>), and a warn with the order and channel ids", () => {
+    const { orders } = loadWith(config())
+    expect(orders.staffOrderEmailData(order("sc_ZZZ"), {}, "sc_WEBSHOP").channel_label).toBe("Unknown channel (sc_ZZZ)")
+    expect(warn.mock.calls.map((x) => String(x[0]))).toContain("[staff-alert] order order_01ABC is on unknown sales channel sc_ZZZ (store default sc_WEBSHOP)")
+    expect(orders.staffOrderEmailData(order(null), {}, "sc_WEBSHOP").channel_label).toBe("Unknown channel (none)")
+  })
+
+  it("with no known default channel, an NK-looking order is Unknown, never NK", () => {
+    const { orders } = loadWith(config())
+    expect(orders.staffOrderEmailData(order("sc_WEBSHOP"), {}, null).channel_label).toBe("Unknown channel (sc_WEBSHOP)")
+    expect(orders.staffOrderEmailData(order("sc_A"), {}, null).channel_label).toBe("Kampi")
+  })
+
+  it("a Kampi block with a broken palette still labels a Kampi order Kampi", () => {
+    const cfg: any = config()
+    cfg.brands.kampi.palette = { ink: "red" }
+    const { orders } = loadWith(cfg)
+    expect(orders.staffOrderEmailData(order("sc_A"), {}, "sc_WEBSHOP").channel_label).toBe("Kampi")
+  })
+
+  it("an Unknown label renders escaped in the NK staff alert with no [Kampi] tag", () => {
+    const { templates, orders } = loadWith(config())
+    const r = templates.renderEmail("staff-new-order", orders.staffOrderEmailData(order("sc_ZZZ"), {}, "sc_WEBSHOP"))
+    expect(r.subject.startsWith("[Kampi]")).toBe(false)
+    expect(r.html).toContain("Channel: Unknown channel (sc_ZZZ)")
+    expect(r.text).toContain("Channel: Unknown channel (sc_ZZZ)")
+  })
+})
+
+describe("bank block colour", () => {
+  it("a Kampi EFT email uses the brand paper colour, not NK's #e8e0cc", () => {
+    const { templates, orders } = loadWith(config())
+    const r = templates.renderEmail("order-placed-eft", orders.orderEmailData(order("sc_A")))
+    expect(r.html).not.toContain("#e8e0cc")
+    expect(r.html).toContain("background:#fcf6e3;width:100%;")
   })
 })
