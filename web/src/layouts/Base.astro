@@ -31,6 +31,8 @@ const { title, description, path, ogImage = '/assets/images/og-image-1200.jpg', 
 const canonical = BUSINESS.url + path;
 const ogImageUrl = BUSINESS.url + ogImage;
 const emergency = path === servicePath('recoveries');
+// Google Tag Manager container. Empty outside production builds.
+const GTM_ID = import.meta.env.PROD ? 'GTM-5SDSQR78' : '';
 ---
 
 <!doctype html>
@@ -71,8 +73,31 @@ const emergency = path === servicePath('recoveries');
 
     <link rel="preload" as="font" type="font/woff2" href={bebasWoff2} crossorigin />    <script is:inline>document.documentElement.classList.add('js');</script>
     <script type="application/ld+json" set:html={jsonLd} />
+    {/* Google Tag Manager: production builds only, so dev and preview traffic stays out of the numbers.
+        GA4 and the Meta pixel are configured as tags inside this container, not in the page. */}
+    {GTM_ID && (
+      <script is:inline define:vars={{ GTM_ID }}>
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
+        var gtmScript = document.createElement('script');
+        gtmScript.async = true;
+        gtmScript.src = 'https://www.googletagmanager.com/gtm.js?id=' + GTM_ID;
+        document.head.appendChild(gtmScript);
+        // Contact clicks are the site's conversions: push one dataLayer event per WhatsApp or phone click.
+        document.addEventListener('click', function (e) {
+          var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+          if (!a) return;
+          var href = a.getAttribute('href') || '';
+          var kind = href.indexOf('wa.me/') > -1 ? 'whatsapp_click' : href.indexOf('tel:') === 0 ? 'phone_click' : null;
+          if (kind) window.dataLayer.push({ event: kind, link_text: (a.textContent || '').trim().slice(0, 60), page_path: location.pathname });
+        }, true);
+      </script>
+    )}
   </head>
   <body>
+    {GTM_ID && (
+      <noscript><iframe src={`https://www.googletagmanager.com/ns.html?id=${GTM_ID}`} height="0" width="0" style="display:none;visibility:hidden" title="Google Tag Manager"></iframe></noscript>
+    )}
     {/* Icon sprite: WhatsApp, phone, the row arrow and the FAQ plus and minus, drawn once and reused through Icon.astro. */}
     <svg class="sprite" aria-hidden="true" focusable="false">
       <symbol id="i-wa" viewBox="0 0 24 24"><path fill="currentColor" d="M12.04 2C6.55 2 2.08 6.46 2.08 11.95c0 1.76.46 3.47 1.33 4.98L2 22l5.2-1.36a9.9 9.9 0 0 0 4.84 1.23h.01c5.49 0 9.95-4.46 9.95-9.95A9.93 9.93 0 0 0 12.04 2zm0 18.2h-.01a8.25 8.25 0 0 1-4.2-1.15l-.3-.18-3.09.81.83-3.01-.2-.31a8.23 8.23 0 0 1-1.26-4.4c0-4.56 3.71-8.27 8.28-8.27a8.27 8.27 0 0 1 8.27 8.27c0 4.56-3.71 8.24-8.32 8.24zm4.54-6.19c-.25-.12-1.47-.72-1.7-.8-.23-.09-.39-.13-.56.12-.17.25-.64.8-.78.97-.14.17-.29.19-.54.06-.25-.12-1.05-.39-2-1.23-.74-.66-1.24-1.47-1.38-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.15.17-.25.25-.42.08-.17.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.41-.42-.56-.42h-.48c-.17 0-.43.06-.66.31-.23.25-.87.85-.87 2.07s.89 2.4 1.01 2.57c.12.17 1.75 2.67 4.24 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.67-1.18.21-.58.21-1.07.15-1.18-.06-.1-.23-.17-.48-.29z"/></symbol>
