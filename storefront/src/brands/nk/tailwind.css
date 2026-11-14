@@ -1,0 +1,4 @@
+/* NK build: Kampi-only markup and content are not scanned, so NK's CSS bundle stays byte-identical (S-R1). */
+@source not '../../components/kampi';
+@source not '../../brands/kampi';
+@source not '../../content/kampi';

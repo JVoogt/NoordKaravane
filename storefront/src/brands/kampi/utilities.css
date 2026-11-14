@@ -1,7 +1,0 @@
-/* Tailwind utilities used only by Kampi markup (src/components/kampi, src/brands/kampi). global.css excludes those
-   paths (and src/content/kampi) from its scan, so NK's CSS bundle stays byte-identical (S-R1); this entry generates them for the Kampi build.
-   @reference brings NK's theme (token names) without emitting it again. */
-@reference '../../styles/global.css';
-@import 'tailwindcss/utilities.css' layer(utilities) source(none);
-@source '../../components/kampi';
-@source '../../brands/kampi';

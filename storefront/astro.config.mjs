@@ -39,6 +39,6 @@ export default defineConfig({
     // import.meta.env.BRAND: Astro rewrites non-PUBLIC import.meta.env reads in server code to process.env (runtime),
     // which would silently resolve to nk in the Kampi container.
     define: { __BRAND__: JSON.stringify(BRAND) },
-    resolve: { alias: { '@brand-copy': brandFile('copy.ts'), '@brand': brandFile('index.ts') } },
+    resolve: { alias: { '@brand-copy': brandFile('copy.ts'), '@brand-tw': brandFile('tailwind.css'), '@brand': brandFile('index.ts') } },
   },
 });

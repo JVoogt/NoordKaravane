@@ -274,3 +274,11 @@ html, body { overflow-x: clip; }
    -------------------------------------------------------------------------- */
 .kampi-h2 { font-size: clamp(1.9rem, 4.5vw, 2.8rem); }                       /* section heads (DESIGN.md 3) */
 .kampi-tile-name { font-size: 1.3rem; line-height: 1.15; letter-spacing: 0; } /* category tile names */
+/* Task 2.5 live pass (320 px): Montserrat 800 is far wider than NK's Bebas, so long page heads and description tables
+   pushed the single mobile column past the viewport. Page heads follow the DESIGN.md 3 scale and may break inside a
+   long word; description tables scroll inside their own box. */
+h1.display:not(.display--caps) { font-size: clamp(2.2rem, 6vw, 4.4rem); overflow-wrap: break-word; hyphens: auto; }
+.prose-nk { overflow-wrap: break-word; }
+.prose-nk table { display: block; max-width: 100%; overflow-x: auto; }
+/* The product page's single mobile column sizes to its widest content (a spec table); pin it to the viewport. */
+@media (max-width: 63.99rem) { article.wrap > .grid { grid-template-columns: minmax(0, 1fr); } }
