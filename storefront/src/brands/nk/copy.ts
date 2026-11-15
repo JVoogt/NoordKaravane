@@ -17,6 +17,9 @@ export interface ClientCopy {
   cartEmptyAction: string;
   /** The "Send me emails about new drops and offers" box at checkout (hidden on Kampi: no newsletter, RD2). */
   checkoutOptIn: boolean;
+  /** Show the discount code field open in the cart and at checkout, instead of behind "Have a code?". Kampi hosts
+   *  missed the link (3 of the first 9 sticker kit orders came without their code). */
+  promoOpen: boolean;
   /** Extra classes for the Kampi look (DESIGN.md 13: P4 dropped). Each is '' on NK, so NK markup is unchanged. */
   ui: { well: string; panel: string; nocaps: string };
 }
@@ -31,5 +34,6 @@ export const clientCopy: ClientCopy = {
   cartEmptyBody: '',
   cartEmptyAction: 'Browse the shop',
   checkoutOptIn: true,
+  promoOpen: false,
   ui: { well: '', panel: '', nocaps: '' },
 };
