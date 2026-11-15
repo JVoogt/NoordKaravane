@@ -1,6 +1,6 @@
 ---
 title: "How to order and pay by EFT"
-description: "How ordering works at Kampi Store: choose your gear, check out, pay by EFT within 48 hours, then your order is packed and shipped or held for collection."
+description: "How ordering works at Kampi Store: choose your gear, check out, pay by EFT, then your order is packed and shipped or held for collection."
 updated: 2026-11-14
 order: 2
 ---

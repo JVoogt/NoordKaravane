@@ -1,6 +1,6 @@
 ---
 title: "How to order and pay by EFT"
-description: "How ordering works at Noord Karavane: choose your products, check out, pay by EFT within 48 hours, then we get your order ready and ship it or hold it for collection."
+description: "How ordering works at Noord Karavane: choose your products, check out, pay by EFT, then we get your order ready and ship it or hold it for collection."
 updated: 2026-11-06
 order: 2
 ---
