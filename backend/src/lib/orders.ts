@@ -240,7 +240,7 @@ export async function notifyStaff(
     template,
     order?.id,
     (cfg) => staffOrderEmailData(order, cfg.dropship_suppliers ?? {}, defaultChannelId),
-    (d) => (template === "staff-order-paid" ? `${order?.id}:${d.payment_captured ? "paid" : "partial"}` : order?.id)
+    (d) => (template === "staff-order-paid" ? `${order?.id}:${d.payment_captured || d.nothing_to_pay ? "paid" : "partial"}` : order?.id)
   )
 }
 

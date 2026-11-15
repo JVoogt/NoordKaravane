@@ -110,6 +110,16 @@ describe("staff alert for a free order", () => {
     expect(r.text).not.toMatch(/pending|Awaiting/)
   })
 
+  it("the ready-to-ship alert treats a free order as ready, not as not fully paid", () => {
+    const { templates, orders } = loadWith(config())
+    const d = orders.staffOrderEmailData(order({ metadata: { collect_from_workshop: true } }), {}, "sc_WEBSHOP")
+    const r = templates.renderEmail("staff-order-paid", d)
+    expect(r.subject).toBe("[Kampi] Nothing to pay: order NK5 ready to ship (R0,00)")
+    expect(r.text).toContain("A discount code covers order NK5 in full, so there is nothing to pay. Next steps:")
+    expect(r.text).toContain("Prepare the order for collection at the workshop")
+    expect(r.text).not.toContain("not fully paid")
+  })
+
   it("an EFT order keeps its awaiting-payment line", () => {
     const { templates, orders } = loadWith(config())
     const d = orders.staffOrderEmailData(order({ total: 85, payment_collections: EFT }), {}, "sc_WEBSHOP")
