@@ -1,6 +1,7 @@
 import type { MedusaContainer } from "@medusajs/framework/types"
 import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
 import { shopUrl, siteUrl } from "./business"
+import { makerBrand, makerMpn, variantFeedTitle } from "./product-identity"
 
 const esc = (s: unknown) =>
   String(s ?? "")
@@ -64,15 +65,17 @@ export async function buildProductFeed(container: MedusaContainer, channel: "met
       if (price === null) continue // no ZAR price: not sellable, keep out of the feed
       const color = optionValue(v, "Colour")
       const size = optionValue(v, "Size") || optionValue(v, "T-shirt size")
+      const title = variantFeedTitle(p.title, (v.options ?? []).map((o: any) => o.value))
+      const mpn = makerMpn(p.title, v.sku)
       items.push(`    <item>
       <g:id>${esc(v.sku || v.id)}</g:id>
-      <g:title>${esc(p.title)}${color ? ` (${esc(color)})` : ""}</g:title>
+      <g:title>${esc(title)}</g:title>
       <g:description>${esc(desc)}</g:description>
       <g:link>${esc(link)}</g:link>
 ${img ? `      <g:image_link>${esc(img)}</g:image_link>\n` : ""}      <g:availability>in_stock</g:availability>
       <g:price>${price.toFixed(2)} ZAR</g:price>
-      <g:brand>Noord Karavane</g:brand>
-      <g:condition>new</g:condition>
+      <g:brand>${esc(makerBrand(p.title))}</g:brand>
+${mpn ? `      <g:mpn>${esc(mpn)}</g:mpn>\n` : ""}      <g:condition>new</g:condition>
       <g:item_group_id>${esc(p.handle)}</g:item_group_id>
 ${color ? `      <g:color>${esc(color)}</g:color>\n` : ""}${size ? `      <g:size>${esc(size)}</g:size>\n` : ""}      <g:product_type>${esc(cat)}</g:product_type>
       <g:custom_label_0>${esc(cat)}</g:custom_label_0>

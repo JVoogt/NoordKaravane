@@ -4,6 +4,7 @@ import { business, brandBusiness, whatsappNumber, isPlaceholder } from './busine
 import { usable, shippingFacts } from './business-display';
 import { u } from './url';
 import { brand } from './brand';
+import { makerBrand } from './maker';
 import type { Product } from './products';
 
 // Kampi Store (plan Decisions, "Product JSON-LD on Kampi"): the #org node is the seller, NK, with its legal name and
@@ -88,7 +89,7 @@ export function productLd(p: Product) {
   return {
     '@context': 'https://schema.org', '@type': 'Product', '@id': url + '#product', name: p.title,
     description: trunc(p.description || p.title, 300), sku: p.variants[0]?.sku || p.handle, url,
-    image: p.images.map((i) => abs(i.src)), brand: { '@type': 'Brand', name: KAMPI ? brand.siteName : business.brand },
+    image: p.images.map((i) => abs(i.src)), brand: { '@type': 'Brand', name: makerBrand(p.title) ?? (KAMPI ? brand.siteName : business.brand) },
     ...(colours.length ? { color: colours.join(', ') } : {}),
     ...(offers ? { offers } : {}),
   };
