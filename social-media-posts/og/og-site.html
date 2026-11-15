@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Noord Karavane share image: main site</title>
+<link rel="stylesheet" href="og.css">
+<style>
+  .canvas { background: var(--ink-deep); color: #fdfdfb; }
+  .photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 38%; filter: saturate(0.9) contrast(1.05); }
+  .shade { position: absolute; inset: 0; background:
+    linear-gradient(180deg, rgba(6,7,9,0.55) 0%, rgba(6,7,9,0.2) 26%, rgba(6,7,9,0.62) 52%, rgba(6,7,9,0.96) 80%); }
+  .logo { position: absolute; top: 30px; left: 50%; width: 150px; height: 150px; margin-left: -75px; filter: drop-shadow(0 2px 14px rgba(0,0,0,0.7)); }
+  .copy { position: absolute; left: 285px; width: 630px; top: 262px; text-align: center; }
+  h1 { font-size: 104px; text-shadow: 0 2px 24px rgba(0,0,0,0.6); }
+  h1 .l2 { display: block; font-size: 82px; color: var(--orange-hi); margin-top: 4px; }
+  .where { margin-top: 14px; font-size: 27px; font-weight: 500; color: var(--paper); }
+  .tread { position: absolute; left: 0; right: 0; bottom: 74px; height: 14px; }
+  .bar { position: absolute; left: 0; right: 0; bottom: 0; height: 74px; background: var(--orange); color: var(--ink);
+    display: grid; grid-template-columns: 285px 630px 285px; align-items: center; font-weight: 600; font-size: 21px; }
+  .bar .l { padding-left: 40px; }
+  .bar .r { padding-right: 40px; text-align: right; }
+  .bar .c { text-align: center; font-family: 'Bebas Neue', sans-serif; font-weight: 400; font-size: 50px; letter-spacing: 0.02em; line-height: 1; padding-top: 4px; }
+  .bar .c small { font-family: 'Barlow', sans-serif; font-weight: 600; font-size: 22px; letter-spacing: 0; vertical-align: 9px; margin-right: 12px; }
+</style>
+</head>
+<body>
+<div class="canvas">
+  <img class="photo" src="../../web/src/assets/workshop.jpg" alt="">
+  <div class="shade"></div>
+  <img class="logo" src="../logo-white.png" alt="">
+  <div class="copy">
+    <h1 class="display">Caravan service<span class="l2">Repairs &amp; recoveries</span></h1>
+    <p class="where">One workshop for caravans and trailers</p>
+  </div>
+  <div class="tread"></div>
+  <div class="bar">
+    <span class="l">Pretoria North</span>
+    <span class="c"><small>Call or WhatsApp</small>083 334 9357</span>
+    <span class="r">noordkaravane.co.za</span>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,24 @@
+/* Shared by og-site.html and og-shop.html. Canvas is 1200x630; the middle 630x630 (x 285 to 915) is what
+   WhatsApp shows when it falls back to the small square thumbnail, so each design must read from that alone. */
+@font-face { font-family: 'Bebas Neue'; src: url('../fonts/bebas-neue-400.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow'; font-weight: 400; src: url('../fonts/barlow-400.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow'; font-weight: 500; src: url('../fonts/barlow-500.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow'; font-weight: 600; src: url('../fonts/barlow-600.woff2') format('woff2'); }
+
+:root {
+  --ink: #0e0f11;
+  --ink-deep: #060709;
+  --paper: #ebe6dd;
+  --ground: #f3f3f0;
+  --orange: #e95e1d;
+  --orange-hi: #ff7a3b;
+  --orange-deep: #a63d0f;
+  --tread: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='46' height='36'%3E%3Cpath d='M0 0h13l9 16H9zM9 20h13l-9 16H0zM25 0h13l8 16H33zM33 20h13l-8 16H25z'/%3E%3C/svg%3E");
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { width: 1200px; height: 630px; overflow: hidden; font-family: 'Barlow', sans-serif; }
+.canvas { position: relative; width: 1200px; height: 630px; overflow: hidden; }
+.display { font-family: 'Bebas Neue', sans-serif; font-weight: 400; line-height: 0.9; letter-spacing: 0.01em; }
+/* Tyre-tread strip, the site's own motif */
+.tread { background-color: var(--orange); position: relative; }
+.tread::after { content: ''; position: absolute; inset: 0; background: var(--ink); -webkit-mask: var(--tread) repeat-x center / auto 100%; mask: var(--tread) repeat-x center / auto 100%; opacity: 0.9; }

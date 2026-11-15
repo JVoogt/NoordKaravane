@@ -162,7 +162,6 @@ Shipped as written, non-blocking, the owner may veto:
 - "500+ caravans serviced".
 - "Factory-trained on Jurgens, Sprite, Gypsey, Conqueror".
 - Google review excerpts: the owner approved three on 2026-11-07 (Vernon d. P., Zenelda S., Johan & Magda A.), quoted in the reviewers' own words from the public profile. Two more candidates sit in `web/src/data/reviews.ts` with `approved: false`. Re-check the excerpts against Google if a reviewer edits or removes a review.
-- The OG share image (`web/public/assets/images/og-image-1200.jpg`) still says "500+ caravans serviced" and "100% parts warranty". The page copy no longer makes either claim; the image needs re-exporting or confirming.
 - Removed from the copy until confirmed (restore in one line if true): "500+ caravans serviced", "Factory-trained on Jurgens, Sprite, Gypsey, Conqueror", "Parts sourced with warranties attached".
 - Turnaround and warranty claims: "most services done same or next day", "2-3 days for larger jobs", lift kit "~1 day" fit and "12 months" warranty on fitments.
 - Google 5.0 from 24 reviews: re-checked on the live profile on 2026-11-07 (all 24 five-star, hours match), stored with `asOf: 2026-11-07`. Update the count and date in `business.ts` when it changes.
