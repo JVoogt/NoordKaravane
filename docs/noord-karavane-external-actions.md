@@ -49,5 +49,4 @@ Google-Extended stays blocked. That also keeps the site out of grounding in the 
 ## 5. Not done here, worth doing next
 
 - The shop (`/shop/`) publishes the same `@id` as the workshop but as `Organization`, with phone `083 334 9357` instead of `+27833349357`, no trailing slash on the URL and Facebook without `www`. Align it with `storefront/src/lib/business.ts` on the next shop deploy.
-- The social share image (`web/public/assets/images/og-image-1200.jpg`) still says "500+ caravan services" and "100% parts warranty". Neither is confirmed. Replace it, or confirm both claims.
 - Afrikaans pages: a separate project (needs a translation plan), not part of this pass.

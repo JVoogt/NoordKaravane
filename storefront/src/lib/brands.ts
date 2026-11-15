@@ -35,7 +35,7 @@ export const STORE_BRANDS: Record<BrandKey, StoreBrand> = {
   nk: {
     key: 'nk', siteName: 'Noord Karavane', titleSuffix: 'Noord Karavane', themeColor: '#0e0f11',
     logo: { header: '/logo-transparent.png', footer: '/logo-white.png', alt: 'Noord Karavane' },
-    icon192: '/icon-192.png', appleTouchIcon: '/apple-touch-icon.png', ogDefault: '/og-default.png',
+    icon192: '/icon-192.png', appleTouchIcon: '/apple-touch-icon.png', ogDefault: '/og-default.jpg',
     landing: { href: '/', label: 'Workshop & servicing' }, newsletter: true, whatsappGreeting: 'Hi Noord Karavane! ', showSellerLine: false,
     tagline: null, heroFeature: null,
   },
