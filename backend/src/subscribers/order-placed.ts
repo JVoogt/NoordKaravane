@@ -1,6 +1,6 @@
 import type { SubscriberArgs, SubscriberConfig } from "@medusajs/framework"
 import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
-import { getOrder, isEftOrder, notifyStaff, orderEmailData, sendEmail } from "../lib/orders"
+import { getOrder, isEftOrder, isFreeOrder, notifyStaff, orderEmailData, sendEmail } from "../lib/orders"
 import { sendPurchase } from "../lib/meta-capi"
 import { orderChannel, shopUrl } from "../lib/business"
 import { storeDefaultChannelId } from "../lib/store-channel"
@@ -20,6 +20,9 @@ export default async function orderPlacedHandler({ event: { data }, container }:
 
   if (isEftOrder(order)) {
     await sendEmail(container, order.email, "order-placed-eft", orderEmailData(order))
+  } else if (isFreeOrder(order)) {
+    // A code covered the whole order: no payment exists, so confirm it here (there is no payment.captured to wait for).
+    await sendEmail(container, order.email, "order-placed-free", orderEmailData(order))
   }
   // Read once for both consumers, so an unreadable default warns once per order, not once per consumer.
   const defaultChannelId = await storeDefaultChannelId(container)

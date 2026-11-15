@@ -7,7 +7,7 @@ order: 4
 
 ## How do I pay?
 
-By EFT. Place your order, and we show you our banking details and your reference straight away (and email them). Pay from your banking app within {{eft_payment_window_hours}} hours. We get your order ready once the money reflects. There are no card fees and we never see your card details.
+By EFT. Place your order, and we show you our banking details and your reference straight away (and email them). Pay from your banking app within {{dur:eft_payment_window_hours}}. We get your order ready once the money reflects. There are no card fees and we never see your card details.
 
 ## How long does delivery take?
 

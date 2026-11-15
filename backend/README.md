@@ -82,7 +82,7 @@ Sign in at `https://admin.noordkaravane.co.za/app`.
 - **A new order** arrives as "Awaiting payment" and the customer is emailed the bank details. Use the order number
   (`SR1042`) as the EFT reference.
 - **Money received**: open the order, Payment section, **Capture payment**. The customer gets "in production".
-  Orders not paid within 48 hours are reminded at 24h and cancelled at 48h automatically.
+  Orders not paid within `eft_payment_window_hours` are cancelled automatically, with one reminder after `eft_reminder_after_hours`. R0 orders (a code covers everything) have no payment, get the `order-placed-free` email and are never cancelled.
 - **Ship it**: book the courier in the TCG / Pudo portal, then on the order choose **Create fulfilment**, then
   **Mark as shipped** and enter the waybill number as the tracking number. The customer is emailed a tracking link.
 - **Refund / cancel**: do the EFT yourself, then record the refund in Admin (manual provider).

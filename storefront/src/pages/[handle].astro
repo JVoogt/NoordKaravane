@@ -1,5 +1,6 @@
 ---
 import Base from '~/layouts/Base.astro';
+import { windowText } from '~/lib/duration';
 import ProductBuy from '~/islands/ProductBuy.tsx';
 import ProductCard from '~/components/ProductCard.astro';
 import { getProduct, hasBackend } from '~/lib/products';
@@ -76,7 +77,7 @@ const wa = whatsappNumber();
         )}
 
         {KAMPI ? <KampiFacts /> : <ul class="mt-8 grid gap-3 border-t border-ink-3 pt-6 text-[0.98rem]">
-          <li class="flex gap-3"><span class="w-24 shrink-0 text-[0.82rem] font-semibold uppercase tracking-[0.08em] text-muted">Pay</span><span><strong>EFT, explained simply.</strong> Place your order and we show you our banking details and your reference. Pay within {b.eft_payment_window_hours} hours and we get it ready. <a href={u('/how-to-order')}>How it works</a>.</span></li>
+          <li class="flex gap-3"><span class="w-24 shrink-0 text-[0.82rem] font-semibold uppercase tracking-[0.08em] text-muted">Pay</span><span><strong>EFT, explained simply.</strong> Place your order and we show you our banking details and your reference. Pay within {windowText(b.eft_payment_window_hours)} and we get it ready. <a href={u('/how-to-order')}>How it works</a>.</span></li>
           <li class="flex gap-3"><span class="w-24 shrink-0 text-[0.82rem] font-semibold uppercase tracking-[0.08em] text-muted">Get it</span><span>Courier from {zar(b.shipping.tcg_bands[0].price_zar)} by parcel size, small parcels to a Pudo locker, free over {zar(b.shipping.free_shipping_threshold_zar)}, or <strong>collect free</strong> from our Pretoria North workshop. <a href={u('/shipping')}>Delivery details</a>.</span></li>
           <li class="flex gap-3"><span class="w-24 shrink-0 text-[0.82rem] font-semibold uppercase tracking-[0.08em] text-muted">Fitting</span><span>We can fit it at the workshop. <a href={u('/contact')}>Ask us</a>. <a href={u('/legal/returns')}>Returns and refunds</a>.</span></li>
         </ul>}

@@ -1,4 +1,5 @@
 import { u } from '../lib/url';
+import { windowText } from '../lib/duration';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { backendAvailable, client, errMsg, ga4Items, getCart, publishCount, reloadCart, setCartId, setShippingMethod, type Cart } from '../scripts/cart-client';
 import { zar } from './format';
@@ -177,6 +178,9 @@ export default function Checkout(props: Props) {
   // stale or replaced method (a Pudo pick waiting for Place order, a Pudo dropped for weight) leaks neither its fee nor
   // its shipping discount into the summary.
   const totals = useMemo(() => (cart ? summaryTotals(cart, shipId, selected?.amount ?? null) : null), [cart, selected, shipId]);
+  // A code covers the whole order, delivery included: there is nothing to pay, so no payment choice is shown. Only once
+  // a delivery option is chosen, so the shopper never sees "nothing to pay" flip to a courier fee.
+  const nothingToPay = !!shipId && totals != null && Number(totals.total) === 0;
 
   function validate(): Record<string, string> {
     const e: Record<string, string> = {};
@@ -251,9 +255,12 @@ export default function Checkout(props: Props) {
         setSubmitErr(stopCopy(check, !!shown));
         return;
       }
-      await sdk.store.payment.initiatePaymentSession(fresh as any, { provider_id: pay });
+      // A R0 order never goes to Payfast. The EFT session is still started, as for every order: Medusa then completes the
+      // R0 cart without taking a payment (the shop's "nothing to pay" email follows the order).
+      const provider = Number(fresh.total) === 0 ? EFT : pay;
+      await sdk.store.payment.initiatePaymentSession(fresh as any, { provider_id: provider });
 
-      if (pay === PAYFAST) {
+      if (provider === PAYFAST) {
         // The backend scaffold returns a signed form; the customer posts it to Payfast.
         const after = (await sdk.store.cart.retrieve(cart.id, { fields: '*payment_collection,*payment_collection.payment_sessions' })).cart as unknown as Cart;
         const sess = after.payment_collection?.payment_sessions?.find((s) => s.provider_id === PAYFAST);
@@ -417,13 +424,19 @@ export default function Checkout(props: Props) {
           )}
         </fieldset>
 
+        {nothingToPay ? (
+        <fieldset class="grid gap-3">
+          <legend class="display mb-2 text-[1.7rem]">Payment</legend>
+          <p class="border border-ink/40 p-4"><strong>Nothing to pay.</strong> Your code covers the full amount, delivery included.</p>
+        </fieldset>
+        ) : (
         <fieldset class="grid gap-3">
           <legend class="display mb-2 text-[1.7rem]">Payment</legend>
           <label class={'choice' + (pay === EFT ? ' is-on' : '')}>
             <input type="radio" name="pay" value={EFT} checked={pay === EFT} onChange={() => setPay(EFT)} />
             <span class="choice__body">
               <strong class="font-display text-[1.05rem] uppercase">EFT, bank transfer</strong>
-              <span class="text-[0.92rem] text-muted">Place your order and we show you our bank details and your reference straight away (and email them). Pay from your banking app within {props.eftWindowHours} hours and we get your order ready. No card needed.</span>
+              <span class="text-[0.92rem] text-muted">Place your order and we show you our bank details and your reference straight away (and email them). Pay from your banking app within {windowText(props.eftWindowHours)} and we get your order ready. No card needed.</span>
             </span>
           </label>
           {providers.includes(PAYFAST) && (
@@ -433,6 +446,7 @@ export default function Checkout(props: Props) {
             </label>
           )}
         </fieldset>
+        )}
 
         <fieldset class="grid gap-3">
           <legend class="display mb-2 text-[1.7rem]">Almost there</legend>
@@ -450,8 +464,8 @@ export default function Checkout(props: Props) {
 
         <div>
           {submitErr && <p id="submit-err" class="err mb-3 border-2 border-wine p-3 font-medium" role="alert">{submitErr}</p>}
-          <button class="btn btn--lg w-full sm:w-auto" type="submit" disabled={placing || shipBusy || promoBusy}>{placing ? 'Placing your order...' : pay === PAYFAST ? 'Continue to Payfast' : `Place order${totals ? ' · ' + zar(totals.total) : ''}`}</button>
-          <p class="hint mt-3">{pay === EFT ? `You will not be charged yet. Next you get our banking details to pay by EFT within ${props.eftWindowHours} hours.` : 'You will pay on the next screen.'}</p>
+          <button class="btn btn--lg w-full sm:w-auto" type="submit" disabled={placing || shipBusy || promoBusy}>{placing ? 'Placing your order...' : nothingToPay ? 'Place order (nothing to pay)' : pay === PAYFAST ? 'Continue to Payfast' : `Place order${totals ? ' · ' + zar(totals.total) : ''}`}</button>
+          <p class="hint mt-3">{nothingToPay ? 'There is nothing to pay. We confirm your order by email.' : pay === EFT ? `You will not be charged yet. Next you get our banking details to pay by EFT within ${windowText(props.eftWindowHours)}.` : 'You will pay on the next screen.'}</p>
         </div>
       </div>
 

@@ -1,6 +1,6 @@
 ---
 title: "How to order and pay by EFT"
-description: "How ordering works at Noord Karavane: choose your products, check out, pay by EFT within 48 hours, then we get your order ready and ship it or hold it for collection."
+description: "How ordering works at Noord Karavane: choose your products, check out, pay by EFT, then we get your order ready and ship it or hold it for collection."
 updated: 2026-11-06
 order: 2
 ---
@@ -17,7 +17,7 @@ Enter your details and choose how you want to get your order: **courier to your 
 
 ## 3. Pay by EFT
 
-After you place the order we show you our banking details and your **payment reference** (like NK1042). We also email them to you. Pay from your banking app within **{{eft_payment_window_hours}} hours** and use the reference exactly as shown.
+After you place the order we show you our banking details and your **payment reference** (like NK1042). We also email them to you. Pay from your banking app within **{{dur:eft_payment_window_hours}}** and use the reference exactly as shown.
 
 | | |
 |---|---|
@@ -27,7 +27,7 @@ After you place the order we show you our banking details and your **payment ref
 | Branch code | {{bank.branch_code}} |
 | Account type | {{bank.account_type}} |
 
-Your order is only released for preparation once the money reflects in our account. This can take up to a business day if you bank with a different bank than ours. Sending proof of payment to {{email_orders}} speeds things up. If we do not receive payment within {{eft_payment_window_hours}} hours the order is cancelled automatically (nothing is charged).
+Your order is only released for preparation once the money reflects in our account. This can take up to a business day if you bank with a different bank than ours. Sending proof of payment to {{email_orders}} speeds things up. If we do not receive payment within {{dur:eft_payment_window_hours}} the order is cancelled automatically (nothing is charged).
 
 ## 4. We get it ready
 
