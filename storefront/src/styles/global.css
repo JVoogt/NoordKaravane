@@ -228,6 +228,21 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.75); }
   z-index: 120;
 }
 
+/* Phones: the notice took nearly half the screen and sat on the Checkout button that appears after Add to cart, so a
+   tap on Checkout hit the notice (2026-11-14). Tighter text, the two answers side by side, Choose as a link. The
+   library's own phone rules use !important, hence the extra .cm in each selector and the !important here. */
+@media screen and (max-width: 640px) {
+  #cc-main .cm .cm__texts { padding-top: 0.8rem; }
+  #cc-main .cm .cm__desc { font-size: 0.85em; line-height: 1.45; padding-bottom: 0.7rem; }
+  #cc-main .cm .cm__btns { padding-top: 0.7rem; padding-bottom: 0.4rem; }
+  #cc-main .cm .cm__btn-group:first-child { flex-direction: row !important; gap: 0.5rem; }
+  #cc-main .cm .cm__btn-group:first-child .cm__btn { flex: 1 1 0 !important; min-height: 44px; }
+  #cc-main .cm .cm__btn-group:first-child .cm__btn + .cm__btn { margin: 0 !important; }
+  #cc-main .cm .cm__btn-group + .cm__btn-group { margin-top: 0.15rem !important; }
+  #cc-main .cm .cm__btn--secondary { background: transparent !important; border-color: transparent !important; color: var(--cc-link-color) !important; text-decoration: underline; text-underline-offset: 3px; min-height: 44px; }
+  #cc-main .cm .cm__footer { padding-top: 0.35rem; padding-bottom: 0.5rem; }
+}
+
 @media print { .no-print { display: none !important; } }
 
 /* ---- Variant options (PDP) ---- */

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { applyPromo, removePromo, type Cart } from '../scripts/cart-client';
+import { clientCopy } from '@brand-copy';
 import { PROMO_COPY, appliedCodes, errInfo, droppedCodes, normalisePromoCode, promoErrorCopy, promoOutcome, promoPrecheck } from '../lib/promo';
 
 /**
@@ -15,7 +16,10 @@ const logInfo = (e: unknown) => errInfo(e, { message: false });
 export default function PromoCode({ cart, onCart, idPrefix, announceDrops = true, disabled = false, onBusy }: {
   cart: Cart; onCart: (c: Cart) => void; idPrefix: string; announceDrops?: boolean; disabled?: boolean; onBusy?: (busy: boolean) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  // Kampi shows the field open while no code is applied (clientCopy.promoOpen); NK keeps the "Have a code?" link.
+  const [open, setOpen] = useState(() => clientCopy.promoOpen && appliedCodes(cart).length === 0);
+  // Focus moves into the field only when the shopper opens it, never when it starts open on page load.
+  const mounted = useRef(false);
   const [raw, setRaw] = useState('');
   const [busy, setBusy] = useState<string | null>(null); // 'apply' or the code being removed
   const [msg, setMsg] = useState('');
@@ -48,6 +52,7 @@ export default function PromoCode({ cart, onCart, idPrefix, announceDrops = true
   }, [cart]);
 
   useEffect(() => {
+    if (!mounted.current) { mounted.current = true; return; }
     if (open) input.current?.focus();
     else if (focusToggle.current) { focusToggle.current = false; toggle.current?.focus(); }
   }, [open]);
@@ -89,6 +94,7 @@ export default function PromoCode({ cart, onCart, idPrefix, announceDrops = true
     setMsg(''); setBusy(c); lock(true);
     try {
       handOver(await removePromo(cart.id, c));
+      if (clientCopy.promoOpen) setOpen(true);
       setRefocus((n) => n + 1);
     } catch (e) {
       console.error('[promo] remove failed', logInfo(e));

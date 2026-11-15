@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'preact/hooks';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { u } from '../lib/url';
 import { quoteHref } from '../lib/quote';
+import { revealDelta } from '../lib/reveal';
 import { clientCopy } from '@brand-copy';
 
 const { buyDeliveryLine: bdl, quoteLine: ql } = clientCopy;
@@ -19,6 +20,26 @@ export default function ProductBuy(p: Props) {
   const [busy, setBusy] = useState(false);
   const [tried, setTried] = useState(false);
   const [msg, setMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
+  const status = useRef<HTMLDivElement>(null);
+
+  // After Add to cart, bring the "Added" box with its Checkout button into the clear part of the screen. On a phone it
+  // lands under the fold, and while the cookie notice is open it lands under the notice, so a tap on Checkout hit the
+  // notice instead (2026-11-14, host sticker kit claims).
+  useEffect(() => {
+    if (msg?.kind !== 'ok' || !status.current) return;
+    const id = requestAnimationFrame(() => {
+      const box = status.current?.getBoundingClientRect();
+      if (!box) return;
+      const header = document.querySelector('header')?.getBoundingClientRect();
+      // The notice stays in the DOM after it is answered; the library marks the open state on <html>.
+      const notice = document.documentElement.classList.contains('show--consent') ? document.querySelector('#cc-main .cm')?.getBoundingClientRect() : undefined;
+      const clearTop = header ? Math.max(0, header.bottom) : 0;
+      const clearBottom = notice && notice.height > 0 && notice.top < innerHeight ? notice.top : innerHeight;
+      const dy = revealDelta(box, clearTop, clearBottom);
+      if (dy) window.scrollBy({ top: dy, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [msg]);
 
   const complete = p.options.every((o) => sel[o.name]);
   const variant = useMemo(() => (complete ? p.variants.find((v) => p.options.every((o) => v.options[o.name] === sel[o.name])) : undefined), [sel]);
@@ -107,7 +128,7 @@ export default function ProductBuy(p: Props) {
       </div>
       )}
 
-      <div role="status" aria-live="polite" class="min-h-6">
+      <div ref={status} role="status" aria-live="polite" class="min-h-6">
         {msg?.kind === 'ok' && (
           <div class="border border-wine bg-paper-2 p-4">
             <p class="font-bold">{msg.text}</p>
