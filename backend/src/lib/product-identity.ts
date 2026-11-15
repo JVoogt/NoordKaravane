@@ -40,3 +40,17 @@ export function variantFeedTitle(title: unknown, optionValues: unknown[]): strin
   const vals = optionValues.map((v) => String(v ?? "").trim()).filter((v) => v && !/^default( title| variant)?$/i.test(v))
   return (vals.length ? `${t} (${vals.join(", ")})` : t).slice(0, 150)
 }
+
+/** Items the shop does not hold: the product copy says they are ordered in from the supplier. */
+export function isOrderedIn(...texts: unknown[]): boolean {
+  return texts.some((t) => /ordered in from (the|our) supplier/i.test(String(t ?? "")))
+}
+
+/** Longest handling time the shop quotes for an ordered-in item, in calendar days (5 working days). */
+export const ORDERED_IN_DAYS = 7
+
+/** Google's availability_date for a backorder item: the day it is expected to ship, ISO 8601 in SAST. */
+export function orderedInShipDate(now: Date = new Date()): string {
+  const d = new Date(now.getTime() + ORDERED_IN_DAYS * 86_400_000 + 2 * 3_600_000)
+  return `${d.toISOString().slice(0, 10)}T00:00+0200`
+}

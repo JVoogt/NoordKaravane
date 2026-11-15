@@ -1,4 +1,4 @@
-import { HOUSE_BRAND, makerBrand, makerMpn, variantFeedTitle } from "../product-identity"
+import { HOUSE_BRAND, isOrderedIn, makerBrand, makerMpn, orderedInShipDate, variantFeedTitle } from "../product-identity"
 
 describe("makerBrand", () => {
   it("names the maker from the first word of the title", () => {
@@ -35,5 +35,16 @@ describe("variantFeedTitle", () => {
     expect(variantFeedTitle("Bos Braai", ["Default"])).toBe("Bos Braai")
     expect(variantFeedTitle("Bos Braai", [])).toBe("Bos Braai")
     expect(variantFeedTitle("x".repeat(200), ["a"]).length).toBe(150)
+  })
+})
+
+describe("ordered-in items", () => {
+  it("reads the ordered-in note from any of the product texts", () => {
+    expect(isOrderedIn("Plain description", "<h3>Stock and delivery</h3><p>Ordered in from the supplier for you.</p>")).toBe(true)
+    expect(isOrderedIn("In stock at the workshop", null, undefined)).toBe(false)
+  })
+  it("dates the shipment seven days out, in SAST", () => {
+    expect(orderedInShipDate(new Date("2026-11-15T10:00:00Z"))).toBe("2026-11-22T00:00+0200")
+    expect(orderedInShipDate(new Date("2026-11-15T23:30:00Z"))).toBe("2026-11-23T00:00+0200")
   })
 })

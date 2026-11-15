@@ -58,7 +58,7 @@ export function productLd(p: Product) {
   const { min, max } = leadDays();
   const courierFrom = shippingFacts(business).courierFromZar;
   const offerBase = {
-    '@type': 'Offer', priceCurrency: 'ZAR', availability: 'https://schema.org/InStock', itemCondition: 'https://schema.org/NewCondition', url,
+    '@type': 'Offer', priceCurrency: 'ZAR', availability: /ordered in from (the|our) supplier/i.test(`${p.description} ${p.descriptionHtml}`) ? 'https://schema.org/BackOrder' : 'https://schema.org/InStock', itemCondition: 'https://schema.org/NewCondition', url,
     seller: { '@id': siteUrl() + '/#org' },
     shippingDetails: {
       '@type': 'OfferShippingDetails', shippingDestination: { '@type': 'DefinedRegion', addressCountry: 'ZA' },

@@ -1,7 +1,7 @@
 import type { MedusaContainer } from "@medusajs/framework/types"
 import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
 import { shopUrl, siteUrl } from "./business"
-import { makerBrand, makerMpn, variantFeedTitle } from "./product-identity"
+import { isOrderedIn, makerBrand, makerMpn, orderedInShipDate, variantFeedTitle } from "./product-identity"
 
 const esc = (s: unknown) =>
   String(s ?? "")
@@ -60,6 +60,10 @@ export async function buildProductFeed(container: MedusaContainer, channel: "met
     const img = p.images?.[0]?.url || p.thumbnail
     const cat = (p.categories ?? [])[0]?.name ?? ""
     const desc = (p.description || p.subtitle || p.title).toString().replace(/\s+/g, " ").trim().slice(0, 4900)
+    // Google has a backorder state (with a ship date); Meta only knows in stock / out of stock.
+    const availability = channel === "google" && isOrderedIn(p.description, p.metadata?.description_html)
+      ? `<g:availability>backorder</g:availability>\n      <g:availability_date>${orderedInShipDate()}</g:availability_date>`
+      : `<g:availability>in_stock</g:availability>`
     for (const v of p.variants ?? []) {
       const price = variantPrice(v)
       if (price === null) continue // no ZAR price: not sellable, keep out of the feed
@@ -72,7 +76,7 @@ export async function buildProductFeed(container: MedusaContainer, channel: "met
       <g:title>${esc(title)}</g:title>
       <g:description>${esc(desc)}</g:description>
       <g:link>${esc(link)}</g:link>
-${img ? `      <g:image_link>${esc(img)}</g:image_link>\n` : ""}      <g:availability>in_stock</g:availability>
+${img ? `      <g:image_link>${esc(img)}</g:image_link>\n` : ""}      ${availability}
       <g:price>${price.toFixed(2)} ZAR</g:price>
       <g:brand>${esc(makerBrand(p.title))}</g:brand>
 ${mpn ? `      <g:mpn>${esc(mpn)}</g:mpn>\n` : ""}      <g:condition>new</g:condition>
