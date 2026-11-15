@@ -443,9 +443,20 @@ export function renderEmail(template: string, d: EmailData): { subject: string; 
       ]
       const detail = staffDetail(nk, d, ref)
       // payment.captured fired but no payment on the order shows captured: do not claim the order is paid.
-      const paid = !!d.payment_captured
-      const subject = paid ? `Paid: order ${ref} ready to ship (${d.total ?? ""})` : `Payment captured: order ${ref} not fully paid yet (${d.total ?? ""})`
-      const intro = paid
+      // A R0 order (a code covers it all) has no payment and needs none: it is ready to ship as soon as it is placed.
+      const free = !!d.nothing_to_pay
+      const paid = !!d.payment_captured || free
+      const subject = free
+        ? `Nothing to pay: order ${ref} ready to ship (${d.total ?? ""})`
+        : paid
+          ? `Paid: order ${ref} ready to ship (${d.total ?? ""})`
+          : `Payment captured: order ${ref} not fully paid yet (${d.total ?? ""})`
+      const intro = free
+        ? {
+            html: `A discount code covers order <strong>${esc(ref)}</strong> in full, so there is nothing to pay. Next steps:`,
+            text: `A discount code covers order ${ref} in full, so there is nothing to pay. Next steps:`,
+          }
+        : paid
         ? { html: `Payment is in for order <strong>${esc(ref)}</strong>. Next steps:`, text: `Payment is in for order ${ref}. Next steps:` }
         : {
             html: `A payment was captured for order <strong>${esc(ref)}</strong> but the order is not fully paid yet. Check the admin before packing. Once it is paid:`,
@@ -454,7 +465,7 @@ export function renderEmail(template: string, d: EmailData): { subject: string; 
       const html = shell(
         nk,
         subject,
-        paid ? `Paid: ${ref} ready to ship` : `${ref}: not fully paid yet`,
+        free ? `Nothing to pay: ${ref} ready to ship` : paid ? `Paid: ${ref} ready to ship` : `${ref}: not fully paid yet`,
         p(intro.html) +
           p(`Channel: ${esc(channel)}`) +
           `<ol style="margin:0 0 16px 0;padding-left:20px;">${steps.map((s) => `<li style="margin:0 0 6px 0;">${esc(s)}</li>`).join("")}</ol>` +

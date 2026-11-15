@@ -1,5 +1,6 @@
 import type { SubscriberArgs, SubscriberConfig } from "@medusajs/framework"
 import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
+import { notifyDropshipSuppliers } from "../lib/dropship"
 import { getOrder, isEftOrder, isFreeOrder, notifyStaff, orderEmailData, sendEmail } from "../lib/orders"
 import { sendPurchase } from "../lib/meta-capi"
 import { orderChannel, shopUrl } from "../lib/business"
@@ -27,6 +28,12 @@ export default async function orderPlacedHandler({ event: { data }, container }:
   // Read once for both consumers, so an unreadable default warns once per order, not once per consumer.
   const defaultChannelId = await storeDefaultChannelId(container)
   await notifyStaff(container, order, "staff-new-order", defaultChannelId)
+  // A R0 order is never captured, so payment.captured never runs for it: send its ready-to-ship alert and notify the
+  // dropship suppliers here, as payment-captured does for a paid order.
+  if (isFreeOrder(order)) {
+    await notifyStaff(container, order, "staff-order-paid", defaultChannelId)
+    await notifyDropshipSuppliers(container, order.id)
+  }
 
   const md = (order.metadata ?? {}) as Record<string, any>
   const consent = md.marketing_consent === true || md.marketing_consent === "true"
