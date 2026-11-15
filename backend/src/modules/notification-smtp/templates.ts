@@ -1,4 +1,5 @@
 import { brandByKey, getBusinessConfig, kampiBrandConfig, siteUrl, usableValue, type Brand, type BrandKey } from "../../lib/business"
+import { moreText, windowText } from "../../lib/duration"
 
 /**
  * Branded, table-based HTML emails (inline styles only, for email clients).
@@ -54,6 +55,8 @@ export type EmailData = {
   ship_to_lines?: string[]
   payment_method?: string
   payment_captured?: boolean
+  /** A discount code covered the whole order: no payment exists or is expected. */
+  nothing_to_pay?: boolean
   collect_from_workshop?: boolean
   admin_order_url?: string
   dropship_items?: { supplier: string; title: string; variant?: string; sku?: string; quantity: number }[]
@@ -207,6 +210,7 @@ ${row("Account name", b.account_name)}${row("Bank", b.bank_name)}${row("Account 
 /** Payment line and subject tag for staff alerts. Paid means a payment has captured_at set. */
 function staffPayment(d: EmailData, ref: string): { line: string; tag: string } {
   const paid = !!d.payment_captured
+  if (d.nothing_to_pay) return { line: "Nothing to pay: a discount code covers the whole order. It can be prepared now.", tag: "nothing to pay" }
   if (d.payment_method === "EFT")
     return paid
       ? { line: "EFT payment received.", tag: "paid by EFT" }
@@ -271,19 +275,19 @@ export function renderEmail(template: string, d: EmailData): { subject: string; 
       const link = orderLink(t, d)
       const html = shell(
         t,
-        `Order ${ref} is in. Pay by EFT within ${windowH} hours to lock it in.`,
+        `Order ${ref} is in. Pay by EFT within ${windowText(windowH)} to lock it in.`,
         "Your order is reserved",
         p(hi) +
           p(`Thank you for your order <strong>${esc(ref)}</strong>. We start packing your order once your payment lands.`) +
-          p(`Please pay by EFT within <strong>${windowH} hours</strong>, using your order number as the reference:`) +
+          p(`Please pay by EFT within <strong>${windowText(windowH)}</strong>, using your order number as the reference:`) +
           bank.html +
           itemsTable(t, d) +
           (d.pudo_locker ? p(`Delivering to Pudo locker: <strong>${esc(d.pudo_locker)}</strong>`) : "") +
-          p(`Once we see the money, we'll email you and your order goes into preparation (${esc(b.production_lead_time_days)}). Unpaid orders are released after ${windowH} hours, but you can always order again.`) +
+          p(`Once we see the money, we'll email you and your order goes into preparation (${esc(b.production_lead_time_days)}). Unpaid orders are released after ${windowText(windowH)}, but you can always order again.`) +
           link.html +
           p(`Safe travels.`)
       )
-      const text = `${hiText}\n\nThank you for your order ${ref}. We start packing your order once your payment lands.\n\nPlease pay by EFT within ${windowH} hours, using your order number as the reference:\n\n${bank.text}\n\n${itemsText(d)}\n${d.pudo_locker ? `\nPudo locker: ${d.pudo_locker}\n` : ""}\nOnce we see the money we'll email you and your order goes into preparation (${b.production_lead_time_days}). Unpaid orders are released after ${windowH} hours.\n\n${link.text}Safe travels.\n${signOff(t)}`
+      const text = `${hiText}\n\nThank you for your order ${ref}. We start packing your order once your payment lands.\n\nPlease pay by EFT within ${windowText(windowH)}, using your order number as the reference:\n\n${bank.text}\n\n${itemsText(d)}\n${d.pudo_locker ? `\nPudo locker: ${d.pudo_locker}\n` : ""}\nOnce we see the money we'll email you and your order goes into preparation (${b.production_lead_time_days}). Unpaid orders are released after ${windowText(windowH)}.\n\n${link.text}Safe travels.\n${signOff(t)}`
       return { subject: `Order ${ref}: pay by EFT to lock it in`, html, text }
     }
     case "eft-reminder": {
@@ -295,13 +299,13 @@ export function renderEmail(template: string, d: EmailData): { subject: string; 
         `Order ${ref} is still waiting on payment.`,
         "Your order is still waiting",
         p(hi) +
-          p(`Order <strong>${esc(ref)}</strong> hasn't been paid yet. We'll hold it for roughly <strong>${left} more hours</strong>, then release it.`) +
+          p(`Order <strong>${esc(ref)}</strong> hasn't been paid yet. We'll hold it for roughly <strong>${moreText(left)}</strong>, then release it.`) +
           bank.html +
           itemsTable(t, d) +
           p(`Already paid? Lovely. It can take a little while to reflect, and you don't need to do anything. If you've changed your mind, no stress.`) +
           link.html
       )
-      const text = `${hiText}\n\nOrder ${ref} hasn't been paid yet. We'll hold it for roughly ${left} more hours, then release it.\n\n${bank.text}\n\n${itemsText(d)}\n\nAlready paid? You don't need to do anything.\n\n${link.text}${signOff(t)}`
+      const text = `${hiText}\n\nOrder ${ref} hasn't been paid yet. We'll hold it for roughly ${moreText(left)}, then release it.\n\n${bank.text}\n\n${itemsText(d)}\n\nAlready paid? You don't need to do anything.\n\n${link.text}${signOff(t)}`
       return { subject: `Reminder: order ${ref} is waiting for payment`, html, text }
     }
     case "payment-received": {
@@ -318,6 +322,25 @@ export function renderEmail(template: string, d: EmailData): { subject: string; 
       )
       const text = `${hiText}\n\nWe've received your payment for order ${ref}. Your order is now being prepared.\n\n${itemsText(d)}\n\nPreparing your order takes ${b.production_lead_time_days} before it ships. We'll email you tracking details the moment it's on its way.\n\n${link.text}${signOff(t)}`
       return { subject: `Payment received for ${ref}: now being prepared`, html, text }
+    }
+    case "order-placed-free": {
+      const link = orderLink(t, d)
+      const collect = /collect/i.test(d.shipping_method ?? "")
+      const next = collect
+        ? "We'll let you know when it's ready to collect."
+        : "We'll email you the tracking details the moment it's on its way."
+      const html = shell(
+        t,
+        `Order ${ref} is confirmed. There is nothing to pay.`,
+        "Confirmed. Nothing to pay.",
+        p(hi) +
+          p(`Thank you for your order <strong>${esc(ref)}</strong>. Your discount code covers the full amount, so there is <strong>nothing to pay</strong>.`) +
+          itemsTable(t, d) +
+          p(`Your order is now <strong>being prepared</strong>. That takes <strong>${esc(b.production_lead_time_days)}</strong>. ${next}`) +
+          link.html
+      )
+      const text = `${hiText}\n\nThank you for your order ${ref}. Your discount code covers the full amount, so there is nothing to pay.\n\n${itemsText(d)}\n\nYour order is now being prepared. That takes ${b.production_lead_time_days}. ${next}\n\n${link.text}${signOff(t)}`
+      return { subject: `Order ${ref} is confirmed: nothing to pay`, html, text }
     }
     case "order-shipped": {
       const track = d.tracking_number
@@ -343,11 +366,11 @@ export function renderEmail(template: string, d: EmailData): { subject: string; 
         `Order ${ref} was cancelled.`,
         "Order cancelled",
         p(hi) +
-          p(`Order <strong>${esc(ref)}</strong> has been cancelled. If it was cancelled because payment didn't arrive within ${windowH} hours, nothing was due. If you did pay, reply to this email and we'll refund or reinstate it.`) +
+          p(`Order <strong>${esc(ref)}</strong> has been cancelled. If it was cancelled because payment didn't arrive within ${windowText(windowH)}, nothing was due. If you did pay, reply to this email and we'll refund or reinstate it.`) +
           p(`Changed your mind, or paid just after the deadline? Reply to this email and we'll sort it out. You're also welcome to order again any time.`) +
           button(t, t.brand.shopUrl + "/", "Back to the shop")
       )
-      const text = `${hiText}\n\nOrder ${ref} has been cancelled. If this was because payment didn't arrive within ${windowH} hours, nothing was due. If you did pay, reply to this email and we'll refund or reinstate it.\n\nPaid just after the deadline? Reply to this email and we'll sort it out.\n\n${t.brand.shopUrl}/\n\n${signOff(t)}`
+      const text = `${hiText}\n\nOrder ${ref} has been cancelled. If this was because payment didn't arrive within ${windowText(windowH)}, nothing was due. If you did pay, reply to this email and we'll refund or reinstate it.\n\nPaid just after the deadline? Reply to this email and we'll sort it out.\n\n${t.brand.shopUrl}/\n\n${signOff(t)}`
       return { subject: `Order ${ref} has been cancelled`, html, text }
     }
     case "dropship-supplier": {

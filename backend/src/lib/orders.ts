@@ -87,6 +87,15 @@ export function hasCapturedPayment(order: any): boolean {
   )
 }
 
+/**
+ * True for an order with nothing to pay: a discount code took the total to R0, so Medusa completed the cart without any
+ * payment. Such an order has no EFT payment, so it gets no EFT email and the unpaid-order job never touches it.
+ */
+export function isFreeOrder(order: any): boolean {
+  const payments = (order?.payment_collections ?? []).flatMap((pc: any) => pc.payments ?? [])
+  return order?.total != null && Number(order.total) === 0 && payments.length === 0
+}
+
 export function isEftOrder(order: any): boolean {
   return (order.payment_collections ?? []).some((pc: any) =>
     (pc.payments ?? []).some((p: any) => p.provider_id === "pp_eft_eft")
@@ -130,6 +139,7 @@ export function staffOrderEmailData(
       .filter(Boolean),
     payment_method: isEftOrder(order) ? "EFT" : payfast ? "PayFast" : payments[0]?.provider_id || "Unknown",
     payment_captured: payments.some((p: any) => !!p.captured_at),
+    nothing_to_pay: isFreeOrder(order) || undefined,
     collect_from_workshop: md.collect_from_workshop === true || md.collect_from_workshop === "true",
     channel_label: staffChannelLabel(order, defaultChannelId),
     admin_order_url: `${adminUrl()}/app/orders/${order.id}`,

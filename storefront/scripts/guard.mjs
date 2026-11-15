@@ -46,10 +46,11 @@ function kampiBlockLines(lines) {
   return out;
 }
 
-// Kampi content, components and brand copy fill {{key}} and {{zar:key}} from business.json (src/lib/fill.ts). Every
-// token there must resolve against the example config's shape: zar to a finite number, plain to a string or number.
+// Kampi content, components and brand copy fill {{key}}, {{zar:key}} and {{dur:key}} from business.json (src/lib/fill.ts).
+// Every token there must resolve against the example config's shape: zar and dur to a finite number, plain to a string
+// or number.
 // Same token pattern as fill.ts, so an Astro object literal ({{ a: 1 }}) is not a token.
-const TOKEN = /\{\{\s*(zar:)?([a-z_][a-z0-9_.]*)\s*\}\}/gi;
+const TOKEN = /\{\{\s*(zar:|dur:)?([a-z_][a-z0-9_.]*)\s*\}\}/gi;
 const hasTokens = (r) => isKampiFile(r) || r.startsWith('src/components/kampi/');
 const EXAMPLE_PATH = process.env.GUARD_BUSINESS_EXAMPLE ? resolve(process.env.GUARD_BUSINESS_EXAMPLE) : resolve(ROOT, '..', 'config', 'business.example.json');
 let example = null;
@@ -60,9 +61,9 @@ try {
   process.exit(1);
 }
 const lookup = (dotted) => dotted.split('.').reduce((o, k) => (o && typeof o === 'object' ? o[k] : undefined), example);
-function tokenProblem(zarToken, key) {
+function tokenProblem(prefix, key) {
   const v = lookup(key);
-  if (zarToken) return typeof v === 'number' && Number.isFinite(v) ? null : `{{zar:${key}}} is not a number in business.example.json`;
+  if (prefix) return typeof v === 'number' && Number.isFinite(v) ? null : `{{${prefix}${key}}} is not a number in business.example.json`;
   return typeof v === 'string' || typeof v === 'number' ? null : `unresolved token {{${key}}} (no string or number in business.example.json)`;
 }
 
@@ -79,7 +80,7 @@ for (const f of files) {
     if (hasTokens(r)) {
       for (const t of line.matchAll(TOKEN)) {
         tokens++;
-        const p = tokenProblem(!!t[1], t[2]);
+        const p = tokenProblem(t[1] || "", t[2]);
         if (p) failures.push(`${r}:${i + 1}: ${p}`);
       }
     }

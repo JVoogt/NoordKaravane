@@ -41,7 +41,7 @@ All prices are in South African rand (ZAR). Prices include VAT (we are VAT regis
 
 ## Payment
 
-Direct EFT (bank transfer) to {{bank.bank_name}}. Card and instant EFT via Payfast may be added later. Orders must be paid within {{eft_payment_window_hours}} hours or they are cancelled. Payment details are shown after checkout. Payment systems and security are described in our [Data Retention and Protection Policy](/shop/legal/data-retention/).
+Direct EFT (bank transfer) to {{bank.bank_name}}. Card and instant EFT via Payfast may be added later. Orders must be paid within {{dur:eft_payment_window_hours}} or they are cancelled. Payment details are shown after checkout. Payment systems and security are described in our [Data Retention and Protection Policy](/shop/legal/data-retention/).
 
 ## Delivery
 

@@ -1,4 +1,5 @@
 import { zar } from './format.ts';
+import { windowText } from './duration.ts';
 
 const lookup = (obj: unknown, dotted: string): unknown =>
   dotted.split('.').reduce<unknown>((o, k) => (o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined), obj);
@@ -6,6 +7,7 @@ const lookup = (obj: unknown, dotted: string): unknown =>
 /**
  * Replace business placeholders in content (pure; plan DD12, G33).
  *   {{zar:a.b}}  a config number rendered as a price with zar() (R2 500); a non-number is left as written
+ *   {{dur:a.b}}  a config number of hours rendered as a duration ("5 days", "48 hours"); a non-number is left as written
  *   {{a.b}}      the raw value (as before); unknown and non-scalar keys are left as written
  * The zar token runs first. NK content has no zar token, so NK output is unchanged.
  * An unresolved token, or a value that is itself a {{PLACEHOLDER}}, is printed as today and logged once per token per
@@ -16,6 +18,12 @@ export function fillWith(text: string, b: Record<string, unknown>): string {
     .replace(/\{\{\s*zar:([a-z_][a-z0-9_.]*)\s*\}\}/gi, (m, key: string) => {
       const v = lookup(b, key);
       if (typeof v === 'number' && Number.isFinite(v)) return zar(v);
+      warnOnce(m, 'is not a number in business.json; printed as written');
+      return m;
+    })
+    .replace(/\{\{\s*dur:([a-z_][a-z0-9_.]*)\s*\}\}/gi, (m, key: string) => {
+      const v = lookup(b, key);
+      if (typeof v === 'number' && Number.isFinite(v)) return windowText(v);
       warnOnce(m, 'is not a number in business.json; printed as written');
       return m;
     })

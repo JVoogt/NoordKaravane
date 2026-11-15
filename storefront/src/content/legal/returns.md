@@ -38,7 +38,7 @@ If you have a statutory right to cancel, you may not waive it, and nothing in th
 - Refunds are paid by **EFT to the bank account you give us**, in the name on the order wherever possible.
 - For a cooling-off cancellation we refund in full within **30 days** of the date you cancel (ECTA s44), and usually much sooner. For faulty goods we refund promptly after we accept the claim.
 - The refund covers the price of the item(s) and, for a faulty or incorrect item or a full cancellation, the delivery fee you paid. The only cost you bear for a cooling-off return is the direct cost of returning the goods.
-- If your order was **unpaid and cancelled** after {{eft_payment_window_hours}} hours, nothing is due, so nothing needs refunding.
+- If your order was **unpaid and cancelled** after {{dur:eft_payment_window_hours}}, nothing is due, so nothing needs refunding.
 
 ## 5. Cancelling before we ship
 

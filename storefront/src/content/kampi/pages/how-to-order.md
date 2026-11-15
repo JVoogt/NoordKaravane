@@ -18,7 +18,7 @@ Enter your details and choose how you want to get your order: **courier to your 
 
 ## 3. Pay by EFT
 
-After you place the order we show you the banking details and your **payment reference** (like NK1042). We also email them to you. Pay from your banking app within **{{eft_payment_window_hours}} hours** and use the reference exactly as shown.
+After you place the order we show you the banking details and your **payment reference** (like NK1042). We also email them to you. Pay from your banking app within **{{dur:eft_payment_window_hours}}** and use the reference exactly as shown.
 
 <p data-seller>The account belongs to {{legal_name}}, who sells and ships Kampi Store orders. NK in your reference is short for {{brand}}.</p>
 
@@ -30,7 +30,7 @@ After you place the order we show you the banking details and your **payment ref
 | Branch code | {{bank.branch_code}} |
 | Account type | {{bank.account_type}} |
 
-Your order is only released for preparation once the money reflects. This can take up to a business day if you bank with a different bank. Sending proof of payment to {{email_orders}} speeds things up. If payment does not arrive within {{eft_payment_window_hours}} hours the order is cancelled automatically (nothing is charged).
+Your order is only released for preparation once the money reflects. This can take up to a business day if you bank with a different bank. Sending proof of payment to {{email_orders}} speeds things up. If payment does not arrive within {{dur:eft_payment_window_hours}} the order is cancelled automatically (nothing is charged).
 
 ## 4. We get it ready
 

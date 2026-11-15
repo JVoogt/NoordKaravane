@@ -28,7 +28,7 @@ Placing an order is an offer to buy. We accept it, and the contract is concluded
 We currently accept **direct EFT (bank transfer)**. Card and instant EFT through Payfast may be added later.
 
 - After checkout you receive our bank details ({{bank.bank_name}}, account name {{bank.account_name}}) and your order number as the payment reference.
-- You must pay within **{{eft_payment_window_hours}} hours**. We send a reminder after {{eft_reminder_after_hours}} hours. **Orders unpaid after {{eft_payment_window_hours}} hours are cancelled automatically.** You are welcome to place the order again.
+- You must pay within **{{dur:eft_payment_window_hours}}**. We send a reminder after {{dur:eft_reminder_after_hours}}. **Orders unpaid after {{dur:eft_payment_window_hours}} are cancelled automatically.** You are welcome to place the order again.
 - We start production only after we see the payment in our account. Bank processing delays are outside our control. Email proof of payment to {{email_orders}} if in doubt.
 
 ## 6. Delivery
